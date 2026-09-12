@@ -685,6 +685,35 @@ back a **provisional** floor; and the door re-runs the command on the real tree 
 is fixed in the lane with a pin; a fix the agent may not apply alone (the constitution's Ask First
 list, or a spec conflict) is written as a patch and **held for your word**. Everything else is a count.
 
+**A review reads ONE PART, and the masters only (SCC-447).** Step 1 no longer hands the engine the
+whole `base..HEAD` diff: `review_scope.py` cuts it first. It groups the lane's commits by their rider
+key, withholds the three classes that are the same thing read twice — byte-copy mirrors, generated
+output, and the lane's own records — and prints every withheld path beside the class that withheld
+it. Measured on SCC-441: 155 files and 1.46 MB became 82 files and 618 KB, most of the difference
+being 48 mirrors of files already in the diff and 26 files describing the work rather than being it.
+There is no byte cap; a part too big to review is a part that should have been two.
+
+**The door reproduces, then fixes, in one turn (SCC-447).** A new **Step 1.4** sits between the
+engine's return and the acceptance audit: every surviving `critical` and `important` goes through
+`repro_receipt.py run --cwd <the tree that ships>`, which records the true exit code — `reproduced`,
+`not-reproduced` (the row is dropped and counted), or `unrunnable` (nobody learned anything; repair
+the command, never the finding). What reproduced is fixed there with a pin seen red then green,
+written as a held patch when permission is missing, or sent down the consolidation ladder when the
+file is not this lane's. Nested at Step 3.5 the clean-code audit runs its **machine floor only** —
+its judgment half is recorded, never a verdict, so it cannot manufacture a third CONCERNS ground.
+
+**One review per lane, and the re-stamp (SCC-447).** The lenses run once. When the fixes land, the
+retest is the pins named in the `fixed` rows plus the enforcement suite once through the receipt
+writer, appended as a new `## Code Review (<date>, re-stamp after fixes)` section carrying no second
+roster — the last `Verdict:` governs, and `walkthrough_roster.py` refuses a walkthrough with two
+rosters unless your written word is on the section. A code or test diff after the stamp invalidates
+the **suite evidence**, never the review: re-run the pins and the suite, never the lenses.
+
+**And the review ends its turn.** The door closes with one screen — the verdict and sha, the fixed
+rows with their pins, the held rows with their patches, the out-of-lane rows with where they went,
+the counts of dropped and recorded, and the two words that move it: `approved`, or `apply <ids>`.
+Nothing is a question and nothing is a recommendation to weigh.
+
 **The record is machine-read.** The walkthrough's `## Code Review` section must carry the engine's
 `dispositions:` line (per-lens reproduced/dropped/recorded) and a one-line `drift:` result;
 `walkthrough_roster.py` blocks a lane dated 2026-08-20 or later that is missing either.
@@ -2399,7 +2428,14 @@ claims). Its judgment half checks the conventions **this page** defines.
 > cannot run in the command centre** — it looks for a BMAD sprint board and exits when it does not
 > find one. So on this lane the evidence contract is pasted real output plus the commit it was
 > measured on, recorded in the walkthrough. Same invariant, held by hand instead of by machine. If a
-> code change lands after that commit, the verdict is void.
+> code change lands after that commit, what is void is the **suite evidence** — re-run the pins and
+> the suite and re-stamp, never the lenses (SCC-447: one review per lane).
+
+> ⓘ **The judgment half is recorded, never a verdict (SCC-447).** Nested inside `/smh-code-review`
+> Step 3.5 it does not run at all — the review takes the machine floor and nothing else. Standalone
+> it runs in full, and its findings are counts and rows in the record: §7 gives CONCERNS exactly two
+> grounds, coverage and authority, and taste is not one of them, because a CONCERNS made of taste is
+> a file you have to open.
 
 *[↑ back to Contents](#contents)*
 

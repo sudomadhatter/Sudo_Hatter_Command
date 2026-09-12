@@ -601,38 +601,15 @@ CHECKS: tuple[tuple[str, str, str, int, str, str], ...] = (
     # all still cover it. What is no longer asserted is the CONTENT of a frozen file. When the
     # rewrite lands, the new file earns its own rows here, the same as any other caller.
 
-    # ── SCC-147: the INTERACTIVE callers name their budget, in their own invocation tables ────
-    # The counter-example here is `capped` — not a nonsense string — because `capped` is the
-    # exact value these two silently inherited by naming nothing. A row that says `capped`
-    # reads as deliberate and is the defect; the check has to reject it, not just notice an
-    # absent word.
-    #
-    # ⛔ The pattern is anchored to the ENGINE-INVOCATION TABLE, and that shape is the whole
-    # point. This lane's review ran two mutants against the first version — a bare
-    # `^\|\s*`lens_budget`\s*\|\s*`standard`` — and BOTH survived with every case green:
-    #   A. move the row out of the invocation table into any other table in the file. The
-    #      caller then passes NO budget and silently takes `capped` — the exact defect this
-    #      ticket exists to fix — while a file-wide grep still sees a matching row somewhere.
-    #   B. leave the row where it is and append "— but pass `capped` when the diff is large"
-    #      INSIDE the same cell, which the old pattern never read: it stopped at the value
-    #      token and never closed the cell.
-    # `^\|\s*`HEAD_SHA`` + `(?:\|[^\n]*\n)*?` binds the row to the same CONTIGUOUS run of table
-    # rows as a required engine input — a blank line or any prose ends the run, so an appendix
-    # table cannot satisfy it. That kills A. The tempered `(?:(?!capped)[^|\n])*\|` reads to the
-    # cell's closing pipe and refuses `capped` anywhere inside it. That kills B — and it is why
-    # neither row's prose may name `capped`: they say "the autopilot's budget" instead.
-    # This is the `source-grep-guards-cannot-see-order` class caught inside a guard written to
-    # close SCC-126's F7, which is the same defect one layer up.
-    ("interactive caller /cicd-code-review: invocation table passes lens_budget standard",
-     CICD_CMD,
-     r"^\|\s*`HEAD_SHA`[^\n]*\n(?:\|[^\n]*\n)*?\|\s*`lens_budget`\s*\|\s*`standard`"
-     r"(?:(?!capped)[^|\n])*\|", re.M,
-     "| `lens_budget` | `standard`", "| `lens_budget` | `capped`"),
-    ("interactive caller /smh-code-review: invocation table passes lens_budget standard",
-     SMH_CMD,
-     r"^\|\s*`HEAD_SHA`[^\n]*\n(?:\|[^\n]*\n)*?\|\s*`lens_budget`\s*\|\s*`standard`"
-     r"(?:(?!capped)[^|\n])*\|", re.M,
-     "| `lens_budget` | `standard`", "| `lens_budget` | `capped`"),
+    # ── SCC-147's two caller rows — RETIRED by SCC-447, and the reason matters ──────────────
+    # They pinned `| `lens_budget` | `standard` |` in each interactive caller's invocation table,
+    # anchored to the contiguous run of rows under `HEAD_SHA` so an appendix table could not
+    # satisfy them (this lane's review killed two looser versions with live mutants). The axis
+    # itself is gone: the roster is three lenses, step-01 carries the retirement note instead of
+    # a definition, and a caller that still passed a budget would be passing an input the engine
+    # no longer reads. A retired input needs the INVERSE guard, and it is asserted over the
+    # discovered caller set in the block below — over every caller, not just these two, because
+    # the failure mode is one caller keeping the row after the definition left.
 
     # ── SCC-173 + SCC-177: the callers WRITE what the preflights read ───────────────────────
     # Bound the same contiguous-table way as `lens_budget` above, for the same reason: a
@@ -803,17 +780,22 @@ def main() -> int:
     # and it protects the blind lens by ORDER instead (splitting its ingests so the lens runs
     # before any context lands). Holding it to "subagents are the default" would be law it cannot
     # obey - a rule nobody can follow is a rule that teaches everyone to ignore rules.
-    # ⭐ THREE paragraphs, not two. The `rather than faking it` clause — where an `inline` caller
-    # holding the plan DROPS the Blind Hunter — was carried by both callers and pinned by nothing:
-    # no CHECKS row named it, and this extractor did not match it, so either caller could have
-    # lost the consequence while every check stayed green. It is part of the same law (what a
-    # runtime answer OBLIGES), so it belongs in the same byte-identity comparison.
+    # ⭐ THREE paragraphs, not two. The third is what the runtime answer OBLIGES once given, and
+    # it was carried by both callers while pinned by nothing — no CHECKS row named it and this
+    # extractor did not match it, so either caller could have lost the consequence with every
+    # check green. It is part of the same law, so it belongs in the same byte-identity comparison.
+    # ⛔ SCC-447 REPLACED THAT CLAUSE RATHER THAN DROPPING IT. It used to be "an `inline` caller
+    # holding the plan DROPS the Blind Hunter rather than faking it" — a rule about a lens that no
+    # longer exists, which both doors still carried as live instruction three parts into the lane
+    # that retired it. The obligation that survives is the one the roster can still break: under
+    # `inline` every lens comes back `recovered-inline`, and the roster may not read as a more
+    # independent review than the one that ran.
     def _law_of(txt: str) -> str:
         out = []
         for para in txt.split("\n\n"):
             if ("**capability**" in para or "IS a user request" in para
                     or "may not record a bare" in para
-                    or "rather than faking it" in para):
+                    or "every lens comes back `recovered-inline`" in para):
                 out.append(" ".join(para.split()))
         return "\n".join(out)
 
@@ -840,7 +822,8 @@ def main() -> int:
     for clause, why in (("**capability**", "capability-vs-policy"),
                         ("IS a user request", "a `/` command IS a user request"),
                         ("inline (blocked:", "a blocked inline must NAME what blocked it"),
-                        ("rather than faking it", "a contaminated Blind Hunter is DROPPED")):
+                        ("every lens comes back `recovered-inline`",
+                         "an inline run's roster says inline on every row")):
         c.check(f"  ^ the law includes the {why} clause",
                 clause in smh_law and clause in cicd_law,
                 f"missing from {'smh' if clause not in smh_law else 'cicd'} caller")
@@ -886,23 +869,23 @@ def main() -> int:
     # that invoke the engine as a skill. Raised by this lane's review; recorded so the next
     # person does not have to re-derive it.
     #
-    # A SECOND, contradictory row elsewhere in the same file is invisible to `re.search`, which
-    # returns on first match. The review proved it: a later "## Step 3.9 — budget override"
-    # section carrying `| `lens_budget` | `capped` — overrides the Step 1 table |` left the
-    # Step 1 row untouched and the whole gate green, while an LLM reading the command
-    # top-to-bottom passes `capped`. So the rows are COUNTED, not just found.
-    for rel in (CICD_CMD, SMH_CMD):
-        txt = texts.get(rel) or read(ROOT / rel)
-        n = len(re.findall(r"^\|\s*`lens_budget`\s*\|", txt, re.M))
-        c.check(f"{Path(rel).name} carries exactly ONE lens_budget row", n == 1,
-                "" if n == 1 else f"found {n} — a second row can contradict the first")
-    # Every caller must NAME a budget. Which value is each caller's own business — the AP twin's
-    # `capped` is as correct as an interactive `standard` — but naming nothing is the defect.
+    # ⛔ SCC-447 INVERTED THIS PAIR. It used to COUNT the rows (exactly one per interactive
+    # caller) and require every discovered caller to NAME a budget, because a second,
+    # contradictory row elsewhere in the same file is invisible to `re.search` — the review
+    # proved it with a "## Step 3.9 — budget override" section that left the Step 1 row
+    # untouched and the whole gate green. The axis is retired now: step-01 defines no budget and
+    # the three-lens roster has no cost dial to turn, so the failure mode flipped from "a caller
+    # names none" to "a caller still passes one". Counting is still what reads it — a file-wide
+    # `re.search` for an absent row returns on the first match it does not find, which is exactly
+    # as blind in this direction — so the rows are COUNTED to zero, over EVERY discovered caller
+    # rather than the two that used to carry them.
     for rel in discovered:
         txt = texts.get(rel) or read(ROOT / rel)
-        named = re.search(r"lens_budget`?\s*[|:]\s*`?(standard|capped)\b", txt) is not None
-        c.check(f"{Path(rel).name} names a lens_budget explicitly", named,
-                "" if named else "names none, so it silently inherits `capped` (SCC-147)")
+        c.check(f"{Path(rel).name} has a body for the budget scan", len(txt) > 2000,
+                "" if len(txt) > 2000 else f"{rel} absent or under 2000 chars")
+        n = len(re.findall(r"^\|\s*`lens_budget`\s*\|", txt, re.M))
+        c.check(f"{Path(rel).name} passes NO lens_budget row (retired, SCC-447)", n == 0,
+                "" if n == 0 else f"found {n} — the engine no longer reads this input")
 
     # ── 3. Vendor identifiers: scanned across EVERY markdown file in the engine ────────────
     found = sorted(str(p.relative_to(MASTER)).replace("\\", "/")

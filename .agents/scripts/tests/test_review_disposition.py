@@ -463,6 +463,222 @@ CHECKS_B: tuple[tuple[str, str, str, int, str, str], ...] = (
      "- **It runs each reproduction command itself.**"),
 )
 
+# ── BLOCK C — the DOORS: /smh-code-review and /cicd-code-review ────────────────────────────────
+#
+# ⛔ WHY THE DOORS NEED A BLOCK OF THEIR OWN. The engine is a skill with no Bash: it hunts,
+# triages and records, and it cannot run a single command (block B pins that). So every sentence
+# of the doctrine that requires RUNNING something belongs to the caller — the reproduction on the
+# real tree (D1), the fix batch (D2), the floor resolved at the stamp on open rows (D3), the
+# re-stamp with no second roster (D4) and the end-of-review screen (D5). A green block A beside a
+# green block B with these two doors untouched is the doctrine written down and never executed,
+# which is precisely the state SCC-441 shipped: the rule said "reproduce or drop" while the door
+# it was written for still said "fix everything the engine hands back".
+SMH_DOOR = ".agents/commands/smh-code-review.md"
+CICD_DOOR = ".agents/commands/cicd-code-review.md"
+DOORS = (SMH_DOOR, CICD_DOOR)
+
+SMH_AUDIT = ".agents/commands/smh-clean-code-audit.md"
+CICD_AUDIT = ".agents/commands/cicd-clean-code-audit.md"
+AUDITS = (SMH_AUDIT, CICD_AUDIT)
+
+CLOSE_TASK = ".agents/commands/smh-close-task-merge-tree.md"
+
+# `.opencode/commands/` is a BYTE copy of the master and the only mirror that is one (`.roo/`
+# gets a generated thin launcher). A master edited without it ships the OLD door to the runtime
+# that reads the mirror — SCC-77's defect, and the reason this is asserted rather than assumed.
+MIRROR = ".opencode/commands"
+MIRRORED = (SMH_DOOR, CICD_DOOR, SMH_AUDIT, CICD_AUDIT, CLOSE_TASK)
+
+
+def both(name: str, pattern: str, flags: int, old: str, new: str, files=DOORS):
+    """One law, asserted in every file that must carry it — with the SAME counter-example.
+
+    Most of this text lives inside `<!-- twin-law: … -->` fences, which `test_twin_parity.py`
+    holds byte-identical between the pair; that is what lets one counter-example apply to both
+    doors. Running the check twice is also what catches the HALF-PORT — an edit that lands on the
+    Task door and never on the story door, which is how the two drifted before SCC-212.
+    """
+    return tuple((f"{name} [{Path(rel).name}]", rel, pattern, flags, old, new) for rel in files)
+
+
+CHECKS_C: tuple[tuple[str, str, str, int, str, str], ...] = (
+    # ── D6: what the lenses actually read. The DIFF row must be the SCRIPT's output, not the
+    # raw `base..HEAD` diff — a relationship (row → script), never the word `review_scope`
+    # appearing somewhere in the file.
+    *both("C · Step 1 hands the engine review_scope.py's patch, one PART and masters only",
+          r"^\|\s*`DIFF`\s*\|\s*the patch `review_scope\.py` wrote — \*\*one PART, masters only\*\*",
+          re.M,
+          "the patch `review_scope.py` wrote — **one PART, masters only**",
+          "the `origin/main...HEAD` diff, every file in it"),
+    *both("C · the scope command is SHOWN, with a selector and an --out path",
+          r"review_scope\.py --repo [^\n]*--key <PART-KEY> --out ", 0,
+          "--key <PART-KEY> --out ", "--key <PART-KEY> "),
+
+    # ── D1: the door's own run. The heading must lead to the receipt writer — a `## Reproduce`
+    # step that names no command is the prose version of the gate that never ran.
+    *both("C · a Reproduce step runs the receipt writer on the real tree",
+          r"^## Step 1\.4 — Reproduce on the real tree\b[\s\S]{0,4000}?repro_receipt\.py run",
+          re.M,
+          "## Step 1.4 — Reproduce on the real tree",
+          "## Step 1.4 — Trust the lens's own reproduction"),
+    *both("C · a command that exits 0 did NOT reproduce — the row is dropped and counted",
+          r"exits 0 did not reproduce: the row is `dropped — no reproduction`", 0,
+          "exits 0 did not reproduce", "exits 0 is still worth a second look"),
+    # ⛔ The third result is the one a naive door gets wrong: a typo'd command exits non-zero, so
+    # "non-zero means reproduced" stamps every finding whose command is broken.
+    *both("C · unrunnable is NOT a result — repair the command, never the finding",
+          r"`unrunnable` is not a result\*\*[^\n]*\n?[^\n]*never fix or drop the finding on it", 0,
+          "never fix or drop the finding on it", "treat it as reproduced and fix it"),
+
+    # ── D2: the action policy, one row per receipt, each binding a RESULT to an ACTION and to
+    # the disposition string the close-out parses.
+    *both("C · D2: a reproduced critical/important is FIXED here, with a pin seen red then green",
+          r"^\|\s*reproduced `critical` or `important`\s*\|[^|]*pin seen RED then GREEN[^|]*\|"
+          r"\s*`fixed @<sha> · pin <test>\[:<case>\] · repro <id>`", re.M,
+          "| reproduced `critical` or `important` | fix it here, now, with a pin seen RED then GREEN",
+          "| reproduced `critical` or `important` | hand it to the operator with a recommendation"),
+    *both("C · D2: a fix you may not apply is WRITTEN as a patch, never asked as a question",
+          r"^\|\s*reproduced, and the fix needs the operator's permission[^|]*\|[^|]*write the fix "
+          r"and its pin as a patch beside the receipt[^|]*do \*\*not\*\* apply it[^|]*\|"
+          r"\s*`held — ask-first:", re.M,
+          "write the fix and its pin as a patch beside the receipt",
+          "ask the operator which way he would like to go"),
+    *both("C · D2: a defect in a file this lane did not touch is out-of-lane, not a bucket",
+          r"^\|\s*reproduced, in a file this lane did not touch\s*\|[^|]*`work-consolidation` "
+          r"ladder[^|]*\|\s*`out-of-lane — <where it went>`", re.M,
+          "| reproduced, in a file this lane did not touch",
+          "| reproduced, in any file the lens looked at"),
+    *both("C · D2: suggestion/nitpick is a COUNT and nothing else",
+          r"^\|\s*`suggestion` / `nitpick`\s*\|\s*nothing at all; a count\s*\|\s*`recorded`", re.M,
+          "| `suggestion` / `nitpick` | nothing at all; a count | `recorded`",
+          "| `suggestion` / `nitpick` | fix the cheap ones | `fixed`"),
+    # The `finish` hold, stated in the door that would otherwise write the row.
+    *both("C · D2: nothing a finding produced goes under `## Your Actions`",
+          r"Nothing a finding produced is written under `## Your Actions`", 0,
+          "Nothing a finding produced is written under",
+          "A finding the operator should weigh is written under"),
+
+    # ── D3: the floor. PROVISIONAL at the engine, resolved at the stamp, two evidence-backed
+    # ways down and no third. This is the sentence that ends the loop.
+    *both("C · D3: the engine's floor is PROVISIONAL and Step 4 resolves it on OPEN rows",
+          r"\*\*The engine's `severity_floor` is PROVISIONAL\.\*\* Step 4 resolves it at the stamp, "
+          r"on the rows still\n\*\*open\*\*", 0,
+          "**The engine's `severity_floor` is PROVISIONAL.**",
+          "**The engine's `severity_floor` BINDS Step 4.**"),
+    *both("C · D3: exactly two ways down, both evidence on disk, never judgment",
+          r"exactly \*\*two\*\* ways a row comes down, and both are\nevidence on disk, never "
+          r"judgment", 0,
+          "evidence on disk, never judgment", "yours to weigh as the assessor"),
+
+    # ── Step 3.5 nested: the machine floor only. §7 has two CONCERNS grounds and taste is not
+    # one of them, so a judgment pass nested inside a review can only manufacture a third.
+    *both("C · Step 3.5 nested runs the machine floor only — the judgment pass does not run",
+          r"\*\*Run the machine floor only\*\*[\s\S]{0,300}?judgment pass does \*\*not\*\* run",
+          0,
+          "**Run the machine floor only**", "**Run the full two-half pass**"),
+
+    # ── Step 4: the verdict rules, the table header the close-out parses, the re-stamp, and the
+    # message. Each is a relationship between a verdict word and the state that produces it.
+    *both("C · Step 4: FAIL is an OPEN reproduced critical at this stamp, held or not",
+          r"^- \*\*FAIL\*\* — an \*\*open reproduced `critical`\*\* at this stamp, held or not",
+          re.M,
+          "an **open reproduced `critical`** at this stamp, held or not",
+          "an **open reproduced `critical`** the operator has not yet waived"),
+    *both("C · Step 4: CONCERNS has exactly two grounds — authority and coverage",
+          r"^- \*\*CONCERNS\*\* — exactly two grounds and nothing else: \*\*authority\*\*"
+          r"[\s\S]{0,400}?\*\*coverage\*\*", re.M,
+          "exactly two grounds and nothing else",
+          "soft issues only, including bloat and duplication"),
+    *both("C · Step 4: PASS means nothing OPEN, not merely every gate green",
+          r"^- \*\*PASS\*\* — nothing open: every reproduced row closed by a fix with a green pin",
+          re.M,
+          "**PASS** — nothing open: every reproduced row closed by a fix with a green pin",
+          "**PASS** — every gate green on the changed set"),
+    *both("C · Step 4: an important neither fixed nor held is NO VERDICT, and the stamp is refused",
+          r"neither `fixed` nor `held` is \*\*no verdict at all\*\* —\n`walkthrough_roster\.py` "
+          r"refuses the stamp", 0,
+          "is **no verdict at all**", "is a CONCERNS"),
+    *both("C · Step 4: the findings-table header is the one walkthrough_roster.py reads",
+          r"^  \| # \| file:line \| sev \| lens \| failure scenario \| repro \| disposition \|$",
+          re.M,
+          "| # | file:line | sev | lens | failure scenario | repro | disposition |",
+          "| # | file:line | sev | lens | failure scenario | disposition |"),
+    *both("C · the dispositions: record line counts reproduced/dropped/recorded",
+          r"dispositions:\s+per-lens: <lens>=<reproduced>/<dropped>/<recorded>", 0,
+          "<lens>=<reproduced>/<dropped>/<recorded>",
+          "<lens>=<survived>/<dismissed>/<relevance-killed>"),
+
+    # ── D4: one review per lane. The re-stamp is a new section with no second roster.
+    *both("C · D4: the retest is the pins plus the suite — the lenses run ONCE",
+          r"⛔ \*\*One review per lane — the lenses run ONCE\.\*\*[\s\S]{0,700}?"
+          r"review: carried from the one review @ <sha1> — no lens re-run", 0,
+          "review: carried from the one review @ <sha1> — no lens re-run",
+          "review: a second fan-out over the fixed tree"),
+    *both("C · D4: a stale sha invalidates the SUITE EVIDENCE, never the review",
+          r"invalidates the \*\*suite evidence\*\*, never the review: re-run the pins and the suite "
+          r"and\nre-stamp — never the lenses", 0,
+          "invalidates the **suite evidence**, never the review",
+          "invalidates the verdict"),
+
+    # ── D5: the door ends the turn. "Nothing is a question" is the whole contract — the review
+    # that pauses to ask is the review that costs a week.
+    *both("C · D5: the turn ENDS with one screen and the two words that move it",
+          r"\*\*End the turn with one screen[\s\S]{0,900}?the two words that move it — `approved`"
+          r"[\s\S]{0,300}?`apply <ids>`", 0,
+          "**End the turn with one screen", "**Stop here and ask the operator"),
+    *both("C · D5: nothing is a question and nothing is a recommendation to weigh",
+          r"\*\*Nothing is a question and nothing is a recommendation to weigh\.\*\*", 0,
+          "**Nothing is a question and nothing is a recommendation to weigh.**",
+          "**Ask him which of these he would like pursued.**"),
+
+    # ── The two clean-code audit doors: nested, the judgment half does not run at all, and
+    # standalone it is RECORDED rather than a verdict (§7's two grounds, ruled 2026-09-11).
+    *both("C · the audit door says it does not run its judgment pass inside a review",
+          r"⛔ \*\*Nested inside a review, this pass does not run\*\* \(SCC-447\)", 0,
+          "⛔ **Nested inside a review, this pass does not run** (SCC-447)",
+          "⛔ **Nested inside a review, run it exactly as usual**", files=AUDITS),
+    *both("C · the audit door's description: the judgment pass is recorded, never a verdict",
+          r"^description:[^\n]*recorded, never a verdict", re.M,
+          "recorded, never a verdict. ", "caps at CONCERNS. ", files=AUDITS),
+    *both("C · the audit door's Step 2 heading: recorded, never a verdict",
+          r"^## Step 2 — The Judgment Pass\s+\*\(taste[^)\n]*— recorded, never a verdict\)\*",
+          re.M,
+          "— recorded, never a verdict)*", "— caps at CONCERNS)*", files=AUDITS),
+    *both("C · the audit door's gate legend: judgment findings never make the verdict",
+          r"^- \*\*CONCERNS\*\*[^\n]*Step 2's judgment findings are \*\*recorded, never a "
+          r"verdict\*\*", re.M,
+          "Step 2's judgment findings are **recorded, never a verdict**",
+          "Step 2's judgment findings CAP this gate at CONCERNS", files=AUDITS),
+
+    # ── The close-out door's severity triage. It used to name two retired engine buckets; what
+    # stops a merge now is an OPEN reproduced finding, and the remedy is the fix, not a re-review.
+    ("C · close-out: only an OPEN reproduced critical/important stops the merge, and it is fixed here",
+     CLOSE_TASK,
+     r"only a reproduced `critical` or `important` still OPEN stops the\nmerge — it is fixed in "
+     r"this lane, with a pin", 0,
+     "only a reproduced `critical` or `important` still OPEN stops the",
+     "only a `critical`/`important` in `decision_needed` or `patch` stops the"),
+)
+
+# ── The doors' identifier bans: the SPELLINGS a door that still runs the old flow would carry ──
+# Asserted the same way as §5's: anti-vacuity first (the file must have a body), then absence.
+# Every one of these is a live input or instruction, never a retirement note — the doors do not
+# explain what the engine retired, they simply stop passing it.
+DOOR_BANS: tuple[tuple[str, str, int, tuple[str, ...]], ...] = (
+    ("a live lens_budget input row", r"^\|\s*`lens_budget`\s*\|", re.M, DOORS),
+    ("a live DEFERRED_WORK input row", r"^\|\s*`DEFERRED_WORK`\s*\|", re.M, DOORS),
+    ("the retired review-level derivation fence", r"<!-- twin-law: review-level -->", 0, DOORS),
+    ("a live review_level hand-off", r"`review_level`", 0, DOORS),
+    ("the retired decision_needed bucket", r"decision_needed", 0, DOORS + (CLOSE_TASK,)),
+    ("the retired deferred-work ledger", r"deferred-work\.md", 0, DOORS),
+    # ⛔ THE LOOP ITSELF. "re-run the review" was the preflight's remedy for FAIL and the reflex
+    # a door can always reach for; SCC-441 reached for it three times. The retest is the pins and
+    # the suite, so no door may say otherwise.
+    ("an instruction to review again", r"re-run the review|fresh review|fresh lens|"
+     r"invalidates the verdict", re.I, DOORS),
+    ("the retired caps-at-CONCERNS judgment verdict", r"caps at CONCERNS", 0, AUDITS),
+)
+
 # ── §5's identifier bans: the SPELLINGS a live caller would have to write ──────────────────────
 # Asserted with anti-vacuity (the file must EXIST and be non-empty first), so a deleted step file
 # fails the control instead of satisfying it. These are the machine-readable forms — `lens_budget:`
@@ -486,27 +702,41 @@ def read(rel: str) -> str:
     return p.read_text(encoding="utf-8") if p.is_file() else ""
 
 
-def run_checks(c: Cases, checks) -> None:
+def check_rows(checks) -> list[tuple[str, bool, str]]:
+    """Every check's three rows — the check, its counter-example's applicability, its rejection.
+
+    ⛔ RETURNS them rather than calling `c.check` itself, and that is not a style choice.
+    `test_suite_runner.py`'s ORPHAN walker reads the AST and recognises exactly one guard idiom:
+    a `c.check` inside the BODY of an `if c.block(...)`. A `c.check` in a module-level helper is
+    outside every block however the helper is called — it runs under EVERY `--case` filter and
+    counts toward every filtered tally, so a mutant it kills is attributed to whichever case
+    happened to be named. This file shipped that defect in Part 1 and carried it through Part 3;
+    caught by the walker while wiring block C, and fixed here rather than left for the sweep to
+    misattribute.
+    """
+    rows: list[tuple[str, bool, str]] = []
     for name, rel, pattern, flags, old, new in checks:
         txt = read(rel)
         rx = re.compile(pattern, flags)
-        c.check(name, bool(txt) and rx.search(txt) is not None,
-                "" if txt else f"{rel} missing or empty")
+        rows.append((name, bool(txt) and rx.search(txt) is not None,
+                     "" if txt else f"{rel} missing or empty"))
         applies = old in txt
-        c.check("  ^ counter-example applies", applies,
-                "" if applies else f"{rel}: {old!r} not present, so the proof would be vacuous")
+        rows.append(("  ^ counter-example applies", applies,
+                     "" if applies else f"{rel}: {old!r} not present, so the proof would be vacuous"))
         mutated = txt.replace(old, new, 1) if applies else txt
-        c.check("  ^ counter-example is rejected",
-                applies and rx.search(mutated) is None,
-                "" if applies and rx.search(mutated) is None
-                else "check survives its own counter-example — it cannot fail on content")
+        rejected = applies and rx.search(mutated) is None
+        rows.append(("  ^ counter-example is rejected", rejected,
+                     "" if rejected
+                     else "check survives its own counter-example — it cannot fail on content"))
+    return rows
 
 
 def main() -> int:
     c = Cases("review disposition doctrine (SCC-447)")
 
     if c.block("A · doctrine (code-standards §6.5 + §7)"):
-        run_checks(c, CHECKS_A)
+        for name, ok, detail in check_rows(CHECKS_A):
+            c.check(name, ok, detail)
 
         # The twin is a BYTE copy, and the copy is where three of the four readers actually look:
         # Claude Code loads `.claude/rules/`, and a rule that drifted between the two is two
@@ -520,7 +750,8 @@ def main() -> int:
                 "" if master == twin else "the two copies of code-standards.md have drifted")
 
     if c.block("B · engine (the four steps + SKILL)"):
-        run_checks(c, CHECKS_B)
+        for name, ok, detail in check_rows(CHECKS_B):
+            c.check(name, ok, detail)
 
         for name, pattern in BANS:
             rx = re.compile(pattern, re.M)
@@ -541,6 +772,32 @@ def main() -> int:
                     "" if len(m) > 200 and len(k) > 200 else "master or cache absent/too short")
             c.check(f"B · cache {rel} is byte-identical", bool(m) and m == k,
                     "" if m == k else f"{CACHE}/{rel} has drifted from the master")
+
+    if c.block("C · the doors (both code reviews, both audits, the close-out)"):
+        for name, ok, detail in check_rows(CHECKS_C):
+            c.check(name, ok, detail)
+
+        for name, pattern, flags, files in DOOR_BANS:
+            rx = re.compile(pattern, flags | re.M)
+            for rel in files:
+                txt = read(rel)
+                # Anti-vacuity FIRST: a deleted door must FAIL its bans, never satisfy them.
+                c.check(f"C · {Path(rel).name} has a body for the ban scan", len(txt) > 2000,
+                        "" if len(txt) > 2000 else f"{rel} absent or under 2000 chars")
+                c.check(f"C · {Path(rel).name}: no {name}",
+                        bool(txt) and rx.search(txt) is None,
+                        "" if rx.search(txt) is None else f"{rel} still carries {name}")
+
+        # `.opencode/commands/` is what OpenCode reads. Byte equality is the whole contract — a
+        # door whose master says "reproduce, then fix" while its mirror says "fix everything the
+        # engine hands back" is two commands with the same name.
+        for rel in MIRRORED:
+            name = Path(rel).name
+            m, mir = read(rel), read(f"{MIRROR}/{name}")
+            c.check(f"C · mirror {name} has a body", len(m) > 2000 and len(mir) > 2000,
+                    "" if len(m) > 2000 and len(mir) > 2000 else "master or mirror absent/short")
+            c.check(f"C · mirror {name} is byte-identical", bool(m) and m == mir,
+                    "" if m == mir else f"{MIRROR}/{name} has drifted from the master")
 
     return c.finish()
 

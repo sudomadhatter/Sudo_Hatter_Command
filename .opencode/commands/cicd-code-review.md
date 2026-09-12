@@ -178,17 +178,6 @@ the step:
    landing-order dependency and what happens to this story if the order is reversed.
 
 
-<!-- twin-law: review-level -->
-**Derive `review_level` HERE, from the radius you just measured (SCC-232) — derived, never
-chosen.** The rule is fixed and defined once, in the engine's lens-roster contract (step-01 § The
-two levels): **quick** when every answer above came back contained (nothing referenced moved · no
-gate, hook, rule, or contract surface in the radius · ≤3 source files in the re-taken diff);
-**standard** otherwise. Hand the engine `review_level` WITH the three written answers as its
-grounding — a level without its radius evidence is a flag, and no caller gets one; the engine
-defaults such a call to `standard`. (`lens_budget` is a different axis and neither re-declares
-the other.)
-<!-- /twin-law -->
-
 **Absorb the epic branch now, before the verdict** — conflicts belong on this story branch, never on
 the epic (`git-policy`). Re-run Step 3's gate **after** absorbing; a verdict measured on a pre-merge
 sha is a verdict about code that will never exist.
@@ -229,9 +218,10 @@ READS that reason (SCC-285):** a bare `inline`, or one resting on permission rat
 capability, is refused at close-out — this rule stopped being prose.
 <!-- /twin-law -->
 
-And if you are `inline` while holding this lane's plan and walkthrough, the engine **drops** the
-Blind Hunter rather than faking it — see step-01 § *When the order CANNOT protect it*. A roster is
-not allowed to claim a review was more independent than it was.
+And if you are `inline`, every lens comes back `recovered-inline` and the roster says so — a roster
+is not allowed to claim a review was more independent than it was. There is no blind lens left to
+contaminate: SCC-447 closed the roster at three, so the only `n/a` it can carry is the Acceptance
+Auditor's `skipped-by-mode (no-spec)`.
 
 Write the answer into the story walkthrough's header, **above `## Code Review`**, exactly like this:
 
@@ -251,20 +241,41 @@ Invoke the **`code-review-engine`** skill on the story's diff — the house revi
 runs the lens fan-out, verifies what the lenses find, triages it and records it; **you own everything
 around it**: the inputs, the fixes, the gates and the verdict.
 
-**Resolve every input before you invoke it — the engine resolves nothing itself, and a missing
+**First, cut the review's scope — the lane is not the review:**
+
+```bash
+cd "$L" && python3 .agents/scripts/review_scope.py --repo "$WORKTREE" --base "origin/$EPIC" --key <PART-KEY> --out "$ARTIFACT_DIR/review/diff.patch"   # PC: `python`  ⛔ the script is the LOBBY's
+```
+
+<!-- twin-law: review-scope -->
+⛔ **A review reads ONE PART, and the masters only (SCC-447).** Handing the engine the whole
+`base..HEAD` diff makes a lens read a byte-copy MIRROR of a file already in the same diff — it finds
+the defect twice and reports it twice — and makes it read the lane's own RECORDS, which is reviewing
+the description of the code instead of the code. Measured on SCC-441: 155 files and 1.46 MB became
+82 files and 618 KB. `review_scope.py` groups the commits by their rider key (`work-consolidation`
+Rule 2) and PRINTS every path it withheld beside the class that withheld it — a filter nobody can
+see is a filter nobody can correct. More than one part in range with no selector is **exit 2 naming
+the keys**, never a guess: a review of the wrong thing looks exactly like a review of the right one.
+A lane whose parts carry no rider keys selects with `--range <sha>..<sha>`.
+
+⛔ **There is NO byte cap, and that is a refusal rather than an omission.** A cap truncates at an
+arbitrary line and the lens never learns what it did not see — the one kind of gap a review cannot
+catch from inside itself. The size of a review is the size of a part; a part too big to review is a
+part that should have been two.
+<!-- /twin-law -->
+
+**Then resolve every input before you invoke it — the engine resolves nothing itself, and a missing
 required input is a stop, not a guess:**
 
 | Input | What you pass |
 |---|---|
 | `REPO` | `PROJECT_ROOT` from Step 0 |
 | `WORKTREE` | the tree Step 0.5 resolved (the story tree when one exists — the built code often lives ONLY there) |
-| `DIFF` | the `origin/$EPIC...HEAD` diff from Step 0.6, **re-taken in that worktree after Step 0.7 absorbed `origin/$EPIC`** — committed work only |
+| `DIFF` | the patch `review_scope.py` wrote — **one PART, masters only** (the command is above; re-taken in `$WORKTREE` after Step 0.7 absorbed `origin/$EPIC`) |
 | `HEAD_SHA` | `git rev-parse HEAD` in that worktree, taken **now, after Step 0.7's absorb** — this is the sha the engine records the review against, **not** necessarily the sha your verdict cites: you apply fixes below, and Step 4's verdict must cite the FINAL sha its full-suite evidence was measured on |
 | `review_mode` | `full` when the story file exists; `no-spec` when it does not |
 | `STORY_FILE` | the story file (`full` mode) |
-| `ARTIFACT_DIR` | `_artifacts/epic_<E>/<story>/` **inside that worktree** |
-| `DEFERRED_WORK` | the project's `deferred-work.md`, when it has one |
-| `lens_budget` | `standard` — the interactive budget, because a human is sitting in front of this review. **This command does not define what the caps are; step-01 of the engine does, once** — a cap each caller repeats is a cap that drifts. Naming nothing is not neutral: it silently selects the autopilot's budget, which is why this row is explicit (SCC-147) |
+| `ARTIFACT_DIR` | `_artifacts/epic_<E>/<story>/` **inside that worktree** — optional to the engine, which writes no receipts, and the root you pass the receipt writer at Step 1.4 |
 | `review_runtime` | `fan-out` or `inline` — **what you PROBED at Step 0.9, never what you expect.** Pass it down and write the same value into the walkthrough header, so the roster the engine returns can be checked against the runtime that produced it |
 
 ⚠ **Step 0 read `HEAD_SHA` from `PROJECT_ROOT` — the shared checkout — and before Step 0.7 absorbed
@@ -274,24 +285,15 @@ no longer exists and your verdict cites a commit that is no longer the tip — t
 
 **Ordering (deliberate): the engine hunts the DIFF first — open ②'s `walkthrough.md` and plan only
 AFTER its summary comes back**, for claimed evidence, plan-vs-built deviations, and the `## Your
-Actions` rows. Reading the builder's story before the hunt imports exactly the bias the Blind Hunter
-exists to zero out, and that lens is starved of context on purpose — never hand it the story.
+Actions` rows. Reading the builder's story before the hunt imports exactly the bias this ordering
+exists to remove. **The ORDER is the protection now** — SCC-447 retired the blind lens whose
+starvation used to carry it, so nothing but this instruction stands between you and ②'s framing.
 
-**Then fix in thread — act on what it hands back, here.** Every `patch` is applied by you, in this
-story lane, now; every `decision_needed` is walked with the operator now, in this thread, and
-becomes a patch or a dismiss on their word — one they do not decide now stays an open DECISION row
-in `## Your Actions` (Step 5; a decision is theirs and may hold the story, it is not a ticket) with
-its `defer` bullet pointing at that row. If you change code, re-run the relevant suite(s) —
-scoped, not full; the ONE full-suite run lands after your last change (Step 3.1) — and paste
-actual output. **Nothing that survived the relevance gate leaves this lane as future work** — not
-a residue ticket, not a "proposed" or "decided" ticket, not a ticket-ruling row (operator ruling
-2026-08-15, second: "we need the fixes made in thread not a ticket made every story"). The only
-exception is a `defer` naming one structural blocker (another live lane owns the file · another
-repo · an open decision), written to the project's `deferred-work.md`.
-
-**The engine returns a `severity_floor`, and it BINDS Step 4.** `none` < `CONCERNS` < `FAIL`: your
-verdict may be the floor or anything more severe (your own gates add their own reasons), never
-anything less. A confirmed `critical` finding is a FAIL; an `important` one is a CONCERNS floor.
+⛔ **What comes back is a CLAIM, and you fix nothing yet.** Every `critical` and `important` arrives
+with the command the lens says proves it; Step 1.4 runs that command HERE, in `$WORKTREE`, on the
+tree that ships, and the receipt it writes is what decides whether the finding exists at all. Fixing
+straight from the engine's summary is fixing a lens's belief about a tree it may itself have edited
+(SCC-295).
 
 **Failure and degradation are the engine's to report, and yours to carry into the verdict.** It owns
 the per-lens contract — retry once, re-run inline, and only a lens still dead after both raises the
@@ -300,6 +302,81 @@ mode. **Copy that line into the verdict as it came back.** "4 lenses ran" and "3
 inline" are different evidence and must read differently; a lens skipped because there is no spec is
 not a degradation and never caps the verdict, while one that never ran at all is an unexamined
 surface — and an unknown is not a pass, the same rule as a missing tool in Step 3.5.
+
+## Step 1.4 — Reproduce on the real tree (the door's own run — SCC-447)
+
+<!-- twin-law: reproduce-gate -->
+⛔ **A `critical` or `important` with no receipt on disk does not exist.** The engine holds no Bash
+and never runs a command, by design — what it returns is the lens's CLAIM plus the `reproduce:`
+command the lens says proves it. A lens proves a defect in its OWN worktree copy, which it may have
+edited: SCC-295 measured three of five lenses writing to the builder's tree, and one reporting a RED
+that no version of the real code could produce. So the door runs every surviving `critical` and
+`important` again, here, on the tree that ships — and the receipt is what proves the run happened.
+
+Three results, and the exit code says which, so you can branch on it:
+
+| Receipt | What it means | What you do |
+|---|---|---|
+| `reproduced` (exit 0) | the command FAILED on the real tree — the finding is there | the action policy below |
+| `not-reproduced` (exit 1) | the command exited 0 — the finding is not there | `dropped — no reproduction`, counted |
+| `unrunnable` (exit 2) | a missing tool, an import error — the command never RAN | neither: repair the command |
+
+A command that exits 0 did not reproduce: the row is `dropped — no reproduction`, counted in one
+line under the findings table and never written up individually.
+
+⛔ **`unrunnable` is not a result** — nobody has learned anything from it, so repair the command and
+run it again; never fix or drop the finding on it. A finding whose reproduction never ran is an
+unexamined claim, and an unknown is not a pass.
+<!-- /twin-law -->
+
+```bash
+cd "$L" && python3 .agents/scripts/repro_receipt.py run --root "$ARTIFACT_DIR" --id <finding-id> --cwd "$WORKTREE" -- <the lens's reproduce command>   # PC: `python`
+```
+
+⛔ **Every flag goes BEFORE `--`; everything after it is the command verbatim.** There is no
+`--result` flag — you cannot hand the writer a verdict, only a command to run. `--cwd` is required:
+without it the command runs wherever the shell happened to be standing and records a result about
+nothing (SCC-154) — and here that is the shared checkout rather than the story tree. Receipts land
+at `<root>/gates/repro/<id>.json`, one per finding id, and an existing id refuses without
+`--replace` — two receipts for one finding is two stories.
+
+<!-- twin-law: disposition-policy -->
+⭐ **THEN FIX WHAT REPRODUCED — here, in this lane, in this turn (`code-standards` §6.5).** A
+reproduced finding is fixed. There is no third bucket: nothing is escalated, nothing is deferred,
+and no finding becomes a ticket (operator ruling 2026-09-11 — both retired buckets put a reproduced
+defect in front of him to read, which is the review the lenses were made to reproduce so that
+nobody has to).
+
+| The receipt says | You do | Disposition written |
+|---|---|---|
+| reproduced `critical` or `important` | fix it here, now, with a pin seen RED then GREEN (`reproduce-before-you-fix` G1–G5) | `fixed @<sha> · pin <test>[:<case>] · repro <id>` |
+| reproduced, and the fix needs the operator's permission — the constitution's **Ask First** list, or it contradicts the spec | write the fix and its pin as a patch beside the receipt, prove it with `git apply --check` on the lane tip, do **not** apply it | `held — ask-first: <row> \| spec-conflict · repro <id> · patch <path>` |
+| reproduced, in a file this lane did not touch | not this lane's work (another repo · a file another LIVE lane owns): the `work-consolidation` ladder, receipt attached | `out-of-lane — <where it went>` |
+| `critical` / `important` that did not reproduce, or arrived without its three fields | dropped, counted, never written up individually | `dropped — no reproduction` (one count line) |
+| `suggestion` / `nitpick` | nothing at all; a count | `recorded` (one count line) |
+
+**`held` is never a question and never carries a recommendation to weigh.** The fix is already
+written; the only thing missing is permission the constitution says you may not grant yourself. Two
+operator words move it — `apply <id>` (you apply the patch, run its pin red then green and re-stamp)
+and `approved` (the lane ships without it and the row closes as `ruled — <his word>`).
+
+⛔ **Nothing a finding produced is written under `## Your Actions`** — an open box there holds the
+ticket forever at `jira_feed.py finish` (`:1774`, `:2452`), which is the loop, not a feature. The
+survivors were fixed here, a `held` row carries its patch, and a review never produces a ticket
+(operator rulings 2026-08-15, both).
+<!-- /twin-law -->
+
+<!-- twin-law: floor-at-the-stamp -->
+**The engine's `severity_floor` is PROVISIONAL.** Step 4 resolves it at the stamp, on the rows still
+**open** — never at triage, from whatever the lenses first returned. A row closed by a fix and a
+green pin does not appear there at all. There are exactly **two** ways a row comes down, and both are
+evidence on disk, never judgment: a receipt showing the command does not fail, or a fix with a test
+seen red and then green. Any other downgrade is you overruling the review, which you may not do;
+more severe needs no permission, because your own gates add their own reasons.
+<!-- /twin-law -->
+
+If you change code here, re-run the relevant suite(s) — scoped, not full; the ONE full-suite run
+lands after your last change (Step 3.1) — and paste actual output.
 
 ## Step 1.5 — Acceptance audit  *(against the story's acceptance criteria, not against the code)*
 
@@ -451,10 +528,17 @@ distinct from `fail`, because per Step 3.5 a missing tool is a **finding, not a 
 Invoke the **`cicd-clean-code-audit`** skill on the story diff, bound to the same worktree Step 0.5 resolved
 (its standard is `.agents/rules/code-standards.md`).
 
+<!-- twin-law: nested-machine-floor -->
+⛔ **Run the machine floor only** (the audit door's Step 1). Nested inside a review the
+judgment pass does **not** run: §1 comment-contract gaps and §2 judgment calls are counts in the
+record, never a verdict (§7 as ruled 2026-09-11 — CONCERNS has exactly two grounds, and taste is
+not one of them). A judgment pass nested inside a review can only manufacture a third ground. The
+full two-half pass is for a STANDALONE audit.
+<!-- /twin-law -->
+
 - **No double drift-hunt (inside ③ only).** Step 1's adversarial review already walked these hunks —
-  run the machine floor + the comment contract (§2A) only, and IMPORT Step 1's drift/bloat findings
-  into the findings table (source `review`) instead of re-running the §2B ban-hunt. The full two-half
-  pass is for standalone `/cicd-clean-code-audit` runs.
+  IMPORT its drift/bloat findings into the findings table (source `review`) instead of re-running
+  the §2B ban-hunt.
 - **Diff-scoped.** Only code THIS story wrote is in scope; legacy debt in untouched files is noted, never
   gated on — the same grandfathering the test gate already uses.
 - **This gate does NOT depend on `sudo-tests.yaml`.** A project with no test baseline still has a code
@@ -477,7 +561,8 @@ new one. The section carries:
 - FIRST line: the canonical **`Verdict: PASS|CONCERNS|FAIL|WAIVED @ <HEAD-sha>`** — this is what
   `cicd-update-sprint-memory` reads before flipping the story to `done` — plus one line naming the SHA
   the full-suite evidence was measured on and whose run it was (②'s inherited certification or ③'s
-  own). Any code/test diff between that SHA and HEAD invalidates the verdict.
+  own). Any code/test diff between that SHA and HEAD invalidates the **suite evidence** — re-run the
+  pins and the suite and re-stamp, never the lenses (the re-stamp block below).
 - ⛔ **the engine's `lenses_run:` block, pasted VERBATIM** — the header line, then one
   `- <lens> · ok | recovered-inline | dead` row per lens, a `—` note on every row that is not `ok`:
 
@@ -487,11 +572,11 @@ new one. The section carries:
   the gate cannot see. Copy these as PLAIN LINES.
 
   lenses_run:
-  - blind-hunter · ok
-  - edge-case-hunter · recovered-inline — fan-out returned nothing, rerun inline
+  - edge-case-hunter · ok
+  - test-adequacy-auditor · recovered-inline — fan-out returned nothing, rerun inline
   lenses_counted:  2/2
   lenses_na:
-  - <lens> · n/a — <why it was not applicable in this review_mode>
+  - acceptance-auditor · n/a — skipped-by-mode (no-spec)
 
   ⭐ **Check the paste HERE, not at close-out** — `python3 .agents/scripts/walkthrough_roster.py
   <the walkthrough>` *(PC: `python`)*. It prints the rows it actually read and answers **one**
@@ -510,23 +595,25 @@ new one. The section carries:
 
 <!-- twin-law: roster -->
   ⛔ **`lenses_na` and `lenses_counted` are part of the block, not optional trimmings (SCC-203).**
-  The engine returns four roster fields and this step used to demand one. Since a contaminated
-  Blind Hunter is **DROPPED** rather than faked, `lenses_na` is now the ONLY legal record that it
-  was dropped — `blind-hunter · n/a — context contaminated (<what it held>)` — and `lenses_counted`
-  is what keeps the drop out of the total. Omitting them is how a dropped lens becomes invisible,
-  which is the exact failure the drop rule exists to make visible.
+  The engine returns four roster fields and this step used to demand one. With the roster closed at
+  three lenses (SCC-447), `lenses_na` carries exactly one legal row — the Acceptance Auditor's
+  `acceptance-auditor · n/a — skipped-by-mode (no-spec)` — and `lenses_counted` is what keeps that
+  skip out of the total, so a spec-less review reports `2/2` and a full one `3/3`. Omitting them is
+  how a lens that did not run becomes invisible, which is the exact failure these two fields exist
+  to prevent.
 <!-- /twin-law -->
 
 <!-- twin-law: record-lines -->
 - ⛔ **two more machine-read lines, in the same section (SCC-231/233, law since 2026-08-20):**
 
   ```
-  dispositions:    per-lens: <lens>=<survived>/<dismissed>/<relevance-killed> · …
+  dispositions:    per-lens: <lens>=<reproduced>/<dropped>/<recorded> · …
   drift:           undeclared=<n> · unimplemented=<n> · incomplete=<n> — <dispositions live in the findings table, or name why there was no block to reconcile>
   ```
 
-  `dispositions:` is pasted from the engine summary VERBATIM — the per-lens death counts are the
-  SCC-233 record, and which lens's findings die at triage is computable only if they land here.
+  `dispositions:` is pasted from the engine summary VERBATIM — the per-lens counts are the SCC-233
+  record, and which lens's findings survived the reproduction gate is computable only if they land
+  here.
   `drift:` is the declared-set reconciliation result from this command's own step, in one line.
   `walkthrough_roster.py` reads both and the close-out preflights BLOCK a lane missing either —
   the measured base rate for prose-only record obligations is 12 of 142, so neither line is left
@@ -537,16 +624,30 @@ new one. The section carries:
   it the verdict is the only record of itself, and a walkthrough with zero lenses run merges clean —
   the defect SCC-173 was raised on. `walkthrough_roster.py` reads it here at close-out. Do not
   summarise it, do not re-order the rows into prose, and never write a state a lens did not report.
-- scope + method, one line each; then ONE findings table (`file:line` · severity · failure scenario ·
-  disposition applied @ sha / deferred — blocked by other live lane · other repo · open decision / dismissed — a relevance kill
-  carries its one-line reason, pure noise is count-only) — **the authoritative copy**; the story file links here,
-  never restates. (The engine's step-04 may leave unresolved findings as `[ ] [Review]…` action items
+- scope + method, one line each;
+<!-- twin-law: findings-table -->
+- **ONE findings table, and it is the authoritative copy.** The header is fixed, because
+  `walkthrough_roster.py` reads these rows at close-out and refuses a stamp they do not support:
+
+  | # | file:line | sev | lens | failure scenario | repro | disposition |
+  |---|---|---|---|---|---|---|
+  | 1 | .agents/scripts/x.py:44 | critical | logic | an empty `--paths` list makes the sweep vacuous | f1 | fixed @a1b2c3d · pin test_x.py:S2 · repro f1 |
+  | 2 | .agents/scripts/y.py:88 | important | drift | writes outside the lane's declared set | f2 | held — ask-first: CI config · repro f2 · patch gates/repro/f2.patch |
+
+  Every `fixed` row names its pin; every `fixed` or `held` row names the `repro <id>` whose receipt
+  is on disk and says `reproduced`; every `held` row names a patch that is on disk. Each of those is
+  refused by row, naming what would satisfy it. `dropped` and `recorded` are COUNT lines under the
+  table — one line each, never rows — because a finding that does not exist is not worth a row and
+  taste is not worth a reader.
+<!-- /twin-law -->
+  (The engine's step-04 may leave unresolved findings as `[ ] [Review]…` action items
   in `STORY_FILE` so the builder sees them — that is a worklist, not a second record, and it carries
   no dispositions. Where the two differ, this table is right; reconcile the story's boxes to it.)
 - each gate check's result in one line + the **actual** suite totals (runs also ledgered in
   `## Suite Ledger`), each **citing its receipt** — `suite: pass @ <sha> (gates/<story>/suite.json)`.
-  Run `gate_receipt.py list --story <id>` and paste the block; an `unrunnable` row is a finding that
-  caps the verdict at CONCERNS, and a gate with no receipt was not run, whatever the prose says,
+  Run `gate_receipt.py list --story <id>` and paste the block; a gate whose receipt says
+  `unrunnable` was not run and the floor is unrunnable with it — report it and name the fix, never
+  stamp over it; a gate with no receipt was not run, whatever the prose says,
 - a `### Clean-Code Gate` subsection carrying Step 3.5's findings table and its pasted tool output.
 - the acceptance matrix from Step 1.5 — every acceptance item → its proving assertion;
 <!-- twin-law: rederive-record -->
@@ -556,15 +657,63 @@ new one. The section carries:
   not — `walkthrough_roster.py --gate` counts list rows under a heading matching `0.7`/`re-deriv`
   (E7) and refuses fewer than three.
 <!-- /twin-law -->
-- **FAIL** = a new test regression, a required tier missing, **or** a Step 3.5 machine-floor error on a
-  changed line / a banned pattern shipped (bare `except:`, `any`, a committed secret).
-- **CONCERNS** = soft issues only — including Step 3.5's judgment findings (missing story provenance, a
-  stale `AIDEV-NOTE` the diff should have updated, bloat, duplication, an unowned TODO).
-- **PASS** = all required tiers green **and** the clean-code floor green on changed lines.
+<!-- twin-law: verdict-rules -->
+**Verdict rules — resolved HERE, at the stamp, on the rows still OPEN (`code-standards` §7):**
+
+- **FAIL** — an **open reproduced `critical`** at this stamp, held or not, with its receipt on disk.
+  Or a machine reason of your own: the enforcement floor red on changed lines, a §2 banned pattern
+  shipped, a committed secret, a gate that cannot fail.
+- **CONCERNS** — exactly two grounds and nothing else: **authority**, an open reproduced `important`
+  `held` because its fix needs the operator's word, with the patch written beside its receipt; and
+  **coverage**, a lens still `dead` after its retry and its inline rerun — the review did not look
+  everywhere. Taste is a count in the record, never a verdict.
+- **PASS** — nothing open: every reproduced row closed by a fix with a green pin, every applicable
+  lens ran, and the machine floor green on the changed set.
+
+⛔ A reproduced `important` that is neither `fixed` nor `held` is **no verdict at all** —
+`walkthrough_roster.py` refuses the stamp, naming the row, and you go finish the fix. It is not a
+softer verdict; there is no verdict to write yet.
+
+**CONCERNS is shippable, and the go/no-go is the operator's word.** It says the review found one of
+exactly two things it cannot settle itself — a surface it could not examine, or a written fix it is
+not allowed to apply — and he decides with the receipt and the patch in front of him, never with a
+file to read. FAIL is the blocker; no command, door or agent may treat CONCERNS as one on its own
+authority.
+<!-- /twin-law -->
+
+**This lane's own gates add their own FAIL reasons**, and they are machine reasons, never taste: a
+new test regression · a required test tier missing · a Step 3.5 machine-floor error on a changed
+line · **a reference this story depends on that an epic-mate moved, renamed or deleted (Step 0.7)**.
+
 - **WAIVED** = no test baseline (Step 2). Step 3.5 still ran — report its result inside the waiver.
 
-> The split is deliberate: objective checks block a story, taste does not. Taste gets recorded, argued,
-> and fixed on its merits — never used to stall a story on a reviewer's preference.
+> The split is deliberate: objective checks block a story, taste does not. Taste gets recorded and
+> fixed on its merits — never used to stall a story on a reviewer's preference, and never used to
+> make a verdict.
+
+<!-- twin-law: one-review-per-lane -->
+⛔ **One review per lane — the lenses run ONCE.** When your fixes land, the retest is the pins named
+in the `fixed` rows plus the enforcement suite once through the receipt writer. Never a second
+fan-out over the same diff: measured over 138 reviews on disk, a re-review converted a non-PASS to
+PASS one time in seven and cost a full roster every time. Append a NEW section rather than editing
+the first — the last `Verdict:` governs:
+
+```
+## Code Review (<date>, re-stamp after fixes)
+
+Verdict: PASS|CONCERNS @ <sha>
+retest: scoped — pins: <test:case>, … · suite: run_all N/N @ <sha> (gates/suite.json)
+review: carried from the one review @ <sha1> — no lens re-run
+```
+
+No second `lenses_run:` roster. `walkthrough_roster.py` counts roster headers in the stripped text
+and refuses a walkthrough carrying two without the operator's written word on the section, his words
+quoted: `re-review: approved by the operator — "<his words>"`.
+
+⛔ **The stamp's sha is the sha the SUITE evidence was measured on.** Any code or test diff between
+that sha and HEAD invalidates the **suite evidence**, never the review: re-run the pins and the suite and
+re-stamp — never the lenses. Artifact-only commits invalidate nothing.
+<!-- /twin-law -->
 
 ## Step 5 — Refresh the walkthrough body + clear `## Your Actions` (REQUIRED)
 The walkthrough (`_artifacts/epic_<E>/<story>/walkthrough.md`, in the worktree) is the **living source
@@ -592,11 +741,27 @@ of truth** — your Step 4 section is part of it, and the body around it must no
   tick.
   ⛔ A row assigning ANY ticket born from review findings — a residue ticket ("One follow-on
   ticket for the N deferred items"), a "proposed" ticket, a "decided" ticket to rule on — is the
-  retired defect (operator rulings 2026-08-15, both), never a valid action row: the survivors were
-  fixed in Step 1, a `defer` names its structural blocker in the ledger, and a review never
+  retired defect (operator rulings 2026-08-15, both), never a valid action row: what reproduced was
+  fixed at Step 1.4, what could not be applied is a `held` patch on disk, and a review never
   produces a ticket. An open box born from a finding holds the story on the review ladder — that
   is the loop, not a feature.
 - **Hard rule: NEVER finish `/cicd-code-review` with the walkthrough body left stale after applying fixes.**
+
+## Step 6 — End the turn
+
+<!-- twin-law: end-of-review -->
+⭐ **End the turn with one screen, and end it — the review never pauses to ask.** You ran the lenses,
+reproduced what they found on the real tree, fixed what reproduced, ran the gates and stamped. What
+the operator gets is one screen: the verdict and its sha; the `fixed` rows (id, pin); the `held` rows
+(id, reason, one line of evidence from the receipt, a link to the patch); the `out-of-lane` rows (id,
+where they went); the counts of `dropped` and `recorded`; and the two words that move it — `approved`
+(he runs the close-out door, and every `held` row closes as `ruled — <his word>`) or `apply <ids>`
+(you apply those patches, run their pins red then green and re-stamp, in one turn).
+
+**Nothing is a question and nothing is a recommendation to weigh.** A finding he has to read is a
+bill, not a contribution (`operator-profile` obligation 9): by the time this screen exists, every
+finding has been fixed, written as a patch, sent down the consolidation ladder, or counted.
+<!-- /twin-law -->
 
 ## Stay in lane
 Commit your review fixes inside the story worktree (explicit paths) — but **never land on the epic

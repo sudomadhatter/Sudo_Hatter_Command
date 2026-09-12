@@ -297,9 +297,11 @@ engine is recall-first with no noise filter **by design**, so re-running it on a
 its own fixes — will always surface new findings, and "review until zero findings" is a loop that
 never terminates (SCC-147, observed live: a re-review at close-out produced five fresh findings on
 a lane already at PASS). If new findings somehow exist anyway, triage them by severity instead of
-looping: `suggestion`/`nitpick` → record and proceed (a `defer` here still names its structural
-blocker, or it is a patch); only a `critical`/`important` in `decision_needed` or `patch` stops the
-merge — and it is fixed in this lane before the merge, never carried out of it.
+looping: `suggestion`/`nitpick` → record and proceed, a count and nothing else;
+only a reproduced `critical` or `important` still OPEN stops the
+merge — it is fixed in this lane, with a pin seen red then green, before the merge and never carried
+out of it, or written as a `held` patch beside its receipt for the operator's word (`code-standards`
+§6.5). Unreproduced is not a finding: no receipt, no row.
 
 ## Step 2.5 — Record the flight event (pre-merge, artifacts-only) — SCC-133
 
