@@ -104,3 +104,4 @@ platform harnesses), it must:
 - **State in chat, in one line, exactly what was saved.**
 - This keeps memory generation visible to Mr. Hatter in real time so invalid notes or unbacked rules can
   be challenged and pruned immediately.
+
