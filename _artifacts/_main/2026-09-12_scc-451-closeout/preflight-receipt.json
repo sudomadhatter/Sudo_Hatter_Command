@@ -1,15 +1,15 @@
 {
   "accept_unpushed_main": false,
-  "branch": "chore/SCC-441-dev-styles-quick-lane-light-epic",
+  "branch": "chore/SCC-451-closeout",
   "errors": 0,
   "exit": 1,
   "fetch": true,
   "fresh": true,
   "lane": "LOCAL",
   "schema_v": 1,
-  "task_key": "SCC-441",
+  "task_key": "SCC-451",
   "verdict": "clear to close out and merge",
-  "verdict_sha": "14b599137c9f8d280b960fc1852298e0328e8601",
+  "verdict_sha": null,
   "warnings": 1,
-  "when": "2026-09-11T09:55:52-04:00"
+  "when": null
 }

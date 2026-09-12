@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-451-inert-paths",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-451",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "b01dbe2580d802c84e14b4890269d2784b535fa2",
+  "warnings": 2,
+  "when": "2026-09-12T11:50:45-04:00"
+}

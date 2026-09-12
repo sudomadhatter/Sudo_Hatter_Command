@@ -390,6 +390,43 @@ question the system will not answer for you at the end.
 | System/toolkit work on a critical surface (the gates: `.github/`, the hooks, the preflights), or needing the full cycle | **The Task Lane** | `/smh-dev-task-tests` | Worktree off `main`, closes via `/smh-close-task-merge-tree`. **Ejects to Story Lane** if deployable code touched. |
 | System/toolkit work off the critical-surfaces list — a guide, a reference, a small rule edit | **The Quick Lane** | `/smh-quick-dev` | Step 1 scope check against the lobby's `.agents/critical-surfaces.json` (its gates): an overlap is a **soft stop** only your word lifts. Step 5 re-runs it on the real diff; an uncovered overlap **ejects to the Task Lane**. |
 
+**⭐ How much ceremony a change earns is now a command, not a feeling (SCC-451).** Both quick lanes
+run a Step 1.5 that prints four lines — what **ships**, what is **inert**, whether the diff is
+**all-inert**, and the **tier**:
+
+| Tier | What happens |
+|---|---|
+| `full` | a critical surface, a dependency manifest, CI config, or an **entry point** — the quick lane refuses and the full lane takes it |
+| `quick` | the five steps, unchanged |
+| `tiny` | the plan is two sentences and the walkthrough is three; the RED/GREEN still runs |
+
+An **all-inert diff** — *every* path in it is read by nothing at runtime and by no gate as law —
+skips the plan, the literal `approved` and the TDD altogether, because there is no design to review
+and no assertion to write. It keeps the lean walkthrough and the close-out tripwire. This is the
+first exemption in `artifacts-always-first` § When to Skip that is **mechanical**: a property of the
+diff rather than of the command's name, so a lane cannot talk its way into it.
+
+⛔ **"All inert" is not "nothing ships", and the difference matters most here in the lobby.** The
+command centre has no product directories at all, so *nothing ever ships* in it — a door gating the
+short-circuit on an empty `ships:` would skip the plan and the TDD for an edit to `git-policy.md`
+itself. The doors read `all-inert:`, which asks whether **every** path is inert. An empty path list
+answers `no`: silence is unknown scope, never empty scope.
+
+Two traps are handled by name, and both are measured rather than argued. **Nothing served from a
+`public/` or `static/` folder is ever inert** — `frontend/public/INDEX.md` is tracked and answers
+200 on production. And **an entry point is never `tiny` whatever its size**: `app/layout.tsx` has a
+reverse-dependency reach of **0** and wraps every screen in the app, because nothing imports a page,
+the router loads it — so the obvious "how many files import this" score ranks the riskiest files as
+the safest. An entry point is recognised by its **filename inside a router folder**, at any depth,
+so `app/api/<name>/route.ts`, a layout inside a `(route group)` and a page under a `[dynamic]`
+segment are all caught.
+
+**In a repo with no critical-surfaces map the tier falls back to the generic surfaces**, exactly as
+the Step 1 scope check already does — six of the nine repos under `Projects/` carry no map, and a
+veto that simply did not run there would have rated an auth file `tiny` while the same command's
+Step 1 called it an overlap. A map that declares nothing is weaker than no map, so it gets the same
+fallback rather than a quieter one.
+
 
 **Read the arrows, they matter more than the boxes.** Both dotted lines are **ejects** — tripwires
 that fire mid-build and send the work back to the full loop. You do not get to argue with either one:
@@ -509,6 +546,31 @@ job lands — nobody has to remember to remove it. **A comment naming the token 
 implementation:** a `# TODO` about skipping E2E leaves the caveat exactly where it was, which is the
 point, because writing the intent before the code is the normal order and is when the wrong answer
 would do the most damage.
+
+**The server has to keep the same promise, and keeping it takes two rulesets rather than one.**
+The workflow's `if:` decides only whether a job *runs*; what decides whether the merge button is
+clickable is the branch ruleset. A ruleset that still requires `Frontend E2E (Playwright)` on a light
+epic does not *block* anything — a job skipped by an `if:` reports **Success** to GitHub, so the
+required context is satisfied and the merge goes through — but the settings then claim a gate that is
+not running, and that claim reads as the truth on the day somebody looks. So an armed repo carries
+**two** epic rulesets that divide the epic namespace between them: the full one includes
+`refs/heads/epic/**` and **excludes** `refs/heads/epic/*-light-epic-*`, requiring all four checks; the
+light one includes exactly that excluded pattern and requires the two fast checks only. Both are
+strict, both carry a `pull_request` rule, and neither has a bypass actor.
+
+**The two ways that split can go wrong are not symmetric, which is why the arming order is fixed.**
+An **overlap** — both rulesets claiming one branch — is dishonest but harmless: GitHub unions the
+requirements and the surplus contexts skip into Success. A **gap** — a branch that no ruleset claims
+— is the dangerous one: no required checks, no required pull request, nothing stopping a direct push
+to an epic branch. Arming `full` first opens exactly that gap, because it writes the light-epic
+exclude while the light ruleset does not yet exist. So the recipes are armed **light before full**,
+one deliberate write at a time, by `arm_rulesets.py`: it writes nothing without `--apply`, `--apply`
+takes exactly one `--only` target, and it refuses `--only full` while the light ruleset is absent.
+The recipes are checked in under `.github/rulesets/`, so what the server enforces is reviewable in
+the repo instead of only in a settings page. **AviationChat is armed** — `epic write gate (AVCH-119)`
+and `epic write gate — light (AVCH-152)` — and every project cloned from the skeleton ships all three
+recipes armed at nothing, which is what step 5 of
+[`/smh-new-project`](../../.agents/commands/smh-new-project.md) is for.
 
 **TRUNK is the third answer, and it means this step cuts nothing** (SCC-423; AviationChat moved to it
 on 2026-09-06). There is no epic branch and no integration branch: every story lane is cut straight
@@ -851,7 +913,7 @@ deliberately do **not** call `/cicd-prune-worktree`, which owns `claude/*` story
 mechanical.** `git branch -d` checks merged-into-**upstream** when an upstream exists, and
 merged-into-**HEAD** when one does not. Deleting the remote first removes the upstream, which forces
 `-d` onto a real ancestry question instead of a vacuous one. **A refusal does not mean the merge
-failed:** lanes here push without `-u` (the sandbox cannot write the lobby's `.git/config`), so there
+failed:** lanes here push without `-u` (the sandbox cannot write the lobby's git config), so there
 is usually no upstream at all, `-d` falls back to the shared lobby's `main`, and that checkout can be
 many commits behind the merge you just made. Prove the landing with
 `git rev-list --count origin/main..<branch>` — `0` means every commit is on `main` — then point the
@@ -1768,7 +1830,25 @@ doc and index edits, memory files, `_artifacts` INDEX rows, notes, and quick ref
 - **Auto-provisions the Standing Push Ticket** — if the project does not have an open `"Standing Push Ticket"`
   (e.g. `AVCH-XX`), it auto-mints it via `acli` and keeps it open permanently.
 - **Maintains a persistent branch** — uses `chore/<KEY>-standing-push` synced from `origin/main`.
-- **Qualifies `LIGHT`** — refuses product code or deployable paths.
+- **Qualifies `LIGHT`** — refuses product code or deployable paths. **"Deployable" means *anything
+  reads this file when the system runs, or a gate reads it as law* — not "what folder is it in".** A
+  markdown map under `frontend/` goes out through this lane; `frontend/public/INDEX.md`, which is
+  served on production, does not. The predicate is `task_preflight.deployable_paths`, the carve-out
+  is declared in the project's `.agents/inert-paths.json`, and the declaration cannot list itself.
+- **Sizes the review by BLAST RADIUS, not by line count** — `task_preflight.ceremony_tier` answers
+  `tiny` · `quick` · `full`, and the cheapest verdict is earned, never assumed. It asks how many
+  other files reach the ones you touched, reading `code-review-graph impact`; a reach above ten
+  forces `quick` however small the diff, because three lines in a module forty files import is not
+  a small change. **Every rule there runs one way, toward more ceremony.** Where there is no
+  measurement — no graph built, a language the graph has a known blind spot in — the line count
+  decides as before, so an absent graph costs you a `quick` review you may not have needed and
+  never a skipped one. Run `code-review-graph update --repo <r>` to buy the sharper answer.
+  Critical surfaces, dependency manifests, CI config and router entry points are refused outright:
+  `app/layout.tsx` wraps every screen and nothing imports it, so a score alone would call the
+  riskiest file in the tree the safest.
+- **Names a door that will actually run when it refuses** — it reads `epic_mode.py` first:
+  `FULL`/`LIGHT` → `/cicd-push-e2e`; `TRUNK` → `/cicd-quick-dev`, then `/cicd-close-story-merge-tree`
+  Arm B. Naming `/cicd-push-e2e` in a trunk project is a refusal the operator cannot comply with.
 - **Stages explicitly**, commits with `<KEY> <summary> [sop-ok]`, pushes, and opens the PR via `gh pr create`.
 - **Verifies `main-write-gate`** passes before handing back the PR link.
 - **Restores checkout to `main`** (`cd "$REPO" && git checkout main`) and pulls latest `main` once merged on GitHub (`cd "$REPO" && git pull origin main`).

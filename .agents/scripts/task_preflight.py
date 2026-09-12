@@ -39,7 +39,8 @@ import re
 import shutil
 import subprocess
 import sys
-from pathlib import Path
+from collections.abc import Iterable
+from pathlib import Path, PurePosixPath
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import walkthrough_roster as roster
@@ -112,6 +113,393 @@ WRONG_LANE = {
 PRODUCT_DIRS = ("backend/", "frontend/", "firebase/", "functions/", "mobile/")
 CI_DIR = ".github/"
 DEPLOY_DIRS = PRODUCT_DIRS + (CI_DIR,)
+
+# ── THE INERT PREDICATE (SCC-451) ─────────────────────────────────────────────
+# The prefix test above answers "what folder is this in". That was the whole question until
+# 2026-09-12, and it dead-ended: `frontend/scripts/INDEX.md` is a markdown map that ships
+# nothing, `check_maps.py` check 2.5 DEMANDS it exist, and the standing-push door refused it
+# and handed it to `/cicd-push-e2e` - which refuses back in a TRUNK project ("there is no epic
+# for this door to ship"). 45 tracked `.md` sit under AviationChat's product dirs; 23 are the
+# INDEX/README files the maps gate manufactures. The routing graph had no exit node, so the
+# gate got skipped by hand, which is worse than any carve-out.
+#
+# The question is now: DOES ANYTHING READ THIS FILE WHEN THE SYSTEM RUNS, OR DOES A GATE READ
+# IT AS LAW? Markdown is not the test, and three counterexamples prove it - `.agents/rules/*.md`
+# IS the law; `backend/knowledge/aviationchat_pitch.md` is loaded by a runtime agent that raises
+# if it is missing; `frontend/public/INDEX.md` is served verbatim on production (measured:
+# `curl https://aviationchat.org/INDEX.md` -> 200).
+DEFAULT_INERT = ("INDEX.md", "README.md")
+# ⛔ BASENAMES, NEVER EXTENSIONS. `PurePosixPath.match` is right-anchored, so `INDEX.md`
+# matches at any depth while `*.md` would match the law and both runtime docs as well.
+SERVED_SEGMENTS = ("public", "static")      # a folder a web server hands out verbatim
+LAW_PREFIXES = (".agents/rules/", ".agents/commands/")
+INERT_REL = ".agents/inert-paths.json"
+
+# ⛔ THE SHAPE CHECK IS SEMANTIC, NOT A SPELLING BLACKLIST, and the first version proved why.
+# It refused a glob whose basename started with `*.` - a literal-prefix test, so `?*.md`,
+# `[a-z]*.md` and `*[.]md` all loaded clean and all match every `.md` in the repo, taking the
+# runtime-loaded knowledge docs with them. It ALSO refused `docs/*.md`, which is scoped and
+# cannot reach one. Wrong in both directions at once.
+#
+# So the declaration is tested against files that must NEVER be inert: a glob that matches any
+# of them is refused, whatever it is spelled like. `INDEX.md`, `README.md` and `docs/*.md` match
+# none of these; `?*.md` and `*` match the first one.
+_GLOB_CANARIES = (
+    "backend/knowledge/runtime_doc.md",     # markdown a loader reads and raises without
+    ".agents/rules/constitution.md",        # markdown that IS the law
+    "frontend/src/App.tsx",                 # source
+    "backend/app/models.py",                # source
+)
+
+
+def _norm_rel(path: str) -> str:
+    """Repo-relative, forward slashes, no leading `./`.
+
+    ⛔ NOT `lstrip("./")`, and this repo has the scar twice now. `lstrip` takes a character SET,
+    so it eats the leading dot off every `.agents/...` path - `.agents/rules/README.md` became
+    `agents/rules/README.md`, `LAW_PREFIXES` could never match, and a RULE FILE was declared
+    inert because `README.md` is a default glob. `lane_qualify.norm` carries the same warning
+    in its docstring, from `sop_currency._norm` shipping it first. Three normalisers that
+    disagree is how the drift case starts failing, so this one is written the same way.
+    """
+    p = path.replace("\\", "/").strip()
+    while p.startswith("./"):
+        p = p[2:]
+    return p
+
+
+def load_inert(repo: Path) -> tuple[str, ...]:
+    """The globs this repo declares as inert. Absent file -> `DEFAULT_INERT`.
+
+    ⛔ Malformed, unreadable, or carrying a bare-extension glob -> `()`, EMPTY - never the
+    defaults and never a wider list. The two directions are opposite on purpose: an ABSENT
+    declaration is a decision (this repo accepts the house defaults), while a CORRUPT one is
+    an unknown intent, and the safe reading of unknown intent is no carve-out at all. This
+    predicate fails toward ceremony.
+
+    A bare-extension glob (`*.md`, `**/*.py`, `*`) is refused rather than trimmed, because it
+    is not a mistake this function can repair: it would carve out the rules directory and the
+    runtime-loaded docs in one line, which is exactly the failure the basename defaults exist
+    to avoid. The refusal is silent to callers but the reason is here - the declaration is a
+    proposal, and this is the shape check on it.
+    """
+    f = repo / INERT_REL
+    if not f.is_file():
+        return DEFAULT_INERT
+    try:
+        data = json.loads(f.read_text(encoding="utf-8"))
+        rows = data["inert"]
+        globs = tuple(str(r["glob"]) for r in rows)
+    except (OSError, ValueError, KeyError, TypeError):
+        return ()
+    for g in globs:
+        if not g or g.startswith("/"):
+            # A leading-slash pattern loads clean and matches NOTHING (`PurePosixPath.match`
+            # only matches an absolute pattern against an absolute path) - a dead row reading
+            # as a live guard, which `scope_check.parse_map` refuses outright for the same
+            # reason. Refuse it rather than carry a carve-out nobody gets.
+            return ()
+        if any(PurePosixPath(canary).match(g) for canary in _GLOB_CANARIES):
+            return ()
+    return globs
+
+
+def inert_paths(repo: Path, paths: Iterable[str]) -> list[str]:
+    """The subset of `paths` that ships nothing - what a door may carry on past.
+
+    A path qualifies only if it matches a declared glob AND survives every hard guard below.
+    ⛔ THE GUARDS RUN AFTER THE GLOB, NEVER INSIDE IT, so a declaration can only ever PROPOSE a
+    carve-out. That is the same self-protection `scope_check.py` gives `critical-surfaces.json`:
+    a line that can widen itself is not a line.
+
+      served  - any segment in SERVED_SEGMENTS. `frontend/public/INDEX.md` is tracked AND on
+                production; a bare basename glob without this guard carves out a live file.
+      law     - anything under LAW_PREFIXES. A rule or a command body is markdown and it is
+                what the gates read as law.
+      itself  - INERT_REL is never inert, so a lane cannot widen the list and route its own
+                gate off in the same diff.
+    """
+    globs = load_inert(repo)
+    if not globs:
+        return []
+    out: list[str] = []
+    for p in paths:
+        rel = _norm_rel(p)
+        if rel == INERT_REL or rel.startswith(LAW_PREFIXES):
+            continue
+        # `parts[:-1]` is right for a FILE (its own name is not a folder it sits in) and wrong
+        # for a planned DIRECTORY, which the `--paths` arm of the quick-lane step really does
+        # produce with a trailing slash - `frontend/public/` would have escaped its own guard.
+        q = PurePosixPath(rel)
+        segs = q.parts if rel.endswith("/") else q.parts[:-1]
+        if any(seg in SERVED_SEGMENTS for seg in segs):
+            continue
+        if any(PurePosixPath(rel).match(g) for g in globs):
+            out.append(p)
+    return out
+
+
+def deployable_paths(repo: Path, paths: Iterable[str]) -> list[str]:
+    """What genuinely ships: the `DEPLOY_DIRS` prefix test, minus the inert subset.
+
+    ⭐ THIS is the function every caller uses - `check_scope`, `lane_qualify`,
+    `ship_preflight.check_lane` and both standing-push doors. Four places used to re-type
+    `p.startswith(...)`, and a carve-out added to one of them would have been invisible to the
+    other three.
+    """
+    inert = set(inert_paths(repo, paths))
+    return [p for p in paths
+            if _norm_rel(p).startswith(DEPLOY_DIRS) and p not in inert]
+
+
+def all_inert(repo: Path, paths: Iterable[str]) -> bool:
+    """Is EVERY path in this diff inert? The predicate that lets a door skip the plan, the
+    literal `approved` and the RED/GREEN - so it is the highest-stakes question here.
+
+    ⛔ THE TEST IS "EVERY PATH IS INERT", NEVER "NOTHING SHIPS", and the difference is the hole
+    this function exists to close. The doors first read an empty `deployable_paths()` as
+    "all inert" - but the COMMAND CENTRE HAS NO PRODUCT DIRS AT ALL, so nothing ever ships
+    there and every lobby diff satisfied it. An edit to `git-policy.md` - the law itself -
+    would have skipped the plan and the TDD. `deployable_paths` answers *what still ships*;
+    only this answers *is there anything here worth a ceremony*.
+
+    An EMPTY path list is False: silence is unknown scope, not empty scope (the same rule
+    `lane_qualify` applies to a caller that names nothing).
+    """
+    kept = list(paths)
+    return bool(kept) and set(kept) == set(inert_paths(repo, kept))
+
+
+# ── HOW MUCH CEREMONY (SCC-451 step one; SCC-452 added the reach veto) ─────────
+# The predicate above answers "does this file do anything". This answers "how much of the
+# system depends on what you touched" - what the industry calls blast radius. SCC-451 shipped
+# a line count behind a named interface, crude on purpose and honest about being a proxy.
+# SCC-452 put a MEASURED reverse-dependency reach score in front of it, as a veto that can only
+# raise the tier - see the block inside `ceremony_tier` for why one direction, not two.
+# ⛔ MATCHED BY NAME PLUS ROUTER FOLDER, NEVER BY A FIXED-DEPTH GLOB. The first version was a
+# list of `*/app/*/page.tsx`-shaped patterns, and `PurePosixPath.match` is right-anchored on
+# WHOLE COMPONENTS - so every pattern pinned an exact segment count. The App Router puts route
+# handlers at `app/api/<name>/route.ts` or deeper, layouts inside `(route groups)`, and pages
+# under `[dynamic]` segments; every one of those came back `tiny`, which is "the plan is two
+# sentences", for an API route handler. Depth is not the property - the FILENAME is, and only
+# inside a router folder.
+ENTRY_POINT_NAMES = ("page.tsx", "page.jsx", "page.js", "layout.tsx", "layout.jsx", "layout.js",
+                     "route.ts", "route.js", "template.tsx", "default.tsx",
+                     "error.tsx", "loading.tsx", "not-found.tsx")
+ROUTER_DIRS = ("app", "pages")              # where those names mean "the router loads this"
+PY_ENTRY_NAMES = ("main.py", "asgi.py", "wsgi.py", "__main__.py")
+MANIFEST_NAMES = ("package.json", "package-lock.json", "pyproject.toml", "poetry.lock",
+                  "requirements.txt", "firebase.json", "next.config.ts")
+TINY_MAX_LINES = 50
+TINY_MAX_FILES = 5
+
+# ⛔ MEASURED, NOT CHOSEN. Run 2026-09-12 over every tracked source file in both repos that
+# carry a graph, at the same depth this code queries (2 hops):
+#
+#   lobby        209 files,  29 measured: p50=2 p75=4 p90=9  p95=10 max=86  (tests/_harness.py)
+#   AviationChat 899 files, 308 measured: p50=6 p75=18 p90=50 p95=96 max=204
+#
+# The knee is where the long tail starts, and it lands in the same place in both repos. In
+# AviationChat the per-value counts run 37·27·39·31·20·16·9·9·10·9 for reach 1 through 10 and
+# then collapse to 4·8·2·1·1 - two thirds of every measured file sits at 10 or under, and the
+# lobby's 95th percentile is exactly 10. Everything above it is a hub. So the cap sits ON the
+# knee: the veto fires for hubs and stays silent for the files people actually edit.
+TINY_MAX_REACH = 10
+
+# How long the graph query may take before the gate stops waiting for it. A door blocks on
+# this call, so a hung binary must cost a few seconds and a `quick` review, never the lane.
+REACH_TIMEOUT_S = 20
+
+# ⛔ THE ONLY ZERO THAT IS EVIDENCE. `code-review-graph` attaches a `confidence` note to EVERY
+# empty result, and this is the one wording that means "measured, and nothing depends on it"
+# (`uncertainty.py::_confirmed_note`). The other four - target not indexed, graph stale, a
+# language blind spot, currency unverified - all mean "I could not see".
+#
+# ⛔ AND IT IS UNREACHABLE FOR PYTHON AND TYPESCRIPT, WHICH IS WHY THE TIER USES REACH AS A
+# VETO AND NOT AS AN ADMISSION TICKET. `uncertainty.LANGUAGE_GAPS` lists `impact_radius` under
+# BOTH the call patterns and the import patterns for python and the whole js/ts family, so a
+# zero about a `.py` or a `.tsx` ALWAYS carries a blind-spot note instead - measured, 178 of 209
+# lobby files. The tool will never certify that a Python leaf is safe, so nothing may be let
+# into `tiny` on the strength of one. What it certifies confidently is a NON-zero, and a
+# non-zero is exactly what a veto needs. (The branch is live, not dead: shell scripts have no
+# gap and do return this - measured on `.agents/hooks/run-hook.sh`.)
+REAL_ABSENCE = "real absence"
+
+
+def _is_entry_point(rel: str) -> bool:
+    """⛔ THE MOST IMPORTANT RULE IN THE TIER, AND IT IS A PATTERN, NOT A SCORE.
+
+    Reverse-dependency count is FLATLY WRONG for entry points, and a naive implementation ranks
+    the riskiest files as the safest. Measured 2026-09-12 over AviationChat's 146 frontend
+    components: `app/layout.tsx` has reach 0 and wraps every screen in the app;
+    `app/dashboard/page.tsx` has reach 0 and is an entire user journey. Nothing imports a page -
+    the router loads it.
+
+    So entry points are excluded from `tiny` BY NAME, before any score is consulted, and the
+    exclusion survives SCC-452 unchanged. A reach score that quietly re-admitted them would be
+    worse than the line count it replaces.
+
+    The router folder is required, not decoration: `components/page.tsx` is an ordinary
+    component that happens to be called `page`, and treating it as an entry point would make
+    the exclusion mean nothing.
+    """
+    parts = PurePosixPath(rel).parts
+    if not parts:
+        return False
+    name, folders = parts[-1], parts[:-1]
+    if name in PY_ENTRY_NAMES:
+        return True
+    return name in ENTRY_POINT_NAMES and any(seg in ROUTER_DIRS for seg in folders)
+
+
+def reach_score(repo: Path, rels: Iterable[str]) -> int | None:
+    """How many OTHER files reach these paths, per `code-review-graph`. `None` = NO EVIDENCE.
+
+    ⛔ `None` IS NOT ZERO. Zero means "measured, and nothing depends on it"; `None` means "not
+    measured". Every arm that cannot produce a real number returns `None`: no paths to score,
+    the binary absent, no graph built, a non-zero exit, output that is not JSON, a `status`
+    that is not `ok`, a timeout, and - the one that matters most - an empty result whose own
+    `confidence` note says the graph could not see.
+
+    ⛔ THE GRAPH IS READ, NEVER RE-IMPLEMENTED. `code-review-graph impact` already owns the
+    import parsing for six languages and publishes its own uncertainty; a second import parser
+    living here would be a second answer to a question already answered, and would have to get
+    TypeScript, JSX and Python right to be worth anything.
+
+    An empty path list returns before spawning anything. `--files` is `nargs="+"`, so the tool
+    would refuse it at argparse and exit 2 anyway (measured) - the guard buys no safety, only
+    the process the doors would otherwise start to be told off.
+    """
+    paths = [p.replace("\\", "/") for p in rels]
+    if not paths:
+        return None
+    binary = shutil.which("code-review-graph")
+    if not binary:
+        return None
+    try:
+        # `encoding="utf-8"` is not optional here (SCC-335): a captured stream decoded with the
+        # machine locale corrupts on the Windows side, and `test_jira_feed.py` E1 walks every
+        # spawn in `.agents/scripts/` looking for exactly this omission.
+        cp = subprocess.run([binary, "impact", "--repo", str(repo), "--depth", "2",
+                             "--files", *paths],
+                            capture_output=True, text=True, encoding="utf-8",
+                            errors="replace", timeout=REACH_TIMEOUT_S)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if cp.returncode != 0:
+        return None
+    try:
+        return _reach_from_impact(json.loads(cp.stdout))
+    except (json.JSONDecodeError, ValueError):
+        # ⛔ THE COMMON PATH, NOT AN EDGE CASE. With no graph the tool prints
+        # "No graph found at …" as PLAIN TEXT and exits **0** - so a returncode check alone
+        # reads that as a successful measurement. Only the parse catches it. Eight of the ten
+        # repos in this workspace have no graph, and a worktree never inherits its parent's.
+        return None
+
+
+def _reach_from_impact(payload: object) -> int | None:
+    """The reach contract, as a pure function of one `impact` payload. `None` = no evidence.
+
+    ⛔ SPLIT OUT SO THE CONTRACT IS TESTABLE WHERE THE BINARY IS NOT. `code-review-graph` is a
+    per-machine `pip --user` install and CI does not have it, so a test that could only reach
+    these arms through a subprocess would quietly assert nothing on the one runner that gates
+    `main`. Every arm below is pinned directly, on every machine.
+    """
+    if not isinstance(payload, dict) or payload.get("status") != "ok":
+        return None
+    hit = payload.get("impacted_files")
+    if not isinstance(hit, list):
+        return None                          # the field is the answer; a wrong type is no answer
+    if hit:
+        return len(hit)
+    return 0 if REAL_ABSENCE in str(payload.get("confidence") or "") else None
+
+
+def ceremony_tier(repo: Path, paths: Iterable[str], *,
+                  lines: int | None = None, structural: bool | None = None) -> str:
+    """`"tiny"` · `"quick"` · `"full"` - how much ceremony this change has earned.
+
+    ⛔ WITHOUT LINE EVIDENCE `tiny` IS UNREACHABLE. The doors call this at two different
+    moments: quick-dev Step 1 holds a PLANNED path list and no diff, while Step 5 and both
+    standing-push doors hold a real one. A tier is never lowered on an assumption, so `lines=None`
+    can only ever reach `quick`.
+
+    ⛔ It touches NO TESTS. Which suites run is the CI classifier's job (AVCH-153); this decides
+    REVIEW DEPTH only, and conflating the two is the failure mode to avoid.
+
+    ⛔ EVERY RULE HERE RUNS IN ONE DIRECTION: toward more ceremony. The critical-surface veto,
+    the manifest and CI checks, the entry-point exclusion and the reach veto can each force a
+    tier UP, and nothing in this function can force one down. That is what makes the order safe
+    to read - `_is_entry_point` comes BEFORE the reach score on purpose, because an entry point
+    has reach 0 and a score consulted first would rank the riskiest files as the safest.
+    """
+    import scope_check as sc
+    rels = [p.replace("\\", "/") for p in paths]
+
+    # ⛔ THE MAP IS READ THROUGH `scope_check`, NEVER RE-PARSED HERE. It already owns the schema,
+    # the prefix-vs-exact rule and the dead-row refusal; a second matcher is a second answer.
+    #
+    # ⛔ AND IT FALLS BACK EXACTLY AS `scope_check.main` DOES, because "no map" is the COMMON
+    # case, not the exception: measured 2026-09-12, six of the nine repos under `Projects/`
+    # carry none. `load_map` returns `(None, None)` with no map and `([], None)` for one that
+    # declares nothing - both falsy - so a veto written as `if rows and …` simply did not run,
+    # and an auth file came back `tiny` in six projects. Worse, Step 1 of the same command said
+    # OVERLAP about that file, because `scope_check` DOES fall back to the GENERIC set. Two
+    # answers from one command about one path. A map that declares nothing is WEAKER than no
+    # map, so it must not be quieter either.
+    rows, err = sc.load_map(repo)
+    if err:
+        return "full"                        # an UNREADABLE map cannot clear anything
+    hits = (sc.overlaps(rels, rows, fragments=False) if rows
+            else sc.overlaps(rels, list(sc.GENERIC), fragments=True))
+    if hits:
+        return "full"                        # ABSOLUTE VETO - never overridden by a size
+
+    for rel in rels:
+        if rel.startswith(CI_DIR) or PurePosixPath(rel).name in MANIFEST_NAMES:
+            return "full"
+        if _is_entry_point(rel):
+            return "full"
+
+    if lines is None or structural:
+        return "quick"
+
+    # ── BLAST RADIUS (SCC-452) ────────────────────────────────────────────────────────────
+    # ⛔ REACH CAN ONLY RAISE CEREMONY. IT IS NEVER AN ADMISSION TICKET.
+    #
+    # The line count below is a proxy for blast radius and a bad one: three lines in a module
+    # forty files import is not small, and forty lines in a leaf nobody imports is. This asks
+    # the real question, and it asks it in ONE direction only.
+    #
+    # The plan for this story said `None` -> `quick`, so that a change with no evidence could
+    # never be `tiny`. Measured on the way in, that rule DELETES the tier instead of tightening
+    # it: two of the ten repos in this workspace have a graph at all, a worktree never inherits
+    # its parent's, and in a Python repo 178 of 209 files answer 0 with a blind-spot note. Under
+    # `None -> quick` every one of those is `quick` forever, and `tiny` is dead code wearing a
+    # threshold.
+    #
+    # The principle underneath that rule is what actually binds: ABSENCE OF EVIDENCE LOWERS
+    # NOTHING. A veto satisfies it exactly. With no evidence the line caps decide, which is
+    # precisely today's behaviour, so no repo gets weaker than it is now; with evidence, a hub
+    # is pushed up to `quick` no matter how small the diff. It also retires the staleness
+    # problem rather than guarding it: a stale number that is too HIGH costs one `quick` review
+    # nobody needed, and one that is too LOW falls through to the caps. Neither can make this
+    # answer permissive, which is why there is no staleness gate here.
+    reach = reach_score(repo, rels)
+    if reach is not None and reach > TINY_MAX_REACH:
+        return "quick"
+
+    # ⛔ COUNT THE NON-INERT PATHS, NOT THE DEPLOYABLE ONES. This counted `deployable_paths`,
+    # which keeps only `DEPLOY_DIRS` survivors - so outside a product folder the count was
+    # permanently 0 and the file cap was dead. In the command centre that is EVERY diff:
+    # 40 files at 10 lines each read `tiny`. "How big is this change" means how many files
+    # it touches that anything reads, which is exactly the non-inert set.
+    inert = set(inert_paths(repo, rels))
+    counted = [p for p in rels if p not in inert]
+    if lines <= TINY_MAX_LINES and len(counted) <= TINY_MAX_FILES:
+        return "tiny"
+    return "quick"
 
 # ── A live epic freezes main for its scope (SCC-416) ───────────────────────────
 # Measured 2026-09-05: a chore/ lane off main carried three files the live epic/AVCH-100
@@ -1289,7 +1677,16 @@ def check_scope(repo: Path, branch: str, rep: wf.Report) -> tuple[str, list[str]
                              if (repo / CI_DIR).is_dir() else ""))
         return "LOCAL", []
 
-    touched = sorted({d for d in surface for p in changed if p.startswith(d)})
+    # SCC-451: the question is no longer "what folder is this in" but "does anything read it".
+    # `deployable_paths` applies the prefix test and then removes the inert subset, so a diff
+    # of nothing but map files under `frontend/` is LOCAL - the state that used to dead-end.
+    ships = deployable_paths(repo, changed)
+    carved = [p for p in changed if p in set(inert_paths(repo, changed))]
+    if carved:
+        rep.info("scope", f"{len(carved)} inert path(s) carried on (nothing reads them at "
+                          f"runtime and no gate reads them as law): {', '.join(carved[:3])}"
+                          + (f" +{len(carved) - 3} more" if len(carved) > 3 else ""))
+    touched = sorted({d for d in surface for p in ships if p.startswith(d)})
     if touched:
         # NOT a judgment call, and deliberately not overridable by a flag. A task that
         # reaches deployable code is not a task; it is a change to the product, and the

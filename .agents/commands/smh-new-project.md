@@ -31,6 +31,21 @@ Then finish the wiring — the script prints these, do them in order:
    --ignore _my_resources,_bmad --mode auto` (run from the lobby; the template's AUTO tree carries the
    skeleton's own root name until you regenerate, so `check_maps` would flag it stale).
 
+5. **Arm the rulesets** — the skeleton ships three recipes under `.github/rulesets/`
+   (`main.json`, `epic-light.json`, `epic-full.json`) and arms **none** of them: until somebody runs
+   this, the server requires nothing and the gate is a file rather than a rule. Run it from the new
+   project's root; without `--apply` it writes nothing and just prints the diff. Arm **light before
+   full** — `full` first writes the light-epic exclude while the light ruleset is still absent, which
+   leaves a light epic branch claimed by no ruleset at all (the script refuses that order, and this
+   is why).
+
+   ```
+   python3 .agents/scripts/arm_rulesets.py --repo <owner>/<name>
+   python3 .agents/scripts/arm_rulesets.py --repo <owner>/<name> --only main  --apply
+   python3 .agents/scripts/arm_rulesets.py --repo <owner>/<name> --only light --apply
+   python3 .agents/scripts/arm_rulesets.py --repo <owner>/<name> --only full  --apply
+   ```
+
 **Optional, when it gets a Jira board:** `cp .agents/jira.conf.example .agents/jira.conf`, set
 `JIRA_KEYS`, then `touch .agents/scripts/git-hooks/JIRA-ENFORCE` to arm REJECT mode. Until then the
 commit gate no-ops — a fresh project is never blocked by a board it doesn't have yet.
