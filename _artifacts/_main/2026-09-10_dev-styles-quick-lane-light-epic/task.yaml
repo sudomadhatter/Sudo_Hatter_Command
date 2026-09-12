@@ -4,4 +4,9 @@ branch: chore/SCC-441-dev-styles-quick-lane-light-epic
 close_command: smh-close-task-merge-tree
 secondary_repos: []
 riders: [SCC-442, SCC-443, SCC-444, SCC-445, SCC-446]
-landing_mode: partial   # the riders flip at this lane's close-out; the parent stays open for AVCH-152 and Part F
+# NO `landing_mode:` KEY ANY MORE, AND THAT IS THE DECLARATION. It read `partial` for the
+# Parts A-E landing, which flipped the five riders and kept the parent open for AVCH-152 and
+# Part F. Both are settled now — AVCH-152 is Done and Part F is this diff — so this is the
+# COMPLETE landing, and a complete landing declares no mode. Leaving `partial` here would
+# also be read, not ignored: it arms the rider-evidence check, which asks that each declared
+# rider's work be in THIS diff, and none of it is — the five landed at 03778605.

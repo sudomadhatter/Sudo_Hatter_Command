@@ -547,6 +547,31 @@ implementation:** a `# TODO` about skipping E2E leaves the caveat exactly where 
 point, because writing the intent before the code is the normal order and is when the wrong answer
 would do the most damage.
 
+**The server has to keep the same promise, and keeping it takes two rulesets rather than one.**
+The workflow's `if:` decides only whether a job *runs*; what decides whether the merge button is
+clickable is the branch ruleset. A ruleset that still requires `Frontend E2E (Playwright)` on a light
+epic does not *block* anything — a job skipped by an `if:` reports **Success** to GitHub, so the
+required context is satisfied and the merge goes through — but the settings then claim a gate that is
+not running, and that claim reads as the truth on the day somebody looks. So an armed repo carries
+**two** epic rulesets that divide the epic namespace between them: the full one includes
+`refs/heads/epic/**` and **excludes** `refs/heads/epic/*-light-epic-*`, requiring all four checks; the
+light one includes exactly that excluded pattern and requires the two fast checks only. Both are
+strict, both carry a `pull_request` rule, and neither has a bypass actor.
+
+**The two ways that split can go wrong are not symmetric, which is why the arming order is fixed.**
+An **overlap** — both rulesets claiming one branch — is dishonest but harmless: GitHub unions the
+requirements and the surplus contexts skip into Success. A **gap** — a branch that no ruleset claims
+— is the dangerous one: no required checks, no required pull request, nothing stopping a direct push
+to an epic branch. Arming `full` first opens exactly that gap, because it writes the light-epic
+exclude while the light ruleset does not yet exist. So the recipes are armed **light before full**,
+one deliberate write at a time, by `arm_rulesets.py`: it writes nothing without `--apply`, `--apply`
+takes exactly one `--only` target, and it refuses `--only full` while the light ruleset is absent.
+The recipes are checked in under `.github/rulesets/`, so what the server enforces is reviewable in
+the repo instead of only in a settings page. **AviationChat is armed** — `epic write gate (AVCH-119)`
+and `epic write gate — light (AVCH-152)` — and every project cloned from the skeleton ships all three
+recipes armed at nothing, which is what step 5 of
+[`/smh-new-project`](../../.agents/commands/smh-new-project.md) is for.
+
 **TRUNK is the third answer, and it means this step cuts nothing** (SCC-423; AviationChat moved to it
 on 2026-09-06). There is no epic branch and no integration branch: every story lane is cut straight
 from `origin/main`, and it lands on `main` through a pull request you merge, under whatever checks

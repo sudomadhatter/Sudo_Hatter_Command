@@ -514,7 +514,7 @@ flowchart TD
 |---|---|---|---|
 | `/cicd-code-review` | your machine, in the lane | **are the right tests written?** — risk allocation (P0–P3), tiers `[L1, L2]`, and the trace matrix proving each P0/P1 AC has a test | whether they pass on a clean machine |
 | `pr-check.yml` | GitHub, on an open PR | **does this pass on a clean machine, in the real stack?** | whether the tests were the right ones |
-| ruleset `21963341` | GitHub, on `main` | **is the merge button allowed to be clickable?** | anything about quality — it only reads the other two |
+| the branch rulesets — `21963341` on `main`, `22247932` and `23051729` on `epic/**` | GitHub, on `main` and the epic branches | **is the merge button allowed to be clickable?** | anything about quality — it only reads the other two |
 
 **The CI gate is one workflow with five jobs.** A first job, `changes`, runs alone: it resolves the
 PR base, refuses to continue if it cannot (`git cat-file -e … || exit 1`), diffs, and feeds the
@@ -554,6 +554,20 @@ list for months, so a PR touching only `relay/app.py` ran no gate at all — fou
 AVCH-149's own review, and now pinned by a test that reads the repo's top-level tree, so a new
 top-level directory goes red until somebody decides which row it belongs in.
 
+**The changed paths are only half the routing — the PR's base branch is the other half (AVCH-152).**
+A story landing into a **light epic** skips both E2E tiers whatever it touched:
+
+| PR's base branch | Backend | Frontend | Playwright | Backend E2E |
+|---|---|---|---|---|
+| `main`, or a FULL epic (`epic/AVCH-18-epic-19-…`) | by path | by path | by path | by path |
+| a LIGHT epic (`epic/AVCH-18-light-epic-19-…`) | by path | by path | **never** | **never** |
+
+Both E2E `if:` lines carry `!contains(github.event.pull_request.base.ref, '-light-epic-')`. It is a
+substring test on purpose: it is the same test the doors run on the branch name, so the mode cannot
+mean one thing on your machine and another on the server. The discount is deferred, not waived — a
+light epic pays its E2E once, when the epic itself goes to `main` under the `main` ruleset, or
+whenever you call `/cicd-e2e`.
+
 ⛔ **The one thing to understand about this design.** A job skipped by an `if:` reports **Success**
 to GitHub. That is the property that makes it work — a docs-only PR reports all four contexts green
 in about twenty seconds instead of stranding them Pending forever, which is what finally made those
@@ -567,6 +581,20 @@ suite rather than four green contexts on a PR that tested nothing.
 with zero required approvals, keeps `deletion` and `non_fast_forward`, and has **no bypass actors**.
 There is no local escape: `--no-verify` clears only the client-side hook. The merge button on a green
 PR is the only road.
+
+**Two more rulesets guard the epic branches, and they partition that namespace between them.**
+`epic write gate (AVCH-119)` (`22247932`) includes `refs/heads/epic/**` and **excludes**
+`refs/heads/epic/*-light-epic-*`, requiring all four contexts. `epic write gate — light (AVCH-152)`
+(`23051729`) includes exactly that excluded pattern and requires `Backend (Python)` and
+`Frontend (Node.js)` only. Both strict, both with a `pull_request` rule, neither with a bypass actor.
+The split is what makes the light toggle honest rather than merely quiet — one ruleset demanding all
+four on a light epic would block nothing, because the skipped jobs report Success and satisfy it, yet
+the settings would advertise a gate that never ran. **Overlap is dishonest; a gap is dangerous:** a
+branch no ruleset claims has no required checks and no required PR at all, which is precisely what
+arming `full` before `light` produces for as long as the two writes are apart. The recipes are checked
+into the repo as [`epic-full.json`](https://github.com/sudomadhatter/AGY_AVIATIONCHAT/blob/main/.github/rulesets/epic-full.json) and [`epic-light.json`](https://github.com/sudomadhatter/AGY_AVIATIONCHAT/blob/main/.github/rulesets/epic-light.json), armed one at a time by
+[`arm_rulesets.py`](https://github.com/sudomadhatter/AGY_AVIATIONCHAT/blob/main/.agents/scripts/arm_rulesets.py),
+which writes nothing without `--apply` and refuses `--only full` while the light ruleset is absent.
 
 ```mermaid
 flowchart TD

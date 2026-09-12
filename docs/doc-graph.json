@@ -7,7 +7,7 @@
     "files": 381,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 797,
+    "edges": 798,
     "external": 35,
     "ambiguous": 182,
     "dangling": 263,
@@ -498,7 +498,7 @@
     },
     {
       "path": ".agents/commands/smh-new-project.md",
-      "in": 1,
+      "in": 2,
       "out": 2
     },
     {
@@ -1824,7 +1824,7 @@
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "in": 31,
-      "out": 67
+      "out": 68
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
@@ -5224,6 +5224,11 @@
       "from": "docs/_scc_sops_prds/tea_testing_guide.md",
       "to": ".agents/rules/code-standards.md",
       "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "to": ".agents/commands/smh-new-project.md",
+      "kind": "link"
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",

@@ -29,7 +29,7 @@ closing docs) waits for AVCH-152 in a closure lane, as the plan says.
 - [x] **Part C · SCC-444** — `/cicd-quick-dev` rebuilt as the quick lane; the close-out preflight reads the quick-lane record line — `5aa18f0c`, `9fdfee3f`
 - [x] **Part D · SCC-445** — `/smh-quick-dev` is the quick lane, `/smh-dev-task-tests` is the full lane, `/smh-quick-fix` retired, 74 references re-pointed by meaning — `49dc82ed`
 - [x] **Part E · SCC-446** — `epic_mode.py`, the kickoff asks FULL/LIGHT/TRUNK, twelve doors print the mode, the close-out has two arms — `4d7b3a2e`
-- [ ] **Part F · SCC-441** — the closing docs (`tea_testing_guide.md` § 6.0, SOP § 6, one line in `smh-new-project.md`) — a closure lane after AVCH-152, per the plan; not this landing
+- [x] **Part F · SCC-441** — the closing docs (`tea_testing_guide.md` § 6.0, SOP § 6, one line in `smh-new-project.md`) — the closure lane after AVCH-152, as the plan said; see § Part F below
 
 ## Evidence
 
@@ -434,3 +434,59 @@ FAST-eject arrow name the current mechanism instead of the retired quick-fix lan
 
 This lane (`chore/SCC-441-...`) closes through `/smh-close-task-merge-tree` -> `task_preflight`, which
 reports `clear to close out and merge` at this tip. None of the three escalated items touches it.
+
+---
+
+## Part F — the closure lane (2026-09-12)
+
+**What was waiting.** Parts A–E shipped the toggles; Part F is the three lobby documents that
+describe the finished state, and the plan deliberately held them until AVCH-152 landed, because
+AVCH-152 is what decides whether the light epic's discount is real. AVCH-152 is Done, and both of
+its rulesets are armed on GitHub, so the docs can now describe a system instead of an intention.
+
+**What was measured before a word was written.** Both epic rulesets were read live off the API
+rather than off AVCH-152's plan, because a plan says what someone meant to arm:
+
+| Ruleset | Includes | Excludes | Required contexts |
+|---|---|---|---|
+| `epic write gate (AVCH-119)` · `22247932` | `refs/heads/epic/**` | `refs/heads/epic/*-light-epic-*` | Backend (Python) · Frontend (Node.js) · Backend E2E (Firestore emulator) · Frontend E2E (Playwright) |
+| `epic write gate — light (AVCH-152)` · `23051729` | `refs/heads/epic/*-light-epic-*` | — | Backend (Python) · Frontend (Node.js) |
+
+Both `active`, both strict, both carrying a `pull_request` rule, neither with a bypass actor. The
+partition is exact: every `epic/**` ref is claimed by one of the two and no ref by both. That is the
+property worth checking rather than assuming, because the two ways it can break are not symmetric —
+an overlap is dishonest and harmless, a gap is an epic branch with no required checks and no
+required pull request at all.
+
+**The four edits.**
+
+| File | What it now says |
+|---|---|
+| [`workflows_testing_SOP.md`](../../../docs/_scc_sops_prds/workflows_testing_SOP.md) § 6 | Two paragraphs after the `⛔ NOT ARMED HERE` caveat: the server half of the LIGHT toggle is two rulesets, not one; a ruleset demanding an E2E check the workflow skips blocks nothing (a skipped job reports **Success** and satisfies the requirement) but advertises a gate that never ran; and the arming order is fixed **light before full** because `full` first writes the light-epic exclude while the light ruleset is still absent |
+| [`tea_testing_guide.md`](../../../docs/_scc_sops_prds/tea_testing_guide.md) § 6.0 | The routing half nobody had written down — the changed paths pick the stacks, the PR's **base branch** picks the E2E tiers — as its own table beside the path table; then the two epic rulesets with their ids, patterns and contexts, appended to *What blocks a merge*; and the three-gates table's ruleset row widened from `main` alone to all three branch rulesets |
+| [`smh-new-project.md`](../../../.agents/commands/smh-new-project.md) | A step 5: a skeleton clone ships all three ruleset recipes and arms **none** of them, so the server requires nothing until somebody runs `arm_rulesets.py` — dry run, then one `--apply` at a time, light before full. The recipes were already in the skeleton; the instruction to run them was in nobody's file |
+| [`workflows_testing_SOP_changelog.md`](../../../docs/_scc_sops_prds/workflows_testing_SOP_changelog.md) | One row, per `sop-currency`, in the same commit |
+
+`.opencode/commands/smh-new-project.md` is a byte-identical mirror and was re-mirrored; `.roo/` and
+the Claude skill are generated thin launchers that carry no body, so they need nothing.
+
+**Evidence at this lane's tip.**
+
+| Gate | Result |
+|---|---|
+| `python3 .agents/scripts/tests/run_all.py` | **92/92 files passed** |
+| `python3 .agents/scripts/workflow_lint.py --toolkit-only` | 0 errors, 0 warnings, 8 info |
+| `python3 .agents/scripts/check_maps.py --depth3-only --strict` | clean, exit 0 |
+| `python3 .agents/scripts/check_links.py --base origin/main` | clean |
+| `python3 .agents/scripts/task_preflight.py` | clear to close out and merge |
+
+**No `Verdict:` line is added by this lane, deliberately.** § Code Review (2026-09-11)'s
+`CONCERNS @ 14b59913` still governs and still describes the code it was stamped on; Part F moves no
+code, and `task_preflight` reads the four documents that moved as exactly what they are — the full
+gate runs rather than a skip being granted. Adding a second stamp for a docs edit would pull in the
+roster gate for a review that never ran.
+
+**Declared-set reconciliation.** The two bullets `declared_change_set.py diff` has returned as
+`unimplemented` since 2026-09-10 — `tea_testing_guide.md` and `smh-new-project.md` — are implemented
+here, which is what closes the parent. The SOP and its changelog were already in the declared set as
+Part F rows.
