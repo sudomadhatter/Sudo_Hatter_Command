@@ -244,6 +244,7 @@ around it**: the inputs, the fixes, the gates and the verdict.
 **First, cut the review's scope — the lane is not the review:**
 
 ```bash
+L=<the LOBBY's absolute path — re-typed; earlier fences have cd'd the shell into the project>
 cd "$L" && python3 .agents/scripts/review_scope.py --repo "$WORKTREE" --base "origin/$EPIC" --key <PART-KEY> --out "$ARTIFACT_DIR/review/diff.patch"   # PC: `python`  ⛔ the script is the LOBBY's
 ```
 
@@ -330,6 +331,7 @@ unexamined claim, and an unknown is not a pass.
 <!-- /twin-law -->
 
 ```bash
+L=<the LOBBY's absolute path — re-typed; earlier fences have cd'd the shell into the project>
 cd "$L" && python3 .agents/scripts/repro_receipt.py run --root "$ARTIFACT_DIR" --id <finding-id> --cwd "$WORKTREE" -- <the lens's reproduce command>   # PC: `python`
 ```
 

@@ -62,7 +62,8 @@ RECORD_PREFIXES = ("_artifacts/", "_bmad-output/", "docs/_scc_sops_prds/")
 
 def git(repo: Path, *args: str) -> str:
     """Run git in `repo` and return stdout, or die naming the command that failed."""
-    out = subprocess.run(("git", *args), cwd=repo, capture_output=True, text=True)
+    out = subprocess.run(("git", *args), cwd=repo, capture_output=True, text=True,
+                         encoding="utf-8", errors="replace")
     if out.returncode != 0:
         die(f"git {' '.join(args)} failed: {out.stderr.strip()}")
     return out.stdout
@@ -70,7 +71,8 @@ def git(repo: Path, *args: str) -> str:
 
 def git_ok(repo: Path, *args: str) -> tuple[int, str]:
     """Run git in `repo` and return (exit code, stdout) without dying."""
-    out = subprocess.run(("git", *args), cwd=repo, capture_output=True, text=True)
+    out = subprocess.run(("git", *args), cwd=repo, capture_output=True, text=True,
+                         encoding="utf-8", errors="replace")
     return out.returncode, out.stdout
 
 
