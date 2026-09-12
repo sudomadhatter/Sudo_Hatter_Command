@@ -1,0 +1,45 @@
+{
+  "test": ["python3", ".agents/scripts/tests/test_memory_long_term_rule.py"],
+  "mutants": [
+    {
+      "id": "M1 constitution.md deletion test phrase dropped",
+      "file": ".agents/rules/constitution.md",
+      "original": "apply the deletion test (slower means memory; wrong means a rule and a ticket)",
+      "mutated": "apply the mental check (slower means memory; wrong means a rule and a ticket)",
+      "case": "constitution.md states the deletion test (slower means memory; wrong means a rule)",
+      "block": "1 · constitution.md"
+    },
+    {
+      "id": "M2 memory-is-disposable.md trigger changed from model_decision",
+      "file": ".agents/rules/memory-is-disposable.md",
+      "original": "trigger: model_decision",
+      "mutated": "trigger: always_on",
+      "case": "rule trigger is model_decision",
+      "block": "2 · memory-is-disposable.md exists & old rule deleted"
+    },
+    {
+      "id": "M3 AGENTS.md §7 disposable mandate removed",
+      "file": "AGENTS.md",
+      "original": "Memory is DISPOSABLE — the deletion test",
+      "mutated": "Memory is PERMANENT — the retention test",
+      "case": "AGENTS.md section 7 incorporates the disposable memory mandate",
+      "block": "4 · INDEX.md and AGENTS.md"
+    },
+    {
+      "id": "M4 smh-memory-audit.md Promote to rule bucket stripped",
+      "file": ".agents/commands/smh-memory-audit.md",
+      "original": "### 📜 Promote to rule (load-bearing",
+      "mutated": "### 📜 Upgrade note (load-bearing",
+      "case": "smh-memory-audit.md contains Promote to rule candidate classification",
+      "block": "5 · smh-memory-audit.md"
+    },
+    {
+      "id": "M5 workflows_testing_SOP.md disposable memory rule removed",
+      "file": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "original": "Memory is disposable: the deletion test replaces long-term-only",
+      "mutated": "Memory is permanent: the retention test replaces long-term-only",
+      "case": "workflows_testing_SOP.md states disposable memory rule and deletion test",
+      "block": "6 · SOP and changelog"
+    }
+  ]
+}
