@@ -306,6 +306,52 @@ block H 4/24 → 24/24 (634/634 whole file) · `test_command_surfaces` 344/345 �
 
 `operator_workflows_quickref.md` (**AUDIT FINDING 8** — v1 declared it conditionally): the three Mermaid diagrams at :717–763 and :958 redrawn — three lenses, no verify wave, `## Reproduce`, two buckets, no `lens_budget`; the SOP's hand-written appendix twins of those diagrams (:3441–3483, :3668–3669 — no generator exists, so both are edits); `workflow_lint.py --toolkit-only` (0 errors); `check_links.py --base origin/main`; `check_maps.py --depth3-only --strict`; `sop_currency.py` on the changed set; then — **on the operator's word, asked separately** — **one** full `run_all.py` through `gate_receipt.py run --task SCC-447 --gate suite`, on a clean tree; the walkthrough with RED→GREEN evidence per row, the sweep record, `## Your Actions`; the Dev Record via `jira_feed.py devrecord`. Then STOP: the two `--range` reviews of D10 run when the operator asks, under the doors this lane just changed.
 
+**As built (2026-09-11), and what the tip's first full suite found.**
+
+**One data table draws both sides.** The quickref's three review diagrams (the story door, the engine, the
+task door) and their hand-drawn SOP appendix twins were rendered from one node list — a Python renderer
+emitted the mermaid block and the `| ID | label | next |` table from the same labels — so the two cannot
+disagree, and block I of `test_review_disposition.py` now holds them there: every node the quickref draws
+must be a row in the SOP twin, label for label (the `\n` fold IS the generator, done by hand until now).
+That check PASSED on the old tables before any edit, which proved the twins were exact folds, and it is what
+fails the next hand that moves one side without the other. Block I also bans every retired token where the
+operator reads (Blind Hunter, Literal-Correctness, verify wave, Evidence Verifier, Compound Synthesis,
+`lens_budget`, `decision_needed`, a five-lens roster, the fix cycle / new sha / second verdict), pins the
+engine blurb as the SAME paragraph in both records, and counts four paired sentences that must appear in
+BOTH door diagrams. RED 27/69 → GREEN 69/69; 703/703 whole file. All four diagrams valid under the Mermaid
+validator.
+
+**Beyond the plan's three diagrams, in the declared files:** the atlas node (`CRE`) said "5 lenses · verify
+wave"; the quickref's autopilot picture still ran the fix child and the fresh reviewer Part 5 retired (the
+plan named the three engine diagrams only — a quickref that stops the robot on one page and loops it on
+another is the failure mode this ticket exists to kill); and the SOP's gates-table engine row still
+described, in present tense, a Blind Hunter DROPPED under a contaminated inline context (SCC-203) and "the
+other four" lenses — rewritten to what runs (the only `n/a` left is the Acceptance Auditor's mode-skip; the
+ORDER both doors impose is what now protects the review from the builder's framing). Changelog row six.
+
+**The absorb.** `origin/main` had moved (SCC-186's records: a plan, a walkthrough, an INDEX row,
+`.maps-state.json`); `git merge-tree --write-tree` dry-ran clean and the merge landed at `8bf95733` before the
+certifying run, so the receipt describes the tree that ships.
+
+⛔ **The first full `run_all.py` at the tip was 88/90, and both reds were this lane's own — neither visible to
+any per-part targeted run, which is D10's claim made on the lane that wrote it.** (1) `test_boot_epic_branch_read`
+A6: the two fences Part 4 added to `cicd-code-review.md` (Step 1's `review_scope.py`, Step 1.4's
+`repro_receipt.py`) used `$L` without binding it in that fence — a fence is its own shell, SCC-441's exact
+shape; earlier fences have cd'd the shell into the project, so the fix is the door's own line-401 idiom (the
+lobby path re-typed), two lines, mirror byte-copied. (2) `test_jira_feed` SCC-335 E1: `review_scope.py`'s two
+`subprocess.run` seams decoded with the machine locale; pinned `encoding="utf-8", errors="replace"`, the idiom
+`repro_receipt.py` already used. Fixed at `c34edf5f` (`[sop-ok]` — no usage change): 50/51 → 51/51, 20/21 →
+21/21; the sweep re-ran over the changed script (19/19); the suite re-stamped **PASS 90/90 @ `c34edf5f`**, 30.8s,
+clean tree — `gates/suite.json`.
+
+**The walkthrough** is [walkthrough.md](walkthrough.md): outline, the acceptance→evidence matrix per row A–H,
+both suite runs pasted (the red one too — a red receipt is the mechanism working), the ledger, and one open row
+under `## Your Actions` (the merge, via the PR the reviews will carry). The Dev Record is filed at stage
+`records`; the close-out updates it.
+
+**Then STOP, as the plan says.** The two `--range` reviews of D10 — Parts 1–3 `114deb3a..3233f2e8`, Parts 4–6
+`3233f2e8..c34edf5f` — run on the operator's word, under the doors this lane changed.
+
 ## Declared Change Set
 
 - NEW `.agents/scripts/review_scope.py` — the diff a lens reads: one part, masters only, no cap; `--audit` keeps mirrors → D
