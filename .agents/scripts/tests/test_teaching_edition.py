@@ -37,15 +37,23 @@ def main() -> int:
     # requirement, so the gate is advertised and never ran. The absence is therefore NAMED and
     # NON-PASSING: the suite tells you the export is unverified here rather than implying it is
     # verified. Install PowerShell, or read this row as the unverified export it is.
+    # ⛔ THE `which` TEST IS OUTSIDE A BLOCK AND THE ROW IS INSIDE ONE, AND THAT SPLIT IS LOAD-
+    # BEARING. `test_suite_runner.py`'s ORPHAN case refuses any `c.check` that is not under a
+    # `c.block` guard, because an orphan row runs even when `--case` selected nothing — which
+    # turns a typo'd filter from a clean exit 3 into a run that reports a result. So the row
+    # lives in a block. The early return does NOT, or a filtered run on a machine without
+    # PowerShell would skip the guard and then raise FileNotFoundError inside whichever block
+    # the filter did select.
     if shutil.which("pwsh") is None:
-        c.check(
-            "pwsh · PowerShell is required to verify the teaching-edition export",
-            False,
-            "pwsh not found on PATH - the export engine is PowerShell and NOTHING in this file "
-            "ran. This is reported as a failure, never a skip: a green here would claim the "
-            "export was verified on a machine that cannot run it. Install PowerShell 7 "
-            "(https://aka.ms/powershell) and re-run.",
-        )
+        if c.block("pwsh · PowerShell is required to verify the teaching-edition export"):
+            c.check(
+                "pwsh · PowerShell is required to verify the teaching-edition export",
+                False,
+                "pwsh not found on PATH - the export engine is PowerShell and NOTHING in this "
+                "file ran. This is reported as a failure, never a skip: a green here would "
+                "claim the export was verified on a machine that cannot run it. Install "
+                "PowerShell 7 (https://aka.ms/powershell) and re-run.",
+            )
         return c.finish()
 
     if c.block("A · a real fresh export satisfies the teaching-shell contract"):
