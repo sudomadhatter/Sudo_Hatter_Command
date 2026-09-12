@@ -76,9 +76,9 @@ one lock.**
 
 ---
 
-## 4. The story run — six children, step by step
+## 4. The story run — four children, step by step
 
-Six children for a clean run, each a fresh session with a new id, and every id lands on the ticket —
+Four children for a clean run, each a fresh session with a new id, and every id lands on the ticket —
 so "did the reviewer really start clean?" is something you can check rather than trust.
 
 | # | Who runs it | The door it runs | What it returns | What the lead does with it |
@@ -87,9 +87,15 @@ so "did the reviewer really start clean?" is something you can check rather than
 | 2 | ♥️👑 **Queen of Hearts** | `/cicd-self-audit` on that plan | `GO` or `NO-GO` | `GO` → build. `NO-GO` → **escalate**; re-scoping is your call |
 | 3 | 😼🔨 **Cheshire Cat** | `/cicd-dev-story-tests <story>`, Step 2.5 → Step 5 | the build, committed and pushed on the lane's `claude/*` branch | Reads the status, never the diff |
 | — | 🦟🔍 **The Gnat** | a read-only lookup, whenever a child asks something the repo can answer | the answer, cited to file and line | Forks the asking child with `--fork-of` and the answer — the only `--resume` in a run |
-| 4 | **no seat** | `/cicd-code-review <story>` | `PASS` / `CONCERNS` / `FAIL`, plus `evidence.sha` | `PASS` → park. Anything else → one fix cycle |
-| 5 | 😼🔨 **Cheshire Cat** | the fix, in the lane — only on `CONCERNS` or `FAIL` | the fixed tree at a new sha | One cycle, never two |
-| 6 | **no seat** | `/cicd-code-review <story>` again | the second verdict at the new sha | `PASS` → park. Anything else → **escalate** |
+| 4 | **no seat** | `/cicd-code-review <story>` | `PASS` / `CONCERNS` / `FAIL`, plus `evidence.sha` | `PASS` → park. Anything else → **escalate**. Either way the run is over |
+
+⛔ **A non-PASS verdict ends the run (SCC-447).** The review door reproduces every `critical` and
+`important` on the real tree and fixes what reproduced, in the lane, with a pin — so a verdict that
+is not `PASS` is one of exactly two things: a fix that needs permission the constitution says an
+agent may not grant itself, written as a patch and held, or a lens that never ran. Neither is work
+another child can do and neither is answered by a second opinion, so no stage follows the review.
+The lead posts the door's end-of-review message on the ticket and stops: `approved` or
+`apply <ids>` is the only thing that moves it, and it is not the lead's to supply.
 
 ⛔ **The Queen audits; she never reviews.** Stage 2 is the pre-dev audit in a fresh session, which is
 exactly what the ② Step 2 stop existed to guarantee — so the lead may pass that stop itself. The ③
@@ -113,11 +119,7 @@ flowchart TD
     Q -- "no" --> C4["4 - THE REVIEWER\nNO seat, reviewing model,\na session id never used before"]
     C4 --> R{"review verdict"}
     R -- "PASS" --> PARK["PARK - story to review,\nticket to In Review,\none line to your phone"]
-    R -- "CONCERNS or FAIL" --> C5["5 - CHESHIRE CAT\nONE fix cycle, in the lane"]
-    C5 --> C6["6 - THE REVIEWER\nfresh session, new sha"]
-    C6 --> R2{"second verdict"}
-    R2 -- "PASS" --> PARK
-    R2 -- "anything else" --> ESC
+    R -- "CONCERNS or FAIL" --> ESCR["ESCALATE\nthe door's end-of-review message\non the ticket - your word moves it"]
     PARK --> DONE(["YOU - read it, then\n/cicd-close-story-merge-tree"])
 ```
 
@@ -126,12 +128,12 @@ no verb for it at all, so it is not something an agent can talk itself into.
 
 ---
 
-## 5. The quick-fix run — four children, for a ticket that is not a story
+## 5. The quick-fix run — two children, for a ticket that is not a story
 
 Not every ticket is a story. A project **Task** — a performance fix, an asset, a copy change — has no
-story file on disk, no sprint row and no epic branch, so the six-child route has nothing to bind to.
+story file on disk, no sprint row and no epic branch, so the story route has nothing to bind to.
 Its road is `/cicd-quick-dev`, **the quick lane** — scope check, plan, RED then GREEN, walkthrough,
-and a review **only when asked** — and the run is four children, because the lead is the one asking.
+and a review **only when asked** — and the run is two children, because the lead is the one asking.
 
 **Which route:** the story route when the work has a story file and an epic branch; the quick-fix
 route when it has neither. If you cannot tell which it is, it is not a quick fix — that is an
@@ -140,9 +142,7 @@ escalation, not a coin flip.
 | # | Who runs it | The door it runs | What it returns | What the lead does with it |
 |---|---|---|---|---|
 | 1 | 😼🔨 **Cheshire Cat** | `/cicd-quick-dev <KEY>` end to end | the build and its walkthrough; the lane writes `Review: none - quick lane …` and no `Verdict:` | both `approved` stops are yours: the plan's is your launch word (a batch approval scoped to this ticket), the walkthrough's comes to your phone (§7) — the lead never supplies either; ⛔ there is no verdict here to read |
-| 2 | **no seat** | `/cicd-code-review <KEY>` | the verdict, plus `evidence.sha` | this is the on-request review; `PASS` → park. Anything else → one fix cycle |
-| 3 | 😼🔨 **Cheshire Cat** | the fix, in the lane | the fixed tree at a new sha | One cycle, never two |
-| 4 | **no seat** | `/cicd-code-review <KEY>` again | the second verdict at the new sha | `PASS` → park. Anything else → **escalate** |
+| 2 | **no seat** | `/cicd-code-review <KEY>` | the verdict, plus `evidence.sha` | this is the on-request review; `PASS` → park. Anything else → **escalate**. Either way the run is over (§4) |
 
 ```mermaid
 flowchart TD
@@ -152,11 +152,7 @@ flowchart TD
     N --> C2["2 - THE REVIEWER\nthe on-request review, NO seat, so it CAN fan out.\nTHIS is the run's verdict"]
     C2 --> R{"review verdict"}
     R -- "PASS" --> PARK["PARK - ticket to In Review,\none line to your phone"]
-    R -- "CONCERNS or FAIL" --> C3["3 - CHESHIRE CAT\nONE fix cycle, in the lane"]
-    C3 --> C4["4 - THE REVIEWER\nfresh session, new sha"]
-    C4 --> R2{"second verdict"}
-    R2 -- "PASS" --> PARK
-    R2 -- "anything else" --> ESC["ESCALATE\na second non-PASS is your call"]
+    R -- "CONCERNS or FAIL" --> ESC["ESCALATE\nthe door's end-of-review message\non the ticket - your word moves it"]
     PARK --> DONE(["YOU - read it, then merge the PR"])
 ```
 
@@ -189,7 +185,7 @@ force is on the record rather than in someone's context.
 | New dependency, schema, security rule, CI or environment config | **you** | The constitution's Ask First list wins. There is no "self-install and log it" in this lane |
 | Deleting a file | **you** | Ask First, always |
 | ③ verdict `PASS` | **the lead** | It posts review-ready and parks. You still own review-to-done |
-| ③ verdict `CONCERNS` or `FAIL` | **the lead**, once | One fix child, then one fresh reviewer. A second non-PASS escalates. `CONCERNS` never ships by itself |
+| ③ verdict `CONCERNS` or `FAIL` | **you** | The lead posts the door's end-of-review message via `needs_human` — no fix child, no second reviewer; your word moves it |
 | Landing on the epic branch or `main` | **nobody** | No runner verb exists |
 | Anything a door marks `PIPELINE_BLOCKER` | **you** | The door already decided it is yours |
 

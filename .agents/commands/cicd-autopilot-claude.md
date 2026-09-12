@@ -119,7 +119,7 @@ rather than in your context.
 | A new dependency, schema change, security rule, CI or environment config | **escalate** | The constitution's Ask First list wins. There is no "self-install and log it" in this lane |
 | Deleting a file | **escalate** | Ask First, always |
 | ③ verdict `PASS` | **lead** | Post review-ready and park. He still owns review-to-done |
-| ③ verdict `CONCERNS` or `FAIL` | **lead**, once | One fix child in the lane, then one **fresh** review child. A second non-PASS **escalates**. `CONCERNS` never ships by itself |
+| ③ verdict `CONCERNS` or `FAIL` | **escalate** | Post the door's end-of-review message on the ticket via `needs_human` — no fix child, no second reviewer; the operator's word moves it |
 | Landing on the epic branch or `main` | **never** | The runner has no verb for it. This is not a rule you could break |
 | Anything a door marks `PIPELINE_BLOCKER` | **escalate** | Whatever it is, the door already decided it is his |
 
@@ -154,9 +154,15 @@ mistake and says which one it was, but the refusal costs a step — get it right
 | 1 | `/cicd-dev-story-tests <story>` (to its Step 2 stop) | `white-rabbit` | Returns the plan path |
 | 2 | `/cicd-self-audit` on that plan | `queen-of-hearts` | Returns `GO` or `NO-GO` |
 | 3 | `/cicd-dev-story-tests <story>` (Step 2.5 → Step 5) | `cheshire-cat` | The build |
-| 4 | `/cicd-code-review <story>` | **`--review`, no seat** | Independence is the point |
-| 5 | the fix, only on CONCERNS/FAIL | `cheshire-cat` | One cycle, in the lane |
-| 6 | `/cicd-code-review <story>` again | **`--review`, no seat** | Fresh session at the new sha |
+| 4 | `/cicd-code-review <story>` | **`--review`, no seat** | Independence is the point. The LAST stage, whatever it returns |
+
+⛔ **A non-PASS verdict ends the run (SCC-447).** The review door reproduces every `critical` and
+`important` on the real tree and fixes what reproduced, in the lane, with a pin — so a verdict that
+is not `PASS` is one of exactly two things: a fix that needs permission the constitution says an
+agent may not grant itself, written as a patch and held, or a lens that never ran. Neither is work
+another child can do and neither is answered by a second opinion, so no stage follows the review.
+The lead posts the door's end-of-review message on the ticket and stops: `approved` or
+`apply <ids>` is the only thing that moves it, and it is not the lead's to supply.
 
 **The quick-fix route — a ticket with no story file, no sprint row and no epic branch.** A
 project Task (a performance fix, an asset, a copy change) rides `/cicd-quick-dev`, the quick lane
@@ -166,9 +172,7 @@ own unless asked**. On this route the lead is the one asking: stage 2 IS the req
 | Stage | Door | Seat | Note |
 |---|---|---|---|
 | 1 | `/cicd-quick-dev <KEY>` | `cheshire-cat` | The build: scope check, plan, RED, GREEN, walkthrough. Both `approved` stops are the operator's: the plan's is his launch word (a batch approval scoped to this ticket, `000-PLAN-FIRST-GATE`), the walkthrough's is escalated to him (Step 2.5) — the lead never supplies either |
-| 2 | `/cicd-code-review <KEY>` | **`--review`, no seat** | The review the quick lane runs only on request — this is the request, and its verdict is the run's |
-| 3 | the fix, only on CONCERNS/FAIL | `cheshire-cat` | One cycle, in the lane |
-| 4 | `/cicd-code-review <KEY>` again | **`--review`, no seat** | Fresh session at the new sha |
+| 2 | `/cicd-code-review <KEY>` | **`--review`, no seat** | The review the quick lane runs only on request — this is the request, its verdict is the run's, and it is the LAST stage |
 
 ⛔ **The quick lane produces no verdict; stage 2 does.** `/cicd-quick-dev` writes the record line
 `Review: none - quick lane; walkthrough approved by the operator @ <sha>` and no `Verdict:` stamp,

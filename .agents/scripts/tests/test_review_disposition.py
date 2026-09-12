@@ -697,6 +697,164 @@ BANS: tuple[tuple[str, str], ...] = (
 )
 
 
+# ══ BLOCKS E, F, H — the LANES that call the doors ════════════════════════════════════════════
+#
+# ⛔ WHY THESE THREE ARE ONE SECTION. Part 4 gave the doors the doctrine. A door is only ever as
+# binding as the lane that calls it: the autopilot decided what to do with a verdict, the
+# consolidation rule decided WHEN a review runs, and the self-audit resolves its own change set the
+# way a review resolves a diff. Each of those was written against the review the doors no longer
+# run, and a lane still running the old contract re-opens the loop from outside the door.
+
+AUTOPILOT = ".agents/commands/cicd-autopilot-claude.md"
+AUTOPILOT_SOP = "docs/_scc_sops_prds/autopilot_SOP.md"
+LANE_SOP = "docs/_scc_sops_prds/workflows_testing_SOP.md"
+# The command and its manual. AUDIT FINDING 1 (plan, v2): `cicd-autopilot-claude.md` declares
+# `platforms: [claude]`, so no `.opencode/` mirror exists and none is expected here.
+AUTOPILOT_SURFACES = (AUTOPILOT, AUTOPILOT_SOP)
+
+CONSOLIDATION = ".agents/rules/work-consolidation.md"
+PLAN_TASK = ".agents/commands/smh-plan-task.md"
+DEV_TASK = ".agents/commands/smh-dev-task-tests.md"
+PLANNERS = (PLAN_TASK, DEV_TASK)
+
+SMH_SELF_AUDIT = ".agents/commands/smh-self-audit.md"
+CICD_SELF_AUDIT = ".agents/commands/cicd-self-audit.md"
+SELF_AUDITS = (SMH_SELF_AUDIT, CICD_SELF_AUDIT)
+
+
+def one_line(text: str) -> str:
+    """A literal sentence, matched across whatever line breaks the file wraps it at.
+
+    ⛔ This exists because of a defect this lane shipped three times in Part 4. A check written as
+    a plain literal binds the PROSE and the WRAPPING together, so re-flowing a paragraph breaks a
+    law nobody changed — and the temptation at that point is to loosen the check, which is how a
+    guard stops guarding. Words are the law; where the line ends is not.
+    """
+    return r"\s+".join(re.escape(w) for w in text.split())
+
+
+# The one sentence both self-audit twins must carry in the SAME words (D9). It sits OUTSIDE every
+# `twin-law` fence — the fences end at smh:115 / cicd:108 and Lens 2 starts well after — so
+# `test_twin_parity.py` does not compare it and this is the only thing that holds the two together.
+ASYMMETRY = (
+    "⛔ **`--audit` keeps the mirrors, and that asymmetry is the point.** A review strips the "
+    "byte-copy mirrors because a defect in a copy is a defect in its master; this lens's whole "
+    "question is whether the copies AGREE, so a stripped diff would hide the one failure it "
+    "exists to catch."
+)
+
+CHECKS_E: tuple[tuple[str, str, str, int, str, str], ...] = (
+    # ── The charter row. The relationship is verdict → channel → what does NOT happen; a row that
+    # says only "escalate" is the row that was already there in three other places.
+    *both("E · a non-PASS verdict goes to the operator via needs_human, with no fix child",
+          r"\|\s*③ verdict `CONCERNS` or `FAIL`\s*\|[^|\n]*\|[^|\n]*`needs_human`"
+          r"[^|\n]*no fix child, no second reviewer", 0,
+          "no fix child, no second reviewer",
+          "one fix child in the lane, then one fresh reviewer",
+          files=AUTOPILOT_SURFACES),
+
+    # The WHO column, per file — the command's charter answers "what you do", the SOP's answers
+    # "who decides", so the cell differs and each is pinned where it lives.
+    ("E · the command's charter hands the row to escalate, not to the lead", AUTOPILOT,
+     r"\|\s*③ verdict `CONCERNS` or `FAIL`\s*\|\s*\*\*escalate\*\*\s*\|", 0,
+     "`FAIL` | **escalate** |", "`FAIL` | **lead**, once |"),
+    ("E · the SOP's charter row is the operator's, not the lead's", AUTOPILOT_SOP,
+     r"\|\s*③ verdict `CONCERNS` or `FAIL`\s*\|\s*\*\*you\*\*\s*\|", 0,
+     "`FAIL` | **you** |", "`FAIL` | **the lead**, once |"),
+
+    # ── The reason, stated where the run is described. Without this the row reads as a policy
+    # choice; with it, it is a consequence of what the door now does before it stamps.
+    *both("E · no stage follows the review, because the door already fixed what reproduced",
+          one_line("so no stage follows the review. The lead posts the door's end-of-review "
+                   "message on the ticket and stops"), 0,
+          "no stage follows the review", "one fix stage follows the review",
+          files=AUTOPILOT_SURFACES),
+    *both("E · the two operator words are the only thing that moves it",
+          one_line("`approved` or `apply <ids>` is the only thing that moves it, and it is not "
+                   "the lead's to supply"), 0,
+          "is the only thing that moves it", "is the usual way to move it",
+          files=AUTOPILOT_SURFACES),
+
+    # ── The lane SOP: the short version in §15 and the atlas row in §18 must agree with the
+    # manual, or the operator reads the retired loop on the page he actually keeps open.
+    ("E · §15 escalates ANY non-PASS verdict", LANE_SOP,
+     one_line("any file deletion, and **any review verdict that is not `PASS`**"), 0,
+     "**any review verdict that is not `PASS`**", "a second failed review"),
+    ("E · the command-atlas review row goes straight to ESCALATE", LANE_SOP,
+     r"\|\s*`R`\s*\|\s*review verdict\s*\|[^|\n]*\*\*CONCERNS or FAIL\*\* -> ESCALATE", 0,
+     "**CONCERNS or FAIL** -> ESCALATE",
+     "**CONCERNS or FAIL** -> child 5, one fix cycle in the lane"),
+)
+
+# The autopilot's identifier bans — the SPELLINGS a lane still running the fix-then-re-review loop
+# has to write. None of these is a retirement note: the retirement is stated in the paragraph the
+# checks above pin, in words no live instruction uses.
+LANE_BANS: tuple[tuple[str, str, int, tuple[str, ...]], ...] = (
+    ("a live fix-cycle stage", r"fix cycle", re.I, AUTOPILOT_SURFACES + (LANE_SOP,)),
+    ("the retired second-verdict escalation", r"second non-PASS", re.I,
+     AUTOPILOT_SURFACES + (LANE_SOP,)),
+    ("a live fresh reviewer at the new sha", r"new sha", re.I,
+     AUTOPILOT_SURFACES + (LANE_SOP,)),
+    ("the retired CONCERNS-never-ships clause", r"never ships by itself", 0,
+     AUTOPILOT_SURFACES + (LANE_SOP,)),
+)
+
+CHECKS_F: tuple[tuple[str, str, str, int, str, str], ...] = (
+    # ── D10. Rule 2 already sequenced the BUILD by the overlap map. What it never said is when the
+    # review runs — so a consolidated lane built six parts and reviewed them as one diff at the end,
+    # which is the 155-file review SCC-441 could not close.
+    ("F · Rule 2 sequences the REVIEW, not only the build", CONSOLIDATION,
+     one_line("Each part is REVIEWED on its own commits before the next part starts"), 0,
+     "REVIEWED on its own commits before the next part starts",
+     "REVIEWED once, at the lane's tip, over every part together"),
+    ("F · the part is selected by --key, or by --range when it carries no rider key", CONSOLIDATION,
+     one_line("`--key <SUB-KEY>` when the parts carry rider keys, `--range <sha>..<sha>` for "
+              "parts without rider keys"), 0,
+     "`--range <sha>..<sha>` for parts without rider keys",
+     "the whole lane diff for parts without rider keys"),
+    ("F · the enforcement suite is the integration check across parts — no lens is", CONSOLIDATION,
+     one_line("the enforcement suite is the integration check across parts, at each part's close "
+              "and again at the lane's tip; no lens is"), 0,
+     "the enforcement suite is the integration check across parts",
+     "a final review over every part together is the integration check"),
+
+    # ── The size warning, at the two places a part is declared. Splitting is free at plan time and
+    # costs a re-cut afterwards, which is the whole reason the warning is HERE and not at review.
+    *both("F · a part over 40 masters is split at plan time",
+          one_line("A part whose declared set exceeds 40 master files is too big to review — "
+                   "split it here"), 0,
+          "exceeds 40 master files is too big to review",
+          "exceeds 40 master files is worth a second look",
+          files=PLANNERS),
+    *both("F · the warning counts MASTERS, because the scope script strips the rest",
+          one_line("count the MASTERS in the part's `## Declared Change Set`"), 0,
+          "count the MASTERS in the part's",
+          "count the paths in the part's",
+          files=PLANNERS),
+)
+
+CHECKS_H: tuple[tuple[str, str, str, int, str, str], ...] = (
+    # ── D9. POST-DEV had no way to resolve "the actual change set" except by hand, which is the
+    # one input a review now gets from a script. Same selection, one flag different.
+    *both("H · POST-DEV resolves its change set through review_scope.py --audit",
+          r"review_scope\.py[^\n]*--range <first>\.\.<HEAD> --audit", 0,
+          "--range <first>..<HEAD> --audit", "--range <first>..<HEAD>",
+          files=SELF_AUDITS),
+    *both("H · it is the same selection a review uses, and --audit is why it differs",
+          one_line("the same selection a review uses, with `--audit` so every mirror stays in"), 0,
+          "so every mirror stays in", "so the diff is smaller",
+          files=SELF_AUDITS),
+
+    # ── The asymmetry itself, in Lens 2, in the same words in both twins. A review strips mirrors
+    # because a defect in a copy is a defect in its master; this lens's question IS the copies.
+    *both("H · Lens 2 states the scope asymmetry, verbatim",
+          one_line(ASYMMETRY), 0,
+          "would hide the one failure it exists to catch",
+          "is the right input here too",
+          files=SELF_AUDITS),
+)
+
+
 def read(rel: str) -> str:
     p = ROOT / rel
     return p.read_text(encoding="utf-8") if p.is_file() else ""
@@ -797,6 +955,62 @@ def main() -> int:
             c.check(f"C · mirror {name} has a body", len(m) > 2000 and len(mir) > 2000,
                     "" if len(m) > 2000 and len(mir) > 2000 else "master or mirror absent/short")
             c.check(f"C · mirror {name} is byte-identical", bool(m) and m == mir,
+                    "" if m == mir else f"{MIRROR}/{name} has drifted from the master")
+
+    if c.block("E · the autopilot lane (a verdict that is not PASS)"):
+        for name, ok, detail in check_rows(CHECKS_E):
+            c.check(name, ok, detail)
+
+        for name, pattern, flags, files in LANE_BANS:
+            rx = re.compile(pattern, flags | re.M)
+            for rel in files:
+                txt = read(rel)
+                # Anti-vacuity FIRST: a deleted manual must FAIL its bans, never satisfy them.
+                c.check(f"E · {Path(rel).name} has a body for the ban scan", len(txt) > 2000,
+                        "" if len(txt) > 2000 else f"{rel} absent or under 2000 chars")
+                c.check(f"E · {Path(rel).name}: no {name}",
+                        bool(txt) and rx.search(txt) is None,
+                        "" if rx.search(txt) is None else f"{rel} still carries {name}")
+
+    if c.block("F · the consolidation rule and the two planners"):
+        for name, ok, detail in check_rows(CHECKS_F):
+            c.check(name, ok, detail)
+
+        # ⛔ The rule has no twin — `work-consolidation.md` is one file with no `cicd-` sibling and
+        # no mirror, so its only guard is the checks above. The planners DO have mirrors.
+        for rel in PLANNERS:
+            name = Path(rel).name
+            m, mir = read(rel), read(f"{MIRROR}/{name}")
+            c.check(f"F · mirror {name} has a body", len(m) > 2000 and len(mir) > 2000,
+                    "" if len(m) > 2000 and len(mir) > 2000 else "master or mirror absent/short")
+            c.check(f"F · mirror {name} is byte-identical", bool(m) and m == mir,
+                    "" if m == mir else f"{MIRROR}/{name} has drifted from the master")
+
+    if c.block("H · both self-audits (POST-DEV resolves through the scope script)"):
+        for name, ok, detail in check_rows(CHECKS_H):
+            c.check(name, ok, detail)
+
+        # The asymmetry sentence sits OUTSIDE every `twin-law` fence, so `test_twin_parity.py`
+        # never compares it. Without this row the two twins could carry two different readings of
+        # the one rule that tells this lens why its diff is shaped differently from a review's.
+        rx = re.compile(one_line(ASYMMETRY))
+        found = []
+        for rel in SELF_AUDITS:
+            m = rx.search(read(rel))
+            found.append(" ".join(m.group(0).split()) if m else "")
+        c.check("H · both twins carry the asymmetry sentence", all(found),
+                "" if all(found) else
+                f"missing from {[Path(r).name for r, f in zip(SELF_AUDITS, found) if not f]}")
+        c.check("H · the asymmetry sentence is the SAME sentence in both twins",
+                bool(found[0]) and found[0] == found[1],
+                "" if found[0] == found[1] else "the twins state the asymmetry differently")
+
+        for rel in SELF_AUDITS:
+            name = Path(rel).name
+            m, mir = read(rel), read(f"{MIRROR}/{name}")
+            c.check(f"H · mirror {name} has a body", len(m) > 2000 and len(mir) > 2000,
+                    "" if len(m) > 2000 and len(mir) > 2000 else "master or mirror absent/short")
+            c.check(f"H · mirror {name} is byte-identical", bool(m) and m == mir,
                     "" if m == mir else f"{MIRROR}/{name} has drifted from the master")
 
     return c.finish()

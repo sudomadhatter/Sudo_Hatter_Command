@@ -134,6 +134,14 @@ develope the whole ticket including subtasks"*).
 | Gate | **ONCE**, at the tip, through the receipt writer | once per lane |
 | Close-out | ONE ceremony: riders flip first, parent last | one per lane |
 
+⛔ **A part whose declared set exceeds 40 master files is too big to review — split it here.**
+Each part is reviewed on its own commits before the next one starts (`work-consolidation` Rule 2),
+and `review_scope.py` strips mirrors, generated launchers and records before a lens sees that diff —
+so count the MASTERS in the part's `## Declared Change Set`, never its bullet total. Over 40, the
+review that part earns is bigger than one sitting can hold, and the loop this house closed in
+SCC-447 comes back as a size problem instead of a policy one. Splitting is free while the parts are
+still lines in a plan; after the tree is cut it costs a re-cut.
+
 **Cutting a CONSOLIDATED lane** — the whole Step 3 loop collapses to one tree:
 
 ```bash

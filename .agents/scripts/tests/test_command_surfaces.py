@@ -4424,7 +4424,10 @@ def main() -> int:
             ("a schema change", "schema"),
             ("CI or environment config", "environment config"),
             ("deleting a file", "Deleting a file"),
-            ("a second non-PASS review", "second non-PASS"),
+            # SCC-447: the row used to escalate only the SECOND non-PASS, after a fix child and a
+            # fresh reviewer. The door now fixes what reproduced before it stamps, so the FIRST
+            # non-PASS is the operator's — and this needle is the half a re-added loop must delete.
+            ("a review verdict that is not PASS", "no fix child, no second reviewer"),
             ("a door's own PIPELINE_BLOCKER", "PIPELINE_BLOCKER"),
         ):
             c.check(f"AP1 the charter names {what}", needle in body, f"missing: {needle!r}")

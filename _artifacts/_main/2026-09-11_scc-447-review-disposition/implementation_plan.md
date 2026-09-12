@@ -240,6 +240,68 @@ RED→GREEN: `test_review_disposition --case "C ·"` 28/209 → 209/209 (531/531
 
 **GREEN:** `test_review_disposition.py --case "E ·"`, `"F ·"`, `"H ·"`; `test_twin_parity.py`; `test_command_surfaces.py`.
 
+**As built (2026-09-11), and the scope this part had to widen to stay honest.**
+
+**The autopilot edit is not one row — it is a stage each route loses.** The plan declared
+`cicd-autopilot-claude.md:122` and "the matching row" in `autopilot_SOP.md`. Editing only those two
+would have left the manual contradicting itself in six other places: the story route's §4 table and
+mermaid still ran child 5 (the fix) and child 6 (the fresh reviewer), the quick-fix route's §5 table
+and mermaid ran the same pair as children 3 and 4, both section headings counted children that no
+longer exist, and the lane SOP's §18 command atlas carried the whole `R → C5 → C6 → R2` chain. A
+charter row saying "escalate" beside a table saying "one fix cycle" is not a fixed lane; it is a lane
+that reads whichever half the agent reaches first. So **the story run is four children and the
+quick-fix run is two**, in the command, in both of the manual's routes, in both mermaids, in §15's
+short version and in §18's atlas — and the retirement paragraph is the same text in the command and
+the manual, pinned as one law in both by block E. The seat pins, the dial, the budgets and the
+escalation protocol are untouched; only the stages after the verdict are gone.
+
+**Why that is a consequence and not a policy change.** The door now reproduces and fixes before it
+stamps, so a non-PASS verdict is one of exactly two things (§7's two grounds): a fix the agent may
+not apply alone, already written as a patch, or a lens that never ran. A fix child cannot apply a
+patch whose whole problem is missing permission, and a second reviewer is the fan-out D4 forbids.
+The stage had nothing left to do.
+
+**One in-lane defect, fixed here.** `test_command_surfaces.py`'s AP1 loop pinned the literal
+`second non-PASS` as a charter row the door must name — so the enforcement suite was holding the
+retired escalate-on-the-second-verdict shape in place, exactly the way `test_review_engine.py` was
+found holding the Blind Hunter's drop clause in Part 4. The needle is now
+`no fix child, no second reviewer`, which is the half a re-added loop would have to delete.
+
+**Three sentences rather than one in Rule 2.** The plan's D10 asked for "reviewed on its own
+commits", "`--range` for parts without rider keys" and "the enforcement suite is the integration
+check". Written as one paragraph that reads as a list of assertions; split into two, the second of
+which says *why* no lens is the integration check — a scoped review sees one part by construction,
+so the cross-part question belongs to something that reads the whole tree.
+
+**The size warning is the same paragraph in both planners,** by design: `smh-plan-task` Step 2.5
+after the mode table, `smh-dev-task-tests` Step 1.5 inside item 1 where the Declared Change Set is
+written. Block F asserts the same text in both with the same counter-example, so a warning added to
+one door and forgotten on the other fails.
+
+**A new test helper, `one_line()`.** Part 4 hit three line-wrap mismatches — a regex or a
+counter-example needing a literal the prose had broken across lines — and each cost a re-wrap. Prose
+checks in this part compile through `one_line()`, which matches the words across whatever wrapping
+the file uses. The words are the law; where the line ends is not, and binding both together is what
+tempts an agent to loosen a check it did not mean to change.
+
+**Beyond the declared set, deliberately:** `autopilot_run.py:615`'s budget comment said "xhigh across
+six children" — a comment this change makes wrong, so it says "across every child in a run" (a count
+in a comment is the thing that drifts). The lane SOP gained two paragraphs the currency rule owes —
+per-part review with the 40-master warning in §11, and the POST-DEV `--audit` resolution beside the
+port section — plus the §15 and §18 corrections. And `_artifacts/_main/INDEX.md` gained this lane's
+depth-3 row, which `test_check_maps.py` had been refusing since Part 1 (36/37); the row links the
+plan and `task.yaml` only, because the walkthrough is Part 6's.
+
+**Evidence, RED first.** `test_review_disposition` block E 15/54 → 54/54 · block F 4/25 → 25/25 ·
+block H 4/24 → 24/24 (634/634 whole file) · `test_command_surfaces` 344/345 → 345/345 ·
+`test_check_maps` 36/37 → 37/37. Then, all green: `test_twin_parity` 76/76 · `test_suite_runner`
+182/182 · `test_autopilot_run` 136/136 · `test_self_audit_contract` 44/44 · `test_review_engine`
+417/417 · `test_walkthrough_roster` 85/85 · `test_task_preflight` 141/141 · `test_closeout_preflight`
+136/136 · `test_workflow_lint` 59/59 · `test_sops_prds_folder` 61/61 · `test_scope_check` 141/141 ·
+`test_lane_qualify` 46/46 · `test_declared_change_set` 59/59 · `test_doc_examples_parse` 22/22 ·
+`test_approved_word_is_the_operators` 130/130 · `workflow_lint --toolkit-only` 0 errors ·
+`check_links --base origin/main` clean.
+
 ### Part 6 — the gate at the tip (row G) — `SCC-447 records: …`
 
 `operator_workflows_quickref.md` (**AUDIT FINDING 8** — v1 declared it conditionally): the three Mermaid diagrams at :717–763 and :958 redrawn — three lenses, no verify wave, `## Reproduce`, two buckets, no `lens_budget`; the SOP's hand-written appendix twins of those diagrams (:3441–3483, :3668–3669 — no generator exists, so both are edits); `workflow_lint.py --toolkit-only` (0 errors); `check_links.py --base origin/main`; `check_maps.py --depth3-only --strict`; `sop_currency.py` on the changed set; then — **on the operator's word, asked separately** — **one** full `run_all.py` through `gate_receipt.py run --task SCC-447 --gate suite`, on a clean tree; the walkthrough with RED→GREEN evidence per row, the sweep record, `## Your Actions`; the Dev Record via `jira_feed.py devrecord`. Then STOP: the two `--range` reviews of D10 run when the operator asks, under the doors this lane just changed.
@@ -293,7 +355,10 @@ RED→GREEN: `test_review_disposition --case "C ·"` 28/209 → 209/209 (531/531
 - EDIT `.agents/scripts/tests/test_workflow_lint.py` — one case for the new alternation (AUDIT FINDING 2) → C
 - EDIT `.agents/scripts/INDEX.md` — two new script rows; the two extractor rows removed → D
 - EDIT `.agents/commands/cicd-autopilot-claude.md` — step-3 row: escalate (AUDIT FINDING 1: `platforms: [claude]`, no `.opencode/` mirror exists — none declared) → E
-- EDIT `docs/_scc_sops_prds/autopilot_SOP.md` — the matching row → E
+- EDIT `docs/_scc_sops_prds/autopilot_SOP.md` — the matching row, and the stage each route loses with it: §4's table + mermaid + heading, §5's table + mermaid + heading, §6's charter row → E
+- EDIT `.agents/scripts/autopilot_run.py` — one budget comment this change makes wrong ("six children" → "every child in a run"); no behaviour, `--stage` was never a fixed count → E
+- EDIT `.agents/scripts/tests/test_command_surfaces.py` — AP1's charter needle pinned the retired `second non-PASS` row, so the suite was holding the loop in place → E
+- EDIT `_artifacts/_main/INDEX.md` — this lane's depth-3 row, red since Part 1 (`test_check_maps` 36/37) → G
 - EDIT `.agents/commands/smh-self-audit.md` — post-dev resolves through `review_scope.py --audit`; Lens 2 states the scope asymmetry → H
 - EDIT `.opencode/commands/smh-self-audit.md` — byte mirror → H
 - EDIT `.agents/commands/cicd-self-audit.md` — the same, story-lane twin (outside every `twin-law` fence — verified) → H

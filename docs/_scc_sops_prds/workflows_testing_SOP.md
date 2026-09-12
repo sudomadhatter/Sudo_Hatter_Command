@@ -2112,6 +2112,13 @@ is a `workflow_lint._RULE_POINTERS` row, which **warns** (exit 1) when a command
 cites nothing — the rest is prose an agent executes, and this page says so rather than implying a
 gate that does not exist.
 
+**A retroactive audit resolves its change set with the same script a review uses, plus one flag.**
+Run either self-audit in POST-DEV mode and it calls `review_scope.py … --audit` instead of
+assembling the set by hand. The flag is the whole difference: a review **strips** the byte-copy
+mirrors, because a defect in a copy is a defect in its master; a parity audit's entire question is
+whether the copies agree, so `--audit` keeps every one of them. Both Lens 2s say so in the same
+words, which is the only thing holding the two twins to one reading.
+
 **What changes when you run a Task as ONE lane:**
 
 | | Consolidated | Per-subtask |
@@ -2126,6 +2133,15 @@ gate that does not exist.
 `/smh-plan-task` **Step 2.5** picks the mode and says why. It cuts the tree from `origin/main` after a
 fetch and immediately runs `git branch --unset-upstream` — branching from `origin/main` otherwise
 points this lane's upstream at **main itself**.
+
+**Each part is built AND reviewed before the next one starts.** Build order comes from
+`/smh-label-tasks`; the review follows the same order, one part at a time, on that part's own
+commits — `review_scope.py --key <SUB-KEY>` when the parts carry rider keys, `--range <sha>..<sha>`
+when they do not. What checks the parts against **each other** is the enforcement suite, at every
+part's close and again at the tip; no lens reads more than one part, by design. And a part whose
+declared set exceeds **40 master files** is split at plan time — both `/smh-plan-task` Step 2.5 and
+`/smh-dev-task-tests` Step 1.5 warn you, because splitting is free while the parts are still lines
+in a plan and costs a re-cut once the tree exists.
 
 **Shipping before every part is built — partial landing.** Write `landing_mode: partial` into `task.yaml`
 and **trim `riders:` to the subset actually on the branch**. Then the trimmed riders flip, the
@@ -3065,7 +3081,9 @@ refuses the other shape and tells you which mistake it was.
 **The charter is what it may pass without you**, and it is scoped to one story at a time — your
 launch word does not travel to the next one. It passes the mid-story `continue` and questions it can
 answer from the repo; it escalates a `NO-GO` audit, any new dependency, schema, security rule, CI or
-environment change, any file deletion, and a second failed review. The full table is on
+environment change, any file deletion, and **any review verdict that is not `PASS`** — the review
+door already fixed everything it could reproduce, so what comes back needs your word, not another
+child. The full table is on
 [the Autopilot SOP](autopilot_SOP.md#6-the-charter--what-the-lead-decides-without-you).
 
 **When it needs you it does two things**, both of them: it asks in the chat with real options and a
@@ -4090,8 +4108,7 @@ full manual, with the charter and the failure modes, is [the Autopilot SOP](auto
 | `C3` | child 3 - CHESHIRE CAT builds against the audited plan | -> did the child ask a question? |
 | `Q` | did the child ask a question? | **answerable from the repo** -> a GNAT child cites the line, then resumes child 3 (the only resume in a run)<br>**it would need a GUESS** -> ESCALATE<br>**no** -> child 4 |
 | `C4` | child 4 - THE REVIEWER: no seat, reviewing model, a session id never used before | -> the review verdict |
-| `R` | review verdict | **PASS** -> park<br>**CONCERNS or FAIL** -> child 5, one fix cycle in the lane, then child 6, a fresh reviewer at the new sha |
-| `R2` | the second verdict | **PASS** -> park<br>**anything else** -> ESCALATE |
+| `R` | review verdict | **PASS** -> park<br>**CONCERNS or FAIL** -> ESCALATE, the door's end-of-review message on the ticket |
 | `PARK` | story to review, ticket to In Review with its Dev Record, one line to your phone | -> you |
 | `ESC` | ESCALATE - the ticket leads with `Needs Mr. Hatter`, and the lead waits | (terminal / end) |
 

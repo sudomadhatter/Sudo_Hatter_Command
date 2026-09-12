@@ -166,6 +166,20 @@ stays for work that really does run side by side (`/smh-label-tasks` computes th
 <PARENT>` and use its output as BUILD ORDER: parts that share a file are sequenced, and the part that
 makes the *rest of this lane* cheaper goes first.
 
+**Each part is REVIEWED on its own commits before the next part starts.** Build order sequences the
+build; this sequences the review, and the two run interleaved — build a part, review that part, then
+start the next. `.agents/scripts/review_scope.py` selects it: `--key <SUB-KEY>` when the parts carry
+rider keys, `--range <sha>..<sha>` for parts without rider keys, and the door passes the result as
+the diff its lenses read. A lane that builds every part and reviews the pile at the end hands one
+review a diff nobody can hold — SCC-441 ran that review three times over 155 files and closed
+nothing, which is the measurement this sentence exists to prevent.
+
+**What checks the parts against EACH OTHER is the suite, not a lens.** A scoped review sees one
+part by construction, so the cross-part question — did part 4 break what part 2 built — belongs to
+something that reads the whole tree: **the enforcement suite is the integration check across parts,
+at each part's close and again at the lane's tip; no lens is.** That is also why a part's review
+never re-reads a part an earlier review already closed.
+
 **Partial landing is legal and declared, never improvised.** If the lane must ship before every part
 is built, write `landing_mode: partial` in `task.yaml` and **trim `riders:` to the subset that actually
 landed**. Then the declared riders flip, the **parent stays open**, and the remainder becomes the next
