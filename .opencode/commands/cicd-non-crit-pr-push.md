@@ -60,21 +60,49 @@ and `HANDOFF` rows above **cannot fire** — measured 2026-08-20: `--paths backe
 qualifies **nothing** here. The check below is the one that actually runs:
 
 ```bash
-python3 -c "import sys; sys.path.insert(0, '.agents/scripts'); \
-from task_preflight import PRODUCT_DIRS, CI_DIR; \
-h=[p for p in sys.argv[1:] if p.startswith(PRODUCT_DIRS + (CI_DIR,))]; \
+L=$(pwd)                                                          # the LOBBY pin, bound in THIS fence (a fence is its own shell); the scripts live here, not in the thin project
+cd "$L" && python3 -c "import sys; sys.path.insert(0, '.agents/scripts'); \
+from pathlib import Path; from task_preflight import deployable_paths, inert_paths; \
+r=Path(sys.argv[1]); p=sys.argv[2:]; h=deployable_paths(r, p); i=inert_paths(r, p); \
+print('carved out (inert): ' + ', '.join(i)) if i else None; \
 print('HANDOFF: ' + ', '.join(h) if h else 'no deployable path — carry on'); \
-sys.exit(1 if h else 0)" <every path you will touch/commit>
+sys.exit(1 if h else 0)" "$REPO" <every path you will touch/commit>
 ```
 
 *(PC: `python`, not `python3`. Run it from the command centre — the constants live there, not in the
 thin project.)*
 
-**Any output starting `HANDOFF:` and this lane is over** — route to `/cicd-push-e2e` and say so in
-one line. ⛔ **The prefixes are IMPORTED, never re-typed here.** They are
+⛔ **The prefixes are IMPORTED, never re-typed here.** They are
 `backend/` · `frontend/` · `firebase/` · `functions/` · `mobile/` (`task_preflight.PRODUCT_DIRS`)
 plus `.github/` (`CI_DIR`), and a copy of that list in prose is a list that goes stale in silence —
 `tests/test_lane_qualify.py` imports the constant and fails if any member goes unnamed above.
+
+⭐ **The question is no longer "what folder is this in" (SCC-451).** `deployable_paths` runs the
+prefix test and then removes the **inert** part — paths nothing reads when the system runs and no
+gate reads as law. A diff of nothing but `INDEX.md` map files under `frontend/` prints
+`no deployable path — carry on` and this lane continues. That is not a loosening: `check_maps.py`
+check 2.5 *manufactures* those files, and the door used to refuse the very thing another gate
+demanded you create. The carve-out is declared in `<repo>/.agents/inert-paths.json`, it cannot
+list itself, nothing under a `public/` or `static/` folder is ever inert (that is served on
+production), and a malformed declaration means **nothing** is inert — this predicate fails toward
+ceremony.
+
+**Any output starting `HANDOFF:` and this lane is over.** Read the project's mode and name the door
+that will actually run — ⛔ never `/cicd-push-e2e` unconditionally, which **refuses in a TRUNK
+project** ("there is no epic for this door to ship") and hands the work straight back:
+
+```bash
+L=$(pwd)                                                          # the LOBBY pin, bound in THIS fence — and BEFORE the cd below, or it points wherever the cd left the shell
+cd "$REPO" && env -u GITHUB_TOKEN git fetch origin --prune && cd "$L" && python3 .agents/scripts/epic_mode.py --repo "$REPO"   # PC: `python`  ⛔ the script lives in the LOBBY — the `cd "$L"` is what finds it after the fetch's cd, and it leaves you back in the lobby for the steps below
+```
+
+| Line 1 | Route to | Why |
+|---|---|---|
+| `FULL …` / `LIGHT …` | `/cicd-push-e2e` | an epic branch exists and it is the road to it |
+| `TRUNK` | `/cicd-quick-dev`, then `/cicd-close-story-merge-tree` Arm B | there is no epic; the work lands on `main` by a PR the operator merges |
+
+Say the mode, the door and the one-line reason. A handoff that names a door which refuses is the
+dead end this step exists to close.
 
 ---
 

@@ -1,0 +1,1166 @@
+diff --git a/.agents/commands/cicd-non-crit-pr-push.md b/.agents/commands/cicd-non-crit-pr-push.md
+index 66a9c7da..61d5d3f2 100644
+--- a/.agents/commands/cicd-non-crit-pr-push.md
++++ b/.agents/commands/cicd-non-crit-pr-push.md
+@@ -60,22 +60,50 @@ and `HANDOFF` rows above **cannot fire** — measured 2026-08-20: `--paths backe
+ qualifies **nothing** here. The check below is the one that actually runs:
+ 
+ ```bash
+-python3 -c "import sys; sys.path.insert(0, '.agents/scripts'); \
+-from task_preflight import PRODUCT_DIRS, CI_DIR; \
+-h=[p for p in sys.argv[1:] if p.startswith(PRODUCT_DIRS + (CI_DIR,))]; \
++L=$(pwd)                                                          # the LOBBY pin, bound in THIS fence (a fence is its own shell); the scripts live here, not in the thin project
++cd "$L" && python3 -c "import sys; sys.path.insert(0, '.agents/scripts'); \
++from pathlib import Path; from task_preflight import deployable_paths, inert_paths; \
++r=Path(sys.argv[1]); p=sys.argv[2:]; h=deployable_paths(r, p); i=inert_paths(r, p); \
++print('carved out (inert): ' + ', '.join(i)) if i else None; \
+ print('HANDOFF: ' + ', '.join(h) if h else 'no deployable path — carry on'); \
+-sys.exit(1 if h else 0)" <every path you will touch/commit>
++sys.exit(1 if h else 0)" "$REPO" <every path you will touch/commit>
+ ```
+ 
+ *(PC: `python`, not `python3`. Run it from the command centre — the constants live there, not in the
+ thin project.)*
+ 
+-**Any output starting `HANDOFF:` and this lane is over** — route to `/cicd-push-e2e` and say so in
+-one line. ⛔ **The prefixes are IMPORTED, never re-typed here.** They are
++⛔ **The prefixes are IMPORTED, never re-typed here.** They are
+ `backend/` · `frontend/` · `firebase/` · `functions/` · `mobile/` (`task_preflight.PRODUCT_DIRS`)
+ plus `.github/` (`CI_DIR`), and a copy of that list in prose is a list that goes stale in silence —
+ `tests/test_lane_qualify.py` imports the constant and fails if any member goes unnamed above.
+ 
++⭐ **The question is no longer "what folder is this in" (SCC-451).** `deployable_paths` runs the
++prefix test and then removes the **inert** part — paths nothing reads when the system runs and no
++gate reads as law. A diff of nothing but `INDEX.md` map files under `frontend/` prints
++`no deployable path — carry on` and this lane continues. That is not a loosening: `check_maps.py`
++check 2.5 *manufactures* those files, and the door used to refuse the very thing another gate
++demanded you create. The carve-out is declared in `<repo>/.agents/inert-paths.json`, it cannot
++list itself, nothing under a `public/` or `static/` folder is ever inert (that is served on
++production), and a malformed declaration means **nothing** is inert — this predicate fails toward
++ceremony.
++
++**Any output starting `HANDOFF:` and this lane is over.** Read the project's mode and name the door
++that will actually run — ⛔ never `/cicd-push-e2e` unconditionally, which **refuses in a TRUNK
++project** ("there is no epic for this door to ship") and hands the work straight back:
++
++```bash
++L=$(pwd)                                                          # the LOBBY pin, bound in THIS fence — and BEFORE the cd below, or it points wherever the cd left the shell
++cd "$REPO" && env -u GITHUB_TOKEN git fetch origin --prune && cd "$L" && python3 .agents/scripts/epic_mode.py --repo "$REPO"   # PC: `python`  ⛔ the script lives in the LOBBY — the `cd "$L"` is what finds it after the fetch's cd, and it leaves you back in the lobby for the steps below
++```
++
++| Line 1 | Route to | Why |
++|---|---|---|
++| `FULL …` / `LIGHT …` | `/cicd-push-e2e` | an epic branch exists and it is the road to it |
++| `TRUNK` | `/cicd-quick-dev`, then `/cicd-close-story-merge-tree` Arm B | there is no epic; the work lands on `main` by a PR the operator merges |
++
++Say the mode, the door and the one-line reason. A handoff that names a door which refuses is the
++dead end this step exists to close.
++
+ ---
+ 
+ ## Step 1 — Resolve or auto-provision the project's Standing Push Ticket
+diff --git a/.agents/commands/cicd-quick-dev.md b/.agents/commands/cicd-quick-dev.md
+index df4e26c8..42f85e6c 100644
+--- a/.agents/commands/cicd-quick-dev.md
++++ b/.agents/commands/cicd-quick-dev.md
+@@ -260,6 +260,44 @@ lightweight lobby lane. The answer to an overlap is the operator's word or the f
+ handling; an ad-hoc fix mints **no story file and no epic key** (`artifacts-always-first` §2 quick-fix
+ bucket) — hanging one off a finished epic silently reopens it.
+ 
++### Step 1.5 — Size the ceremony to what actually ships (SCC-451)
++
++The scope check above answers *is this a critical surface*. This answers *how much of the system
++depends on it*, and it is what stops six `INDEX.md` map files from making a one-file change look
++like a seven-file one:
++
++```bash
++L=<the lobby's absolute path>
++cd "$L" && python3 -c "import sys; sys.path.insert(0, '.agents/scripts'); \
++from pathlib import Path; from task_preflight import ceremony_tier, deployable_paths, inert_paths; \
++r=Path(sys.argv[1]); p=sys.argv[2:]; \
++print('ships:  ' + (', '.join(deployable_paths(r, p)) or '(nothing deployable)')); \
++print('inert:  ' + (', '.join(inert_paths(r, p)) or '(none)')); \
++print('tier:   ' + ceremony_tier(r, p))" "$PROJECT_ROOT" <the planned set>   # PC: `python`
++```
++
++| Tier | What this lane does |
++|---|---|
++| `full` | ⛔ **stop.** A critical surface, a dependency manifest, CI config or an **entry point** — that is ① `/cicd-write-story-tests` → ② `/cicd-dev-story-tests`, with the audit and the review |
++| `quick` | the five steps below, unchanged |
++| `tiny` | the plan is two sentences and the walkthrough is three; Step 3's RED/GREEN still runs |
++
++⛔ **An ALL-INERT diff — `ships:` empty — short-circuits Step 2 and Step 3 entirely.** There is no
++design to review and no assertion to write for a file nothing reads at runtime. Keep the lean
++walkthrough and keep the Step 5 tripwire; skip the plan, the literal `approved` and the TDD. The
++project's own `.agents/inert-paths.json` declares what qualifies, it cannot list itself, and nothing
++under a `public/` or `static/` folder is ever inert — that is served on production.
++
++⛔ **`tier` is read from the command, never judged.** At this step there is no diff yet, so
++`ceremony_tier` is called without line evidence and **`tiny` is unreachable** — a tier is never
++lowered on an assumption. Step 5 re-runs it on the real diff, where the line count exists.
++
++⛔ **AN ENTRY POINT IS NEVER `tiny`, whatever its size.** `app/**/page.tsx`, `app/**/layout.tsx`,
++route handlers and `main.py` are excluded by name, before any score is consulted. Measured over
++AviationChat's 146 frontend components: `app/layout.tsx` has a reverse-dependency reach of **0** and
++wraps every screen in the app. Nothing imports a page — the router loads it — so the naive "how many
++files import this" reading ranks the riskiest files as the safest.
++
+ ## Step 2 — Plan, then the literal `approved`
+ 
+ Write `implementation_plan.md` in the lane's artifact folder — the owning `_artifacts/` store per the
+diff --git a/.agents/commands/smh-non-crit-pr-push.md b/.agents/commands/smh-non-crit-pr-push.md
+index 6c72312c..5ba1c1bd 100644
+--- a/.agents/commands/smh-non-crit-pr-push.md
++++ b/.agents/commands/smh-non-crit-pr-push.md
+@@ -40,6 +40,14 @@ verdict this command has no instruction for, and the agent then answers by judge
+ one thing putting the question in a script was meant to prevent. `tests/test_lane_qualify.py` fails
+ if `lane_qualify.VERDICTS` ever grows a sixth and this table does not.
+ 
++⭐ **`HANDOFF` now asks a different question (SCC-451).** `lane_qualify.py` calls
++`task_preflight.deployable_paths`, which runs the folder test and then removes the **inert** part —
++paths nothing reads when the system runs and no gate reads as law. A markdown map file under a
++product folder is no longer "deployable code", because `check_maps.py` check 2.5 demands those files
++exist and this door used to refuse the very thing another gate manufactured. One predicate, in one
++module, called by all four doors; nothing here re-implements it. Notes, artifacts and `docs/` were
++always accepted — measured — so a plan for a todo item was never this gate's doing.
++
+ ---
+ 
+ ## Step 1 — Resolve or auto-provision the Standing Push Ticket
+diff --git a/.agents/commands/smh-quick-dev.md b/.agents/commands/smh-quick-dev.md
+index fece123f..188e5d57 100644
+--- a/.agents/commands/smh-quick-dev.md
++++ b/.agents/commands/smh-quick-dev.md
+@@ -194,6 +194,38 @@ is a paragraph, not a ceremony. `lane_qualify.py` is no longer called by any dev
+ qualify `LIGHT` with it): it answered
+ size, and a lane with a plan and `approved` does not need a size verdict.
+ 
++### Step 1.5 — Size the ceremony to what actually ships (SCC-451)
++
++The scope check above answers *is this a critical surface*. This answers *how much of the system
++depends on it*, and it is what stops six `INDEX.md` files from making a one-file change look like a
++seven-file one:
++
++```bash
++L=$(pwd)
++cd "$L" && python3 -c "import sys; sys.path.insert(0, '.agents/scripts'); \
++from pathlib import Path; from task_preflight import ceremony_tier, deployable_paths, inert_paths; \
++r=Path(sys.argv[1]); p=sys.argv[2:]; \
++print('ships:  ' + (', '.join(deployable_paths(r, p)) or '(nothing deployable)')); \
++print('inert:  ' + (', '.join(inert_paths(r, p)) or '(none)')); \
++print('tier:   ' + ceremony_tier(r, p))" "$REPO" <the planned set>   # PC: `python`
++```
++
++| Tier | What this lane does |
++|---|---|
++| `full` | ⛔ **stop.** A critical surface, a dependency manifest, CI config or an **entry point** — this is `/smh-dev-task-tests` work, with its audit and its review |
++| `quick` | the five steps below, unchanged |
++| `tiny` | the plan is two sentences and the walkthrough is three; Step 3's RED/GREEN still runs |
++
++⛔ **An ALL-INERT diff — `ships:` empty — short-circuits Step 2 and Step 3 entirely.** There is no
++design to review and no assertion to write for a file nothing reads at runtime. Keep the lean
++walkthrough and keep the Step 5 tripwire; skip the plan, the literal `approved` and the TDD. This is
++the mechanical form of the exemption `artifacts-always-first` § When to Skip already grants by
++prose, and it is a property of **the diff**, not of the command's name.
++
++⛔ **`tier` is read from the command, never judged.** At this step there is no diff yet, so
++`ceremony_tier` is called without line evidence and **`tiny` is unreachable** — a tier is never
++lowered on an assumption. Step 5 re-runs it on the real diff, where the line count exists.
++
+ ## Step 2 — Plan, then the literal `approved`
+ 
+ Write `implementation_plan.md` into `_artifacts/_main/<YYYY-MM-DD>_<slug>/`, with `task.yaml` beside
+diff --git a/.agents/critical-surfaces.json b/.agents/critical-surfaces.json
+index 40efcc32..1749daf6 100644
+--- a/.agents/critical-surfaces.json
++++ b/.agents/critical-surfaces.json
+@@ -51,7 +51,8 @@
+         ".claude/settings.local.json",
+         ".agents/critical-surfaces.json",
+         ".agents/scripts/scope_check.py",
+-        ".agents/rules/critical-surfaces.md"
++        ".agents/rules/critical-surfaces.md",
++        ".agents/inert-paths.json"
+       ]
+     }
+   }
+diff --git a/.agents/inert-paths.json b/.agents/inert-paths.json
+new file mode 100644
+index 00000000..16359d98
+--- /dev/null
++++ b/.agents/inert-paths.json
+@@ -0,0 +1,14 @@
++{
++  "_comment": "Paths that sit under a deployable folder but ship nothing - read by .agents/scripts/task_preflight.py (SCC-451). A glob is matched with PurePosixPath.match, which is RIGHT-ANCHORED, so a bare basename like INDEX.md matches at any depth. Three guards run AFTER the glob and no declaration can override them: nothing under a `public/` or `static/` segment (that is served verbatim on production), nothing under .agents/rules/ or .agents/commands/ (that IS the law), and never this file. A bare-extension glob (*.md) is refused at load - it would match the rules and the runtime-loaded docs in one line. An ABSENT file means the code defaults; a MALFORMED one means NOTHING is inert, because absence is a decision and corruption is not.",
++  "_lobby_note": "The command centre has no deployable surface at all - no backend/, frontend/, firebase/, functions/ or mobile/ - so deploy_surface() is empty here and this list never fires. It is carried anyway, the same way .agents/critical-surfaces.json carries keys with empty path lists: the schema is declared where the predicate lives, and a project clones a file it can read rather than a shape it has to infer.",
++  "inert": [
++    {
++      "glob": "INDEX.md",
++      "why": "a folder map. check_maps.py check 2.5 DEMANDS one in every level-2 folder, so the maps gate manufactures these files and the push gate used to refuse them - 45 tracked .md under AviationChat's product dirs, 23 of them INDEX/README. Nothing imports an INDEX and no gate reads one as law."
++    },
++    {
++      "glob": "README.md",
++      "why": "a human-facing folder note. Same shape as INDEX.md and the same reason. ⛔ A README a runtime loader actually reads is not this - name it in the loader's own folder and it stops matching, or drop this row for that repo."
++    }
++  ]
++}
+diff --git a/.agents/rules/artifacts-always-first.md b/.agents/rules/artifacts-always-first.md
+index 873db718..8f0c8e89 100644
+--- a/.agents/rules/artifacts-always-first.md
++++ b/.agents/rules/artifacts-always-first.md
+@@ -318,6 +318,28 @@ When Mr. Hatter says **"review"** (or asks to review a document/plan), EVERY age
+ ## When to Skip
+ - **Investigatory requests** ("explain how X works", "where is Y?") — no artifacts needed.
+ - **Trivial one-liners** (typo, comment fix) — mention what you changed; skip the full cycle.
++- **⭐ AN ALL-INERT DIFF — the one exemption that is MECHANICAL, not a judgement (SCC-451).** Every
++  other entry here is read by an agent deciding about its own work, which is the one reader that
++  cannot be trusted with a size word. This one is a command:
++
++  ```bash
++  python3 -c "import sys; sys.path.insert(0, '.agents/scripts'); \
++  from pathlib import Path; from task_preflight import deployable_paths; \
++  print(deployable_paths(Path(sys.argv[1]), sys.argv[2:]) or 'ALL INERT')" <repo> <the paths>
++  ```
++
++  `ALL INERT` means nothing in the diff is read when the system runs and no gate reads any of it as
++  law — so there is **no design to review and no assertion to write.** Skip the plan, the literal
++  `approved` and the RED/GREEN; keep the lean `walkthrough.md` and keep the close-out tripwire.
++  The precedent is the LLM-approvals door below, already a complete carve-out on exactly this
++  reasoning; **what is new is that the exemption is a property of the DIFF rather than of the
++  command's name.**
++  A lane cannot talk its way into it: the declaration lives in `<repo>/.agents/inert-paths.json`, it
++  cannot list itself, nothing under a `public/` or `static/` folder is ever inert, nothing under
++  `.agents/rules/` or `.agents/commands/` is ever inert, and a malformed declaration means **nothing**
++  is inert. Markdown is not the test — `.agents/rules/*.md` IS the law, and a project's runtime
++  knowledge documents are markdown the product genuinely needs (AviationChat's greeting agent reads
++  its pitch file under `backend/knowledge/` and raises when it is missing).
+ - **Mr. Hatter says** "skip the plan, just do it" / "quick dev this" — that phrase names **the quick
+   lane**, and the quick lane still carries a plan: a paragraph, not a ceremony. It used to dead-end
+   here, telling an agent to skip the plan and nothing about what to do instead; that gap is what put a
+diff --git a/.agents/scripts/INDEX.md b/.agents/scripts/INDEX.md
+index 069b9842..831e9a50 100644
+--- a/.agents/scripts/INDEX.md
++++ b/.agents/scripts/INDEX.md
+@@ -65,13 +65,13 @@ A file that legitimately **carries** those bytes as data — the detector's own
+ 
+ ⚠️ **The defect SCC-54 found underneath itself:** `--fields` on `acli workitem view` is a **whitelist**, and `issuetype` was not on the list `view_fields()` sent. Every type read in the file goes through there, so on the live board `have` came back `""` — `devrecord --closing` never saw a `Bug` and therefore **never cleared one**, and `audit --apply` reports FAILED on every conversion that in fact succeeded. It passed green for two tickets because the test stub returned the whole shape no matter what was asked for. **A stub more generous than the tool it stands in for tests nothing**; the stub now enforces the whitelist, with a positive control asserting it is still strict.
+ 
+-`task_preflight.py` (SCC-49) backs `/smh-close-task-merge-tree`, the **Task** lane's close-out — the half BMAD has no answer for, since `/cicd-close-story-merge-tree` needs a sprint board, a story file and an epic branch that task work does not have. It resolves the repo **without** a board, and every check in it was local until SCC-119 added exactly one that is not: `check_children()` refuses to close a PARENT while any subtask under it is still open, because the whole job closes together at the end. Three traps are handled explicitly and each one would have made it a gate that cannot fail - it reads the **exit code, never the row count** (a bad key and a childless parent both return zero rows, so counting rows turns a wrong key into a clean pass); it never asks for `parent` in `--fields` on a search (the real acli exits 1, straight into the first trap); and it resolves `acli` gently instead of through `acli_bin()`, which DIES when the CLI is absent and would have taken an offline-capable preflight down with it. An unreachable board WARNS and does not flip the VERDICT - sandboxed agent shells cannot reach the OS credential store at all, so blocking there would make "NOT CLEAR" the normal output; `/smh-close-task-merge-tree` re-asserts the check with the board in hand immediately before it writes `Done`. `Deferred` is the escape hatch, deliberately not a `--force` flag: descoping a child properly leaves a trail, a bypass leaves none. The one check that earns the script is `LANE`, because the only thing making this command cheaper than `/cicd-push-e2e` is skipping the E2E suite, and the only honest justification — *nothing that deploys changed* — is exactly the claim an agent audits worst about its own work. So it is derived, twice over: `deploy_surface()` asks whether the repo **has** `backend/ · frontend/ · firebase/ · functions/ · mobile/ · .github/` at all (empty ⇒ the command centre, where `git-policy.md` says there is no E2E suite and never will be, so nothing is being skipped), and the diff-vs-`origin/main` asks whether **this** change reached one. Touched ⇒ `HANDOFF`, hard exit 2, `/cicd-push-e2e` — **no override flag, deliberately**. It also refuses `epic/`, `claude/incident-` and `claude/` branches **by name, citing the command that IS right** — scanned in that order on purpose, the specific incident prefix before the generic story one, because the scan is first-match and a generic prefix listed first makes the specific entry dead code (SCC-148: the table once carried a bare `incident/` no command ever creates, while real `claude/incident-*` branches were confidently routed to the story close-out), and treats a missing `_artifacts/` tree as an ERROR rather than "nothing to check" — absence of the tree is the strongest evidence the walkthrough was never written, and warning there is how the check would go quiet on the one repo that needed it. Since SCC-146 it also reads what the review actually SAID: `check_gate()` parses the walkthrough's canonical `Verdict: … @ <sha>` line — a **FAIL verdict is a hard exit 2** (before this, a FAIL review did not block the merge at all), and a PASS/CONCERNS whose sha is *code-fresh* (nothing outside `_artifacts/` changed since — the review command's own artifact-commits-don't-invalidate rule made mechanical), over a clean tree with valid receipts beside the walkthrough, prints `gate: SKIP`, collapsing the lane's four identical suite runs into one. **SCC-154 finished the resolution half the review flagged:** verdicts pool ONLY from GOVERNING walkthroughs (a sibling `task.yaml` declaring this task's key — `check_artifacts` matches by substring, so `SCC-14 ⊂ SCC-146` and content-mention hits could pool foreign stamps, proven live), the LATEST stamp governs (a re-review APPENDS: FAIL-then-PASS un-wedges, PASS-then-FAIL blocks — the old `any(FAIL)` made the FAIL remedy unable to ever clear itself), more than one stamped governing walkthrough is ambiguity = no SKIP, fenced stamps are evidence not verdicts, a near-miss stamp (`**Verdict: FAIL @ …**`, lowercase, heading-prefixed) is an ERROR rather than a silent demotion, and the SKIP replaces the **suite entry only** — the artifact-scoped checks (lint, check_maps) still print and run, because every SKIPping lane structurally carries post-verdict `_artifacts/` commits the suite receipt never inspected. Receipt result-validity reads through `gate_receipt.receipt_defect()`; dirty receipts whose recorded `dirty_paths` are all `_artifacts/` are exempt at THIS reader (the recorder stays strict). Every miss falls through to the full printed plan: fail toward running, never toward trusting. **SCC-159 added the one question it never asked: is the DESTINATION itself unpushed?** Every other check here is about the lane. `check_stalled_landing()` compares local `main` with `origin/main`, because a `main` that is ahead is a landing that stalled — an earlier lane merged and never reached the remote — and every lane behind it then queues invisibly (measured live, about an hour, 2026-08-14). Nothing downstream caught it: both close-out commands run `git pull --ff-only origin main` before merging, which SUCCEEDS silently when local is merely ahead, and their `0 0` check runs after the push. Severity is split on purpose — ERROR with a fresh `--fetch`, WARN without one, since an unfetched comparison is only as good as the last fetch — and `--accept-unpushed-main` is the auditable exit for the operator's satellite uplink, where reads succeed while pushes die mid-upload; it downgrades this one check and prints itself back into the output. It reads and reports only: the merge, the transition and the branch delete stay in the command, where a human is watching the output.
++`task_preflight.py` (SCC-49) backs `/smh-close-task-merge-tree`, the **Task** lane's close-out — the half BMAD has no answer for, since `/cicd-close-story-merge-tree` needs a sprint board, a story file and an epic branch that task work does not have. It resolves the repo **without** a board, and every check in it was local until SCC-119 added exactly one that is not: `check_children()` refuses to close a PARENT while any subtask under it is still open, because the whole job closes together at the end. Three traps are handled explicitly and each one would have made it a gate that cannot fail - it reads the **exit code, never the row count** (a bad key and a childless parent both return zero rows, so counting rows turns a wrong key into a clean pass); it never asks for `parent` in `--fields` on a search (the real acli exits 1, straight into the first trap); and it resolves `acli` gently instead of through `acli_bin()`, which DIES when the CLI is absent and would have taken an offline-capable preflight down with it. An unreachable board WARNS and does not flip the VERDICT - sandboxed agent shells cannot reach the OS credential store at all, so blocking there would make "NOT CLEAR" the normal output; `/smh-close-task-merge-tree` re-asserts the check with the board in hand immediately before it writes `Done`. `Deferred` is the escape hatch, deliberately not a `--force` flag: descoping a child properly leaves a trail, a bypass leaves none. The one check that earns the script is `LANE`, because the only thing making this command cheaper than `/cicd-push-e2e` is skipping the E2E suite, and the only honest justification — *nothing that deploys changed* — is exactly the claim an agent audits worst about its own work. So it is derived, twice over: `deploy_surface()` asks whether the repo **has** `backend/ · frontend/ · firebase/ · functions/ · mobile/ · .github/` at all (empty ⇒ the command centre, where `git-policy.md` says there is no E2E suite and never will be, so nothing is being skipped), and the diff-vs-`origin/main` asks whether **this** change reached one. Touched ⇒ `HANDOFF`, hard exit 2, `/cicd-push-e2e` — **no override flag, deliberately**. **SCC-451 changed the question that second half asks, because the folder answer had a dead end in it:** `frontend/scripts/INDEX.md` is a markdown map that ships nothing, `check_maps.py` check 2.5 *demands* it exist, and this gate refused it and routed it to `/cicd-push-e2e` — which refuses back in a TRUNK project, so the routing graph had no exit node and the gate got skipped by hand. `deployable_paths()` now runs the prefix test and then removes the **inert** part: paths nothing reads when the system runs and no gate reads as law, declared in `<repo>/.agents/inert-paths.json` (absent ⇒ the basename defaults `INDEX.md`/`README.md`). **Markdown is not the test** — three guards run AFTER the glob and no declaration can override any of them: nothing under a `public/` or `static/` segment (`frontend/public/INDEX.md` is tracked and served on production, measured at 200), nothing under `.agents/rules/` or `.agents/commands/` (that IS the law), and never the declaration file itself, which is the same self-listing rule `scope_check.py` gives `critical-surfaces.json`. A bare-extension glob like `*.md` is refused at load, and a malformed declaration means **nothing** is inert — absence is a decision, corruption is not, so this predicate fails toward ceremony in both directions. Beside it `ceremony_tier()` answers the second question, *how much review depth has this earned*: `full` for a critical surface (an absolute veto, read through `scope_check.load_map` so there is no second matcher), a dependency manifest, CI config, or an **entry point**; `tiny` only with real line evidence, so the doors that call it at plan time — before a diff exists — can never reach it. ⛔ The entry-point exclusion is by PATTERN and it survives SCC-452's reach score unchanged: measured over AviationChat's 146 frontend components, `app/layout.tsx` has a reverse-dependency reach of **0** and wraps every screen, because nothing imports a page — the router loads it. It also refuses `epic/`, `claude/incident-` and `claude/` branches **by name, citing the command that IS right** — scanned in that order on purpose, the specific incident prefix before the generic story one, because the scan is first-match and a generic prefix listed first makes the specific entry dead code (SCC-148: the table once carried a bare `incident/` no command ever creates, while real `claude/incident-*` branches were confidently routed to the story close-out), and treats a missing `_artifacts/` tree as an ERROR rather than "nothing to check" — absence of the tree is the strongest evidence the walkthrough was never written, and warning there is how the check would go quiet on the one repo that needed it. Since SCC-146 it also reads what the review actually SAID: `check_gate()` parses the walkthrough's canonical `Verdict: … @ <sha>` line — a **FAIL verdict is a hard exit 2** (before this, a FAIL review did not block the merge at all), and a PASS/CONCERNS whose sha is *code-fresh* (nothing outside `_artifacts/` changed since — the review command's own artifact-commits-don't-invalidate rule made mechanical), over a clean tree with valid receipts beside the walkthrough, prints `gate: SKIP`, collapsing the lane's four identical suite runs into one. **SCC-154 finished the resolution half the review flagged:** verdicts pool ONLY from GOVERNING walkthroughs (a sibling `task.yaml` declaring this task's key — `check_artifacts` matches by substring, so `SCC-14 ⊂ SCC-146` and content-mention hits could pool foreign stamps, proven live), the LATEST stamp governs (a re-review APPENDS: FAIL-then-PASS un-wedges, PASS-then-FAIL blocks — the old `any(FAIL)` made the FAIL remedy unable to ever clear itself), more than one stamped governing walkthrough is ambiguity = no SKIP, fenced stamps are evidence not verdicts, a near-miss stamp (`**Verdict: FAIL @ …**`, lowercase, heading-prefixed) is an ERROR rather than a silent demotion, and the SKIP replaces the **suite entry only** — the artifact-scoped checks (lint, check_maps) still print and run, because every SKIPping lane structurally carries post-verdict `_artifacts/` commits the suite receipt never inspected. Receipt result-validity reads through `gate_receipt.receipt_defect()`; dirty receipts whose recorded `dirty_paths` are all `_artifacts/` are exempt at THIS reader (the recorder stays strict). Every miss falls through to the full printed plan: fail toward running, never toward trusting. **SCC-159 added the one question it never asked: is the DESTINATION itself unpushed?** Every other check here is about the lane. `check_stalled_landing()` compares local `main` with `origin/main`, because a `main` that is ahead is a landing that stalled — an earlier lane merged and never reached the remote — and every lane behind it then queues invisibly (measured live, about an hour, 2026-08-14). Nothing downstream caught it: both close-out commands run `git pull --ff-only origin main` before merging, which SUCCEEDS silently when local is merely ahead, and their `0 0` check runs after the push. Severity is split on purpose — ERROR with a fresh `--fetch`, WARN without one, since an unfetched comparison is only as good as the last fetch — and `--accept-unpushed-main` is the auditable exit for the operator's satellite uplink, where reads succeed while pushes die mid-upload; it downgrades this one check and prints itself back into the output. It reads and reports only: the merge, the transition and the branch delete stay in the command, where a human is watching the output.
+ 
+ `git-hooks/merge-target-guard.sh` + `git-hooks/pre-push-merge-backstop.sh` (SCC-144) are the **only checks in this repo that guard the branch you merge INTO**. Everything else — `--expect-key`, the preflight header, `main_write_gate.py`, the push token — guards the branch you merge FROM, and a merge onto the wrong *local* branch is never pushed, so no push-time gate can ever see it (SCC-97: a `cd` in one tool call, a bare `git merge` in a later one, a production merge commit on a sibling lane, and success printed). The guard refuses a merge whose target is not a legal destination for its source under `git-policy.md` §Branch model, naming target, source, rule and `git merge --abort`. ⭐ **It runs from `commit-msg`, and that placement is measured, not chosen:** `pre-merge-commit` — where SCC-144 specified it — fires BEFORE git writes `MERGE_HEAD`, so it can name the target and nothing else, and it never fires at all when the merge conflicts; `commit-msg` sees both paths. The `pre-merge-commit` dispatcher was written and then deleted rather than shipped decorative. ⚠ It refuses only topologies it can positively judge (unclassified branches and unnameable sources are allowed **with a line saying it declined**; where one sha carries several names, any legal name wins) because a gate that false-reds on the shipping path is one that gets routed around — and an incident lane, `claude/incident-*`, is **positively classified by a carve-out ABOVE the story arm and then deliberately unjudged** (SCC-149: it matches the `claude/*` glob, so without the carve-out an emergency hotfix merge to main ate the story-lane refusal mid-incident). The backstop covers the one gap that has no commit to hook: a **fast-forward** creates none, so it asks at push time whether a lane carries another lane's commits that are not reachable from `origin/main` — never on `main` or `epic/*`, where containment-and-unlanded is exactly what a legitimate landing looks like. ⛔ Adding it made `.githooks/pre-push` carry two gates, and `pre-push` is handed its refs **on stdin**, which can be read once: the dispatcher now tees them to a file under the git dir and feeds each gate from it, because handing the raw stream to the first gate leaves the second reading EOF and **silently exiting 0**. Both directions of that are killed by mutants (`test_git_hooks.py` case P, plus seven cases of the shipped SCC-77 suite). **SCC-159 closed the last two seams the SCC-154 review left open.** (1) `incident:incident` is now REFUSED in both directions: two concurrent incidents plus a `cd` slip cross-landed one incident's work on the other and both gates printed a friendly note, because the pair fell to the positively-classified-then-unjudged arm — a sibling incident lane is not the pipeline's business, it is the SCC-97 wrong-target shape wearing a second incident name. (2) The backstop's incident carve-out narrowed from a **skip** to a **note**: keyed on the pushed ref alone it waved an incident ref through carrying anything, while the guard refuses that same content at commit time — and a fast-forward creates no commit, so the ff variant of an already-refused merge escaped both gates exactly during an incident. The lane's own commits are still never judged; the containment loop simply runs for it now. The `incident:main`/`incident:epic` allow arms are untouched and pinned by false-red controls, because an emergency absorb must never eat a refusal. ONE flag, `MERGE-TARGET-ENFORCE`, arms both halves; `git merge --no-verify` / `git push --no-verify` are the auditable overrides, deliberately.
+ 
+ `sop_currency.py` is the **second armed commit-msg gate** (SCC-31, 2026-08-08), running after the Jira gate from the same `.githooks/commit-msg` shim — note that shim now *calls and checks* rather than `exec`ing, since an `exec` replaces the process and would have made any second gate dead code. It rejects a commit that changes a **usage surface** (`commands/*.md` · `rules/*.md` · `scripts/*.py|*.ps1` · `git-hooks/` · `.githooks/` · root `AGENTS.md`) without staging `docs/_scc_sops_prds/workflows_testing_SOP.md`. Exempt: `INDEX.md` churn, `reference/`, `templates/`, `skills/`, `_artifacts/`, its own tests — a gate that fires on mechanical churn gets opted out of reflexively. Opt out per-commit with `[sop-ok]` (logged in git forever); disarm by deleting `git-hooks/SOP-ENFORCE`; it no-ops in any repo without the doc. Law → `.agents/rules/sop-currency.md`. It checks **co-occurrence, not content**: no program can judge whether the doc edit was right, only that the author looked while the context was still in their head.
+ 
+-`lane_qualify.py` (SCC-162) answers *"is this work light enough to just do?"* and exists as a script for one reason: **the previous version of this rule was prose, and an agent talked itself past it.** It backed `/smh-quick-fix` at Step 0 and Step 3.5 until SCC-445 retired that door — today no dev door calls it (only the two standing-push doors, for their `LIGHT` check): the quick lane (`/smh-quick-dev`, `/cicd-quick-dev`) asks `scope_check.py` about RISK instead, and a plan plus the literal `approved` stands in for the size verdict; `main_write_gate.py` and `jira_feed.py` still import it for the `TASK-LIGHT` classification. Its two passes (the paths you intend, then the paths you actually changed — an under-declared scope is caught by the diff rather than by the agent's honesty). Five non-LIGHT answers, in the order they are checked, each one a hole found before it shipped (the fifth, `TASK-LIGHT`, is SCC-302's size door - still exit 1, never the light lane). **NOT-COMMAND-CENTRE first, before paths are read at all** — the operator's scope ruling was *"only for the smh / commands… not normal cicd work"*, and it is derived rather than asserted: the centre owns workflow law and projects are thin, so `.agents/commands/` masters exist in exactly one repo, and a hard-coded folder name would be wrong the first time it is cloned. A **contradicted declaration** (`--no-file-changes` alongside named paths) resolves to `TASK`, because the safe reading of a self-contradiction is never the permissive one. **Silence is `TASK`** — no paths is *unknown* scope, not *empty* scope, and "a check whose empty input reads as a pass" is the one input an agent controls completely; the escape for the operator's own git-hygiene example, which really does change zero files, is the explicit `--no-file-changes` → `LIGHT-VCS`. **Deployable** comes from `task_preflight.PRODUCT_DIRS` by import, never re-typed — ⛔ and **never `DEPLOY_DIRS`**, which is `PRODUCT_DIRS + (".github/",)`. That difference is a shipped incident (SCC-118): the command centre HAS a `.github/` and ships nothing, so the combined list routed an unshippable repo to `/cicd-push-e2e`. `.github/` reaches this script as a TOOLKIT prefix (⇒ `TASK`), not a deployable one. This line said `DEPLOY_DIRS` until 2026-08-20 (SCC-243) while the code said the opposite in a ⛔ two lines above the import — a router describing the trap backwards is how the next reader re-opens it. ⛔ Its toolkit rule is deliberately **blunter than `sop_currency.classify()`** — anything under `.agents/` is never `LIGHT` — because that function exempts `.agents/scripts/tests/`, correctly for *its* question and fatally for this one: reusing it would have rated an edit to the **enforcement suite** as safe. `test_lane_qualify.py` pins that divergence and cross-checks that this script is never the more permissive of the two, so a future widening there fails a case here instead of quietly widening the lane. It reads and prints; it is never the authority for a merge, which stays `task_preflight.py`.
++`lane_qualify.py` (SCC-162) answers *"is this work light enough to just do?"* and exists as a script for one reason: **the previous version of this rule was prose, and an agent talked itself past it.** It backed `/smh-quick-fix` at Step 0 and Step 3.5 until SCC-445 retired that door — today no dev door calls it (only the two standing-push doors, for their `LIGHT` check): the quick lane (`/smh-quick-dev`, `/cicd-quick-dev`) asks `scope_check.py` about RISK instead, and a plan plus the literal `approved` stands in for the size verdict; `main_write_gate.py` and `jira_feed.py` still import it for the `TASK-LIGHT` classification. Its two passes (the paths you intend, then the paths you actually changed — an under-declared scope is caught by the diff rather than by the agent's honesty). Five non-LIGHT answers, in the order they are checked, each one a hole found before it shipped (the fifth, `TASK-LIGHT`, is SCC-302's size door - still exit 1, never the light lane). **NOT-COMMAND-CENTRE first, before paths are read at all** — the operator's scope ruling was *"only for the smh / commands… not normal cicd work"*, and it is derived rather than asserted: the centre owns workflow law and projects are thin, so `.agents/commands/` masters exist in exactly one repo, and a hard-coded folder name would be wrong the first time it is cloned. A **contradicted declaration** (`--no-file-changes` alongside named paths) resolves to `TASK`, because the safe reading of a self-contradiction is never the permissive one. **Silence is `TASK`** — no paths is *unknown* scope, not *empty* scope, and "a check whose empty input reads as a pass" is the one input an agent controls completely; the escape for the operator's own git-hygiene example, which really does change zero files, is the explicit `--no-file-changes` → `LIGHT-VCS`. **Deployable** comes from `task_preflight.deployable_paths` by import, never re-typed — the prefix test *and* the inert carve-out in one call (SCC-451), so this script and `check_scope` cannot disagree about what ships. It still filters on `PRODUCT_DIRS` afterwards, ⛔ and **never `DEPLOY_DIRS`**, which is `PRODUCT_DIRS + (".github/",)`. That difference is a shipped incident (SCC-118): the command centre HAS a `.github/` and ships nothing, so the combined list routed an unshippable repo to `/cicd-push-e2e`. `.github/` reaches this script as a TOOLKIT prefix (⇒ `TASK`), not a deployable one. This line said `DEPLOY_DIRS` until 2026-08-20 (SCC-243) while the code said the opposite in a ⛔ two lines above the import — a router describing the trap backwards is how the next reader re-opens it. ⛔ Its toolkit rule is deliberately **blunter than `sop_currency.classify()`** — anything under `.agents/` is never `LIGHT` — because that function exempts `.agents/scripts/tests/`, correctly for *its* question and fatally for this one: reusing it would have rated an edit to the **enforcement suite** as safe. `test_lane_qualify.py` pins that divergence and cross-checks that this script is never the more permissive of the two, so a future widening there fails a case here instead of quietly widening the lane. It reads and prints; it is never the authority for a merge, which stays `task_preflight.py`.
+ 
+ `epic_mode.py` (SCC-446) answers *"which epic mode is this project on?"* with ONE query every branch-touching door shares, so an agent knows which epic it is on from command output and never from belief. **Line 1 is the word** — `TRUNK` (no `origin/epic/*` at all), `FULL epic/<KEY>-epic-<N>-<slug>`, `LIGHT epic/<KEY>-light-epic-<N>-<slug>` — and line 2 is the landing cost the operator reads: where a story lands, which checks run, when E2E runs. The mode is chosen once by the operator at kickoff and carried in the branch NAME (`git-policy` § The epic's mode); `-light-epic-` after the key is the whole switch, the same substring the epic ruleset globs and `pr-check.yml` reads with `contains()` — the word `light` elsewhere in the slug is not it. **Origin decides:** only remote-tracking refs are read, because a local epic head is a cache that outlives the epic it belonged to and a stale one must not turn a trunk project back into an epic project; the caller fetches with `--prune` first (every door's Step 0 does) and the script makes no network call. Two live epics is `AMBIGUOUS`, exit 2 — the doors already stop on more than one epic and the script never picks. Before it, five doors each carried their own `for-each-ref` glob and read a `-quickdev` suffix nothing ever cut; `test_epic_mode.py` pins the four modes, the origin-only rule, the token, and that twelve `cicd-*` doors call it while none re-types the glob.
+ 
+diff --git a/.agents/scripts/lane_qualify.py b/.agents/scripts/lane_qualify.py
+index eaf8c4ac..36a86107 100644
+--- a/.agents/scripts/lane_qualify.py
++++ b/.agents/scripts/lane_qualify.py
+@@ -77,7 +77,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
+ # only ever runs in the command centre, which ships nothing. So PRODUCT_DIRS is the whole
+ # deployable question here, and `.github/` belongs below, in the toolkit — CI and the gates
+ # ARE the development system.
+-from task_preflight import PRODUCT_DIRS
++from task_preflight import PRODUCT_DIRS, deployable_paths
+ 
+ # The toolkit itself. Prefix match, plus one exact filename.
+ TOOLKIT_PREFIXES = (".agents/", ".githooks/", ".github/", "_bmad/", "_bmad-output/")
+@@ -145,7 +145,12 @@ def classify(repo: Path, paths: list[str], no_file_changes: bool,
+                 "no paths given - that is UNKNOWN scope, not empty scope. Silence is never a "
+                 "pass; declare --no-file-changes if this genuinely edits nothing")
+ 
+-    hits = [p for p in clean if p.startswith(PRODUCT_DIRS)]
++    # SCC-451: the prefix test alone called a markdown map under `frontend/` a product change.
++    # `deployable_paths` runs it and then removes what nothing reads at runtime - one predicate,
++    # imported, never a fourth copy of the rule. ⛔ Still PRODUCT_DIRS and never DEPLOY_DIRS:
++    # the inert carve-out narrows nothing about `.github/`, which reaches this script as a
++    # TOOLKIT prefix below (SCC-118).
++    hits = [p for p in deployable_paths(repo, clean) if p.startswith(PRODUCT_DIRS)]
+     if hits:
+         return ("HANDOFF",
+                 f"deployable path(s): {', '.join(hits[:3])} - the product has one road to "
+diff --git a/.agents/scripts/ship_preflight.py b/.agents/scripts/ship_preflight.py
+index ede22fb2..9f519852 100644
+--- a/.agents/scripts/ship_preflight.py
++++ b/.agents/scripts/ship_preflight.py
+@@ -330,16 +330,26 @@ def check_lane(repo: Path, branch: str, prefix: str | None, rep: wf.Report) -> s
+     # live epic is epic work, and "deployable -> product change -> ship" must never see it.
+     if tp.epic_freeze(repo, changed, base, "lane", rep):
+         return "handoff"
+-    touched = sorted({d for d in surface for p in changed if p.startswith(d)})
++    # SCC-451: one predicate, imported, exactly as `check_scope` reads it - the prefix test
++    # minus what nothing reads at runtime. A lane of nothing but map files under `frontend/`
++    # is Task work, not a product change.
++    ships = tp.deployable_paths(repo, changed)
++    touched = sorted({d for d in surface for p in ships if p.startswith(d)})
+     if touched:
+         rep.info("lane", f"chore branch touching {', '.join(touched)} -> the light gate "
+                          f"(backend suite + frontend build); a change that reaches "
+                          f"deployable code is a product change whatever its ticket says")
+         return "light"
++    # ⛔ NAME A DOOR THAT ACTUALLY RUNS HERE (SCC-451). This arm is reachable ONLY when
++    # `surface` is non-empty - the `not surface` case returned above - so the repo is always a
++    # PROJECT, and `/smh-close-task-merge-tree` is the LOBBY's close-out. Sending a project's
++    # chore lane there was the second dead end of the same class as the standing-push one: two
++    # doors each naming the other. The diff here is routine project docs by definition, which
++    # is exactly `/cicd-non-crit-pr-push`'s subject, and its standing branch is reusable.
+     rep.err("lane", f"chore branch, {len(changed)} file(s) changed, none of them deployable "
+-                    f"({', '.join(surface)}) - this is Task work and the Task ceremony never "
+-                    f"runs for a lane that lands here. STOP and close it out with "
+-                    f"/smh-close-task-merge-tree")
++                    f"({', '.join(surface)}) - this is not product work and the ship gate has "
++                    f"nothing to certify. STOP and take it out through "
++                    f"/cicd-non-crit-pr-push, the project's standing-push door")
+     return "handoff"
+ 
+ 
+diff --git a/.agents/scripts/task_preflight.py b/.agents/scripts/task_preflight.py
+index b76b591b..33d9c85e 100644
+--- a/.agents/scripts/task_preflight.py
++++ b/.agents/scripts/task_preflight.py
+@@ -39,7 +39,8 @@ import re
+ import shutil
+ import subprocess
+ import sys
+-from pathlib import Path
++from collections.abc import Iterable
++from pathlib import Path, PurePosixPath
+ 
+ sys.path.insert(0, str(Path(__file__).resolve().parent))
+ import walkthrough_roster as roster
+@@ -113,6 +114,170 @@ PRODUCT_DIRS = ("backend/", "frontend/", "firebase/", "functions/", "mobile/")
+ CI_DIR = ".github/"
+ DEPLOY_DIRS = PRODUCT_DIRS + (CI_DIR,)
+ 
++# ── THE INERT PREDICATE (SCC-451) ─────────────────────────────────────────────
++# The prefix test above answers "what folder is this in". That was the whole question until
++# 2026-09-12, and it dead-ended: `frontend/scripts/INDEX.md` is a markdown map that ships
++# nothing, `check_maps.py` check 2.5 DEMANDS it exist, and the standing-push door refused it
++# and handed it to `/cicd-push-e2e` - which refuses back in a TRUNK project ("there is no epic
++# for this door to ship"). 45 tracked `.md` sit under AviationChat's product dirs; 23 are the
++# INDEX/README files the maps gate manufactures. The routing graph had no exit node, so the
++# gate got skipped by hand, which is worse than any carve-out.
++#
++# The question is now: DOES ANYTHING READ THIS FILE WHEN THE SYSTEM RUNS, OR DOES A GATE READ
++# IT AS LAW? Markdown is not the test, and three counterexamples prove it - `.agents/rules/*.md`
++# IS the law; `backend/knowledge/aviationchat_pitch.md` is loaded by a runtime agent that raises
++# if it is missing; `frontend/public/INDEX.md` is served verbatim on production (measured:
++# `curl https://aviationchat.org/INDEX.md` -> 200).
++DEFAULT_INERT = ("INDEX.md", "README.md")
++# ⛔ BASENAMES, NEVER EXTENSIONS. `PurePosixPath.match` is right-anchored, so `INDEX.md`
++# matches at any depth while `*.md` would match the law and both runtime docs as well.
++SERVED_SEGMENTS = ("public", "static")      # a folder a web server hands out verbatim
++LAW_PREFIXES = (".agents/rules/", ".agents/commands/")
++INERT_REL = ".agents/inert-paths.json"
++
++
++def load_inert(repo: Path) -> tuple[str, ...]:
++    """The globs this repo declares as inert. Absent file -> `DEFAULT_INERT`.
++
++    ⛔ Malformed, unreadable, or carrying a bare-extension glob -> `()`, EMPTY - never the
++    defaults and never a wider list. The two directions are opposite on purpose: an ABSENT
++    declaration is a decision (this repo accepts the house defaults), while a CORRUPT one is
++    an unknown intent, and the safe reading of unknown intent is no carve-out at all. This
++    predicate fails toward ceremony.
++
++    A bare-extension glob (`*.md`, `**/*.py`, `*`) is refused rather than trimmed, because it
++    is not a mistake this function can repair: it would carve out the rules directory and the
++    runtime-loaded docs in one line, which is exactly the failure the basename defaults exist
++    to avoid. The refusal is silent to callers but the reason is here - the declaration is a
++    proposal, and this is the shape check on it.
++    """
++    f = repo / INERT_REL
++    if not f.is_file():
++        return DEFAULT_INERT
++    try:
++        data = json.loads(f.read_text(encoding="utf-8"))
++        rows = data["inert"]
++        globs = tuple(str(r["glob"]) for r in rows)
++    except (OSError, ValueError, KeyError, TypeError):
++        return ()
++    for g in globs:
++        stem = g.rsplit("/", 1)[-1]
++        if not stem or stem.lstrip("*").lstrip(".") == "" or stem.startswith("*."):
++            return ()
++    return globs
++
++
++def inert_paths(repo: Path, paths: Iterable[str]) -> list[str]:
++    """The subset of `paths` that ships nothing - what a door may carry on past.
++
++    A path qualifies only if it matches a declared glob AND survives every hard guard below.
++    ⛔ THE GUARDS RUN AFTER THE GLOB, NEVER INSIDE IT, so a declaration can only ever PROPOSE a
++    carve-out. That is the same self-protection `scope_check.py` gives `critical-surfaces.json`:
++    a line that can widen itself is not a line.
++
++      served  - any segment in SERVED_SEGMENTS. `frontend/public/INDEX.md` is tracked AND on
++                production; a bare basename glob without this guard carves out a live file.
++      law     - anything under LAW_PREFIXES. A rule or a command body is markdown and it is
++                what the gates read as law.
++      itself  - INERT_REL is never inert, so a lane cannot widen the list and route its own
++                gate off in the same diff.
++    """
++    globs = load_inert(repo)
++    if not globs:
++        return []
++    out: list[str] = []
++    for p in paths:
++        rel = p.replace("\\", "/").lstrip("./")
++        if rel == INERT_REL or rel.startswith(LAW_PREFIXES):
++            continue
++        if any(seg in SERVED_SEGMENTS for seg in PurePosixPath(rel).parts[:-1]):
++            continue
++        if any(PurePosixPath(rel).match(g) for g in globs):
++            out.append(p)
++    return out
++
++
++def deployable_paths(repo: Path, paths: Iterable[str]) -> list[str]:
++    """What genuinely ships: the `DEPLOY_DIRS` prefix test, minus the inert subset.
++
++    ⭐ THIS is the function every caller uses - `check_scope`, `lane_qualify`,
++    `ship_preflight.check_lane` and both standing-push doors. Four places used to re-type
++    `p.startswith(...)`, and a carve-out added to one of them would have been invisible to the
++    other three.
++    """
++    inert = set(inert_paths(repo, paths))
++    return [p for p in paths
++            if p.replace("\\", "/").startswith(DEPLOY_DIRS) and p not in inert]
++
++
++# ── HOW MUCH CEREMONY (SCC-451 step one; SCC-452 replaces the `tiny` arm) ──────
++# The predicate above answers "does this file do anything". This answers "how much of the
++# system depends on what you touched" - what the industry calls blast radius. Step one is a
++# line count behind a named interface: crude on purpose, honest about being a proxy, and it
++# gets the doors working today. SCC-452 swaps the `tiny` arm for a measured reverse-dependency
++# reach score and NOTHING else here moves.
++ENTRY_POINT_GLOBS = ("*/app/*/page.tsx", "*/app/*/*/page.tsx", "*/app/page.tsx",
++                     "*/app/*/layout.tsx", "*/app/layout.tsx", "*/app/*/route.ts",
++                     "*/main.py", "*/asgi.py", "*/wsgi.py", "*/__main__.py")
++MANIFEST_NAMES = ("package.json", "package-lock.json", "pyproject.toml", "poetry.lock",
++                  "requirements.txt", "firebase.json", "next.config.ts")
++TINY_MAX_LINES = 50
++TINY_MAX_FILES = 5
++
++
++def _is_entry_point(rel: str) -> bool:
++    """⛔ THE MOST IMPORTANT RULE IN THE TIER, AND IT IS A PATTERN, NOT A SCORE.
++
++    Reverse-dependency count is FLATLY WRONG for entry points, and a naive implementation ranks
++    the riskiest files as the safest. Measured 2026-09-12 over AviationChat's 146 frontend
++    components: `app/layout.tsx` has reach 0 and wraps every screen in the app;
++    `app/dashboard/page.tsx` has reach 0 and is an entire user journey. Nothing imports a page -
++    the router loads it.
++
++    So entry points are excluded from `tiny` BY NAME, before any score is consulted, and the
++    exclusion survives SCC-452 unchanged. A reach score that quietly re-admitted them would be
++    worse than the line count it replaces.
++    """
++    q = PurePosixPath("/" + rel)
++    return any(q.match(g) for g in ENTRY_POINT_GLOBS)
++
++
++def ceremony_tier(repo: Path, paths: Iterable[str], *,
++                  lines: int | None = None, structural: bool | None = None) -> str:
++    """`"tiny"` · `"quick"` · `"full"` - how much ceremony this change has earned.
++
++    ⛔ WITHOUT LINE EVIDENCE `tiny` IS UNREACHABLE. The doors call this at two different
++    moments: quick-dev Step 1 holds a PLANNED path list and no diff, while Step 5 and both
++    standing-push doors hold a real one. A tier is never lowered on an assumption, so `lines=None`
++    can only ever reach `quick`.
++
++    ⛔ It touches NO TESTS. Which suites run is the CI classifier's job (AVCH-153); this decides
++    REVIEW DEPTH only, and conflating the two is the failure mode to avoid.
++    """
++    import scope_check as sc
++    rels = [p.replace("\\", "/") for p in paths]
++
++    # ⛔ THE MAP IS READ THROUGH `scope_check`, NEVER RE-PARSED HERE. It already owns the schema,
++    # the prefix-vs-exact rule and the dead-row refusal; a second matcher is a second answer.
++    rows, err = sc.load_map(repo)
++    if err:
++        return "full"                        # an UNREADABLE map cannot clear anything
++    if rows and sc.overlaps(rels, rows, fragments=False):
++        return "full"                        # ABSOLUTE VETO - never overridden by a size
++
++    for rel in rels:
++        if rel.startswith(CI_DIR) or PurePosixPath(rel).name in MANIFEST_NAMES:
++            return "full"
++        if _is_entry_point(rel):
++            return "full"
++
++    ships = deployable_paths(repo, rels)
++    if lines is None or structural:
++        return "quick"
++    if lines <= TINY_MAX_LINES and len(ships) <= TINY_MAX_FILES:
++        return "tiny"
++    return "quick"
++
+ # ── A live epic freezes main for its scope (SCC-416) ───────────────────────────
+ # Measured 2026-09-05: a chore/ lane off main carried three files the live epic/AVCH-100
+ # branch was also changing. Both preflights judged it by its own diff against PRODUCT_DIRS,
+@@ -1289,7 +1454,16 @@ def check_scope(repo: Path, branch: str, rep: wf.Report) -> tuple[str, list[str]
+                              if (repo / CI_DIR).is_dir() else ""))
+         return "LOCAL", []
+ 
+-    touched = sorted({d for d in surface for p in changed if p.startswith(d)})
++    # SCC-451: the question is no longer "what folder is this in" but "does anything read it".
++    # `deployable_paths` applies the prefix test and then removes the inert subset, so a diff
++    # of nothing but map files under `frontend/` is LOCAL - the state that used to dead-end.
++    ships = deployable_paths(repo, changed)
++    carved = [p for p in changed if p in set(inert_paths(repo, changed))]
++    if carved:
++        rep.info("scope", f"{len(carved)} inert path(s) carried on (nothing reads them at "
++                          f"runtime and no gate reads them as law): {', '.join(carved[:3])}"
++                          + (f" +{len(carved) - 3} more" if len(carved) > 3 else ""))
++    touched = sorted({d for d in surface for p in ships if p.startswith(d)})
+     if touched:
+         # NOT a judgment call, and deliberately not overridable by a flag. A task that
+         # reaches deployable code is not a task; it is a change to the product, and the
+diff --git a/.agents/scripts/tests/test_epic_mode.py b/.agents/scripts/tests/test_epic_mode.py
+index 2e969f31..e34a7765 100644
+--- a/.agents/scripts/tests/test_epic_mode.py
++++ b/.agents/scripts/tests/test_epic_mode.py
+@@ -280,8 +280,15 @@ def main() -> int:
+         cmds = ROOT / ".agents" / "commands"
+         callers = sorted(p.name for p in cmds.glob("cicd-*.md")
+                          if "epic_mode.py --repo" in p.read_text(encoding="utf-8"))
+-        c.check("twelve branch-touching cicd doors call it (the mode line at the top of Step 0)",
+-                len(callers) == 12, f"{len(callers)}: {callers}")
++        # THIRTEEN since SCC-451: `cicd-non-crit-pr-push.md` joined them. Its HANDOFF used to
++        # name `/cicd-push-e2e` unconditionally — a door that REFUSES in a trunk project ("there
++        # is no epic for this door to ship"), so the two doors named each other and the routing
++        # graph had no exit node. It reads the mode now and routes TRUNK to `/cicd-quick-dev`.
++        c.check("thirteen branch-touching cicd doors call it (the mode line at the top of Step 0)",
++                len(callers) == 13, f"{len(callers)}: {callers}")
++        c.check("⛔ …and the standing-push door is one of them - its handoff must never name a "
++                "door that refuses (SCC-451)",
++                "cicd-non-crit-pr-push.md" in callers, f"{callers}")
+         # ⛔ COUNTING CALLERS IS NOT CHECKING THEY CAN RUN (SCC-441 review, reproduced).
+         # `epic_mode.py` lives in the LOBBY and no project ships it, while the line above the
+         # call `cd`s into `$PROJECT_ROOT` to fetch. The shipped doors all carried a BARE
+diff --git a/.agents/scripts/tests/test_inert_paths.py b/.agents/scripts/tests/test_inert_paths.py
+new file mode 100644
+index 00000000..40be110b
+--- /dev/null
++++ b/.agents/scripts/tests/test_inert_paths.py
+@@ -0,0 +1,322 @@
++"""task_preflight.py — the inert-path predicate and the ceremony tier (SCC-451).
++
++The gate used to ask *"what folder is this in"*. Anything under `backend/ frontend/ firebase/
++functions/ mobile/ .github/` was a deployable product change, full stop — so
++`frontend/scripts/INDEX.md`, a markdown map that ships nothing, was refused by the standing-push
++door and handed to `/cicd-push-e2e`, which refuses back in a TRUNK project. The routing graph had
++no exit node, which is why the gate got skipped by hand.
++
++It asks a different question now: **does anything read this file when the system runs, or does a
++gate read it as law?**
++
++  ── WHY THESE CASES ────────────────────────────────────────────────────────────────────────
++**Markdown is not the test**, and three counterexamples are pinned as controls because each one
++would ship if the predicate keyed on the extension: `.agents/rules/*.md` IS the law;
++`backend/knowledge/aviationchat_pitch.md` is loaded at runtime by a loader that raises if it is
++missing; `frontend/public/INDEX.md` is served verbatim on production (measured 2026-09-12:
++`curl https://aviationchat.org/INDEX.md` -> 200).
++
++**Every guard runs AFTER the glob matches**, so a declaration can only ever *propose* a carve-out.
++That is the same self-protection `scope_check.py:76-78` gives `critical-surfaces.json` — a line
++that can widen itself is not a line.
++
++**The two failure directions are opposite and both are pinned.** An absent declaration means the
++defaults (absence is a decision). A malformed one means NOTHING is inert (corruption is not a
++decision) — this predicate fails toward ceremony, never toward a wide carve-out.
++
++**`tiny` is unreachable without line evidence.** `ceremony_tier` is called at two moments: quick-dev
++Step 1 has a planned path list and no diff, while Step 5 and both standing-push doors have a real
++one. A tier is never lowered on an assumption.
++
++**The entry-point exclusion is by PATTERN and it is not a threshold.** Reverse-dependency count is
++flatly wrong for entry points — measured over AviationChat's 146 frontend components,
++`app/layout.tsx` has reach 0 and wraps every screen, `app/dashboard/page.tsx` has reach 0 and is an
++entire user journey. Nothing imports a page; the router loads it. SCC-452 replaces the line count
++with that reach score and this exclusion still binds there, which is why it is a separate rule.
++"""
++from __future__ import annotations
++
++import json
++import sys
++from pathlib import Path
++
++from _harness import SCRIPTS, Cases, TempDir
++import _pf_fixtures as pf
++
++sys.path.insert(0, str(SCRIPTS))
++import task_preflight as tp  # noqa: E402
++
++ROOT = SCRIPTS.parents[1]
++COMMANDS = ROOT / ".agents/commands"
++
++DOORS = ("cicd-non-crit-pr-push", "smh-non-crit-pr-push",
++         "cicd-quick-dev", "smh-quick-dev")
++
++
++def body(name: str) -> str:
++    return (COMMANDS / f"{name}.md").read_text(encoding="utf-8")
++
++
++def bare(root: Path, **files: str) -> Path:
++    """A repo-shaped directory with no git — the predicate reads files, never history."""
++    repo = root / "repo"
++    repo.mkdir(parents=True, exist_ok=True)
++    for rel, text in files.items():
++        p = repo / rel.replace("|", "/")
++        p.parent.mkdir(parents=True, exist_ok=True)
++        p.write_text(text, encoding="utf-8")
++    return repo
++
++
++def declare(repo: Path, *globs: str) -> None:
++    rows = [{"glob": g, "why": "test"} for g in globs]
++    (repo / ".agents").mkdir(parents=True, exist_ok=True)
++    (repo / ".agents/inert-paths.json").write_text(
++        json.dumps({"inert": rows}, indent=2), encoding="utf-8")
++
++
++def surfaces(repo: Path, *paths: str) -> None:
++    """A minimal critical-surfaces map in the shape scope_check.py parses.
++
++    ⛔ Every declared path is CREATED: `parse_map` refuses a row naming no file, on the rule
++    that a dead row reads as a protected surface. A fixture that skipped this would return
++    `(None, err)` and silently test the error arm instead of the veto.
++    """
++    for p in paths:
++        if not p.endswith("/"):
++            f = repo / p
++            f.parent.mkdir(parents=True, exist_ok=True)
++            f.write_text("x\n", encoding="utf-8")
++    (repo / ".agents").mkdir(parents=True, exist_ok=True)
++    (repo / ".agents/critical-surfaces.json").write_text(json.dumps({
++        "surfaces": {
++            "auth": {"why": "test", "paths": list(paths)},
++            "billing": {"why": "nothing here", "paths": []},
++            "rules": {"why": "nothing here", "paths": []},
++            "answers": {"why": "nothing here", "paths": []},
++            "ci": {"why": "nothing here", "paths": []},
++        }
++    }, indent=2), encoding="utf-8")
++
++
++# The six paths the ticket measured, and what each must answer. The first three are already
++# accepted today (they are outside PRODUCT_DIRS entirely) and are controls: this lane must not
++# change them. The next two are the whole point. The last is the control that must NOT move.
++MEASURED = [
++    ("_my_resources/notes.md",             False, "outside the product dirs — accepted today"),
++    ("_artifacts/_main/INDEX.md",           False, "outside the product dirs — accepted today"),
++    ("docs/repo-map.md",                    False, "outside the product dirs — accepted today"),
++    ("frontend/scripts/INDEX.md",           False, "a map file under a product dir — THE FIX"),
++    ("backend/agents/INDEX.md",             False, "a map file under a product dir — THE FIX"),
++    ("frontend/src/components/Button.tsx",  True,  "real product code — must STILL hand off"),
++]
++
++
++def main() -> int:
++    c = Cases("task_preflight.py — the inert predicate and the ceremony tier (SCC-451)")
++
++    # ── A ─────────────────────────────────────────────────────────────────────────────────
++    if c.block("A · inert_paths / deployable_paths on the six measured paths"):
++        with TempDir() as t:
++            repo = bare(t)                                  # no declaration -> the defaults
++            paths = [p for p, _, _ in MEASURED]
++            got = tp.deployable_paths(repo, paths)
++            for p, deployable, why in MEASURED:
++                c.check(f"A · {p} -> {'deployable' if deployable else 'carries on'} ({why})",
++                        (p in got) == deployable, f"deployable_paths={got}")
++            c.check("A · the defaults are basenames, never extensions "
++                    "(`*.md` would match the law and the runtime docs)",
++                    tp.DEFAULT_INERT == ("INDEX.md", "README.md"),
++                    repr(getattr(tp, "DEFAULT_INERT", None)))
++            c.check("A · inert_paths names WHAT was carved out, so a door can say it — and it "
++                    "answers about the FILE, not its folder, so an artifact INDEX is in the list "
++                    "even though the prefix test never reached it",
++                    sorted(tp.inert_paths(repo, paths))
++                    == ["_artifacts/_main/INDEX.md", "backend/agents/INDEX.md",
++                        "frontend/scripts/INDEX.md"],
++                    repr(tp.inert_paths(repo, paths)))
++
++    # ── B ─────────────────────────────────────────────────────────────────────────────────
++    if c.block("B · the hard guards — served, law, runtime doc — each pinned BOTH ways"):
++        with TempDir() as t:
++            repo = bare(t)
++            declare(repo, "INDEX.md", "README.md")
++
++            # SERVED. Next.js hands out `public/` verbatim; measured live at 200.
++            served = ["frontend/public/INDEX.md", "frontend/static/README.md"]
++            c.check("⛔ B · a file under public/ or static/ is NEVER inert — it is ON PRODUCTION",
++                    tp.deployable_paths(repo, served) == served,
++                    repr(tp.deployable_paths(repo, served)))
++            c.check("B · …and the same basename outside a served folder still carries on",
++                    tp.deployable_paths(repo, ["frontend/scripts/INDEX.md"]) == [],
++                    repr(tp.deployable_paths(repo, ["frontend/scripts/INDEX.md"])))
++
++            # LAW. A rule or a command body is markdown AND it is the law.
++            law = [".agents/rules/git-policy.md", ".agents/commands/smh-quick-dev.md"]
++            c.check("⛔ B · nothing under .agents/rules/ or .agents/commands/ is ever inert",
++                    tp.inert_paths(repo, law) == [], repr(tp.inert_paths(repo, law)))
++
++            # RUNTIME DOC. Markdown a loader reads, and the loader raises if it is missing.
++            runtime = "backend/knowledge/aviationchat_pitch.md"
++            c.check("⛔ B · a runtime-loaded doc is not inert under the defaults "
++                    "(it matches no basename)",
++                    tp.deployable_paths(repo, [runtime]) == [runtime],
++                    repr(tp.deployable_paths(repo, [runtime])))
++
++            # …and the declaration cannot widen its way to it.
++            declare(repo, "*.md")
++            c.check("⛔ B · a BARE-EXTENSION glob is refused at load — it would match the law, "
++                    "the runtime docs and everything else",
++                    tp.load_inert(repo) == (), repr(tp.load_inert(repo)))
++            c.check("⛔ B · …so the runtime doc survives a `*.md` declaration",
++                    tp.deployable_paths(repo, [runtime]) == [runtime],
++                    repr(tp.deployable_paths(repo, [runtime])))
++
++    # ── C ─────────────────────────────────────────────────────────────────────────────────
++    if c.block("C · the declaration cannot widen itself, and corruption is not a decision"):
++        with TempDir() as t:
++            repo = bare(t)
++            declare(repo, "INDEX.md", ".agents/inert-paths.json")
++            decl = ".agents/inert-paths.json"
++            c.check("⛔ C · the declaration lists ITSELF and is still deployable — "
++                    "a line that can widen itself is not a line",
++                    tp.inert_paths(repo, [decl]) == [], repr(tp.inert_paths(repo, [decl])))
++
++            c.check("C · an ABSENT declaration means the defaults (absence is a decision)",
++                    tp.load_inert(bare(t / "none")) == ("INDEX.md", "README.md"),
++                    repr(tp.load_inert(bare(t / "none"))))
++
++            (repo / ".agents/inert-paths.json").write_text("{not json", encoding="utf-8")
++            c.check("⛔ C · a MALFORMED declaration means NOTHING is inert — not the defaults. "
++                    "This predicate fails toward ceremony",
++                    tp.load_inert(repo) == (), repr(tp.load_inert(repo)))
++            c.check("⛔ C · …so a map file under a product dir hands off again while it is broken",
++                    tp.deployable_paths(repo, ["frontend/scripts/INDEX.md"])
++                    == ["frontend/scripts/INDEX.md"],
++                    repr(tp.deployable_paths(repo, ["frontend/scripts/INDEX.md"])))
++
++    # ── D ─────────────────────────────────────────────────────────────────────────────────
++    if c.block("D · check_scope: an all-inert diff is LOCAL, and .github/ still hands off"):
++        with TempDir() as t:
++            repo = pf.make_repo(t, deployable=True)
++            pf.branch(repo, "chore/SCC-1-maps",
++                      {"frontend/scripts/INDEX.md": "# map\n",
++                       "backend/agents/INDEX.md": "# map\n"}, push=False)
++            import wf_common as wf
++            rep = wf.Report()
++            lane, touched = tp.check_scope(repo, "chore/SCC-1-maps", rep)
++            c.check("D · an all-inert diff under product dirs -> LOCAL, nothing touched",
++                    (lane, touched) == ("LOCAL", []), f"{lane} {touched}")
++
++            pf.branch(repo, "chore/SCC-2-ci", {".github/workflows/x.yml": "on: push\n"},
++                      push=False)
++            rep2 = wf.Report()
++            lane2, touched2 = tp.check_scope(repo, "chore/SCC-2-ci", rep2)
++            c.check("⛔ D · CONTROL — a repo with a product surface STILL hands off on .github/; "
++                    "the carve-out narrows nothing about CI paths",
++                    lane2 == "HANDOFF" and ".github/" in touched2, f"{lane2} {touched2}")
++
++    # ── E ─────────────────────────────────────────────────────────────────────────────────
++    if c.block("E · ceremony sizes to the NON-INERT part of a mixed diff"):
++        with TempDir() as t:
++            repo = bare(t)
++            surfaces(repo)                                   # a map with nothing listed
++            mixed = ["frontend/src/components/Button.tsx"] + [
++                f"frontend/{d}/INDEX.md" for d in ("a", "b", "c", "d", "e", "f")]
++            c.check("E · one component plus six INDEX files is a ONE-file ceremony",
++                    tp.deployable_paths(repo, mixed)
++                    == ["frontend/src/components/Button.tsx"],
++                    repr(tp.deployable_paths(repo, mixed)))
++            c.check("E · …and that sizes to `tiny` at 12 lines, where the raw 7-file count "
++                    "would not",
++                    tp.ceremony_tier(repo, mixed, lines=12, structural=False) == "tiny",
++                    tp.ceremony_tier(repo, mixed, lines=12, structural=False))
++
++    # ── F ─────────────────────────────────────────────────────────────────────────────────
++    if c.block("F · no dead end remains: the TRUNK handoff names a door that RUNS"):
++        b = body("cicd-non-crit-pr-push")
++        c.check("F · the HANDOFF routing reads the mode instead of assuming an epic",
++                "epic_mode.py" in b, "epic_mode.py absent from the door body")
++        c.check("F · TRUNK is named, and it routes to /cicd-quick-dev, not /cicd-push-e2e",
++                "TRUNK" in b and "/cicd-quick-dev" in b,
++                f"TRUNK={'TRUNK' in b} quick-dev={'/cicd-quick-dev' in b}")
++
++    # ── G ─────────────────────────────────────────────────────────────────────────────────
++    if c.block("G · ceremony_tier's three vetoes — critical surface, manifest, entry point"):
++        with TempDir() as t:
++            repo = bare(t)
++            surfaces(repo, "backend/middleware/auth.py")
++            tiny = dict(lines=1, structural=False)
++            c.check("⛔ G · a critical surface is an ABSOLUTE veto — one line still means full",
++                    tp.ceremony_tier(repo, ["backend/middleware/auth.py"], **tiny) == "full",
++                    tp.ceremony_tier(repo, ["backend/middleware/auth.py"], **tiny))
++            c.check("G · a dependency manifest is full",
++                    tp.ceremony_tier(repo, ["frontend/package.json"], **tiny) == "full",
++                    tp.ceremony_tier(repo, ["frontend/package.json"], **tiny))
++            c.check("G · CI config is full",
++                    tp.ceremony_tier(repo, [".github/workflows/pr-check.yml"], **tiny) == "full",
++                    tp.ceremony_tier(repo, [".github/workflows/pr-check.yml"], **tiny))
++            c.check("G · an ordinary small change with line evidence is tiny",
++                    tp.ceremony_tier(repo, ["frontend/src/lib/fmt.ts"], **tiny) == "tiny",
++                    tp.ceremony_tier(repo, ["frontend/src/lib/fmt.ts"], **tiny))
++            c.check("G · …and the same change over 50 lines is quick",
++                    tp.ceremony_tier(repo, ["frontend/src/lib/fmt.ts"],
++                                     lines=51, structural=False) == "quick",
++                    tp.ceremony_tier(repo, ["frontend/src/lib/fmt.ts"],
++                                     lines=51, structural=False))
++            # The veto's own failure direction. A map that cannot be read has not cleared
++            # anything, and a tier that fell through to `tiny` here would be the exact hole
++            # the absolute veto exists to close.
++            (repo / ".agents/critical-surfaces.json").write_text("{not json",
++                                                                 encoding="utf-8")
++            c.check("⛔ G · an UNREADABLE critical-surfaces map forces full, never tiny",
++                    tp.ceremony_tier(repo, ["frontend/src/lib/fmt.ts"], **tiny) == "full",
++                    tp.ceremony_tier(repo, ["frontend/src/lib/fmt.ts"], **tiny))
++
++    # ── H ─────────────────────────────────────────────────────────────────────────────────
++    if c.block("H · an entry point with reach 0 is NEVER tiny"):
++        with TempDir() as t:
++            repo = bare(t)
++            surfaces(repo)
++            for p in ("frontend/src/app/layout.tsx",
++                      "frontend/src/app/dashboard/page.tsx",
++                      "backend/main.py"):
++                c.check(f"⛔ H · {p} is an entry point — 3 lines, still full",
++                        tp.ceremony_tier(repo, [p], lines=3, structural=False) == "full",
++                        tp.ceremony_tier(repo, [p], lines=3, structural=False))
++            c.check("⛔ H · without line evidence `tiny` is UNREACHABLE — a tier is never "
++                    "lowered on an assumption",
++                    tp.ceremony_tier(repo, ["frontend/src/lib/fmt.ts"]) == "quick",
++                    tp.ceremony_tier(repo, ["frontend/src/lib/fmt.ts"]))
++            c.check("H · a structural change (add/delete/rename) is never tiny either",
++                    tp.ceremony_tier(repo, ["frontend/src/lib/fmt.ts"],
++                                     lines=3, structural=True) == "quick",
++                    tp.ceremony_tier(repo, ["frontend/src/lib/fmt.ts"],
++                                     lines=3, structural=True))
++
++    # ── I ─────────────────────────────────────────────────────────────────────────────────
++    if c.block("I · the doors CALL the seams; nobody re-implements the threshold"):
++        for name in DOORS:
++            b = body(name)
++            c.check(f"I · {name} calls deployable_paths",
++                    "deployable_paths" in b, "not found in the body")
++        for name in ("cicd-quick-dev", "smh-quick-dev"):
++            b = body(name)
++            c.check(f"I · {name} calls ceremony_tier",
++                    "ceremony_tier" in b, "not found in the body")
++        for name in DOORS:
++            b = body(name)
++            c.check(f"⛔ I · {name} does not re-type the prefix list as a startswith test",
++                    "startswith(PRODUCT_DIRS" not in b,
++                    "the body still re-implements the prefix test")
++        c.check("I · the seam names exist on the module, so the doors' import cannot go stale",
++                all(hasattr(tp, n) for n in
++                    ("load_inert", "inert_paths", "deployable_paths", "ceremony_tier")),
++                repr([n for n in ("load_inert", "inert_paths", "deployable_paths",
++                                  "ceremony_tier") if not hasattr(tp, n)]))
++
++    return c.finish()
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/.agents/scripts/tests/test_lane_qualify.py b/.agents/scripts/tests/test_lane_qualify.py
+index 87ae4d16..54e2add3 100644
+--- a/.agents/scripts/tests/test_lane_qualify.py
++++ b/.agents/scripts/tests/test_lane_qualify.py
+@@ -172,6 +172,22 @@ with TempDir() as tmp:
+                              "--paths", "frontend/app.tsx", "--lines", "1")
+         c.check("C3 a one-line change under PRODUCT_DIRS is still HANDOFF - size never buys "
+                 "an exception", verdict(out) == "HANDOFF", out.strip()[:200])
++        # ⛔ SCC-451: THE CARVE-OUT AT THIS CALLER, BOTH WAYS. `deployable_paths` runs the
++        # prefix test and then removes what nothing reads at runtime, so a markdown map under
++        # a product folder stops being "product code" here too - the whole point being that
++        # this script and `task_preflight.check_scope` read ONE predicate and cannot disagree.
++        # The control beside it is the load-bearing half: real product code must still HANDOFF,
++        # or the carve-out widened into a hole.
++        rc, out = run_script("lane_qualify.py", "--repo", str(root),
++                             "--paths", "frontend/scripts/INDEX.md", "--lines", "1")
++        c.check("C3a a markdown MAP under a product dir is no longer HANDOFF - check_maps.py "
++                "demands that file exist and this gate used to refuse it",
++                verdict(out) != "HANDOFF", out.strip()[:200])
++        rc, out = run_script("lane_qualify.py", "--repo", str(root),
++                             "--paths", "frontend/public/INDEX.md", "--lines", "1")
++        c.check("⛔ C3b CONTROL: the same basename under a SERVED folder is still HANDOFF - "
++                "frontend/public/INDEX.md answers 200 on production",
++                verdict(out) == "HANDOFF", out.strip()[:200])
+         proj2 = tmp / "sized-project"
+         (proj2 / "docs").mkdir(parents=True, exist_ok=True)
+         rc, out = run_script("lane_qualify.py", "--repo", str(proj2),
+diff --git a/.agents/scripts/tests/test_ship_preflight.py b/.agents/scripts/tests/test_ship_preflight.py
+index e91fff21..c37e562a 100644
+--- a/.agents/scripts/tests/test_ship_preflight.py
++++ b/.agents/scripts/tests/test_ship_preflight.py
+@@ -256,8 +256,14 @@ def main() -> int:
+             code, out = ship(repo, "chore/SCC-11-thing")
+             c.check("SP-F a docs-only chore diff is REFUSED -> exit 2", code == 2,
+                     out.strip()[-300:])
+-            c.check("SP-F ...and handed to the Task door",
+-                    "/smh-close-task-merge-tree" in out, out.strip()[-300:])
++            # ⛔ SCC-451: THE DOOR NAMED HERE MUST BE A PROJECT DOOR. This arm is only
++            # reachable when the repo HAS a deployable surface, and `/smh-close-task-merge-tree`
++            # is the lobby's close-out — it refuses a project and hands the work straight back,
++            # each door naming the other. That is the same dead end the inert predicate closed
++            # on the standing-push side, and it was live in this file until now.
++            c.check("SP-F ...and handed to the PROJECT's standing-push door, not the lobby's",
++                    "/cicd-non-crit-pr-push" in out
++                    and "/smh-close-task-merge-tree" not in out, out.strip()[-300:])
+ 
+         # A repo with no deployable surface at all cannot produce a deployable diff, so the
+         # chore lane can never be legitimate here. This is the command centre's own shape,
+diff --git a/docs/doc-graph.json b/docs/doc-graph.json
+index 8c3a0021..ece6d62e 100644
+--- a/docs/doc-graph.json
++++ b/docs/doc-graph.json
+@@ -7,9 +7,9 @@
+     "files": 381,
+     "packs": 1,
+     "pack_docs": 2,
+-    "edges": 795,
++    "edges": 797,
+     "external": 35,
+-    "ambiguous": 175,
++    "ambiguous": 182,
+     "dangling": 263,
+     "broken_paths": 59,
+     "unresolved_names": 204,
+@@ -38,7 +38,7 @@
+     },
+     {
+       "path": ".agents/commands/INDEX.md",
+-      "in": 9,
++      "in": 10,
+       "out": 7
+     },
+     {
+@@ -514,7 +514,7 @@
+     {
+       "path": ".agents/commands/smh-quick-dev.md",
+       "in": 1,
+-      "out": 15
++      "out": 16
+     },
+     {
+       "path": ".agents/commands/smh-review.md",
+@@ -1753,7 +1753,7 @@
+     },
+     {
+       "path": "docs/_scc_sops_prds/INDEX.md",
+-      "in": 3,
++      "in": 4,
+       "out": 20
+     },
+     {
+@@ -1829,7 +1829,7 @@
+     {
+       "path": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+       "in": 4,
+-      "out": 22
++      "out": 23
+     },
+     {
+       "path": "docs/code-review-graph.md",
+@@ -3145,6 +3145,11 @@
+       "to": ".agents/rules/worktree-per-story.md",
+       "kind": "ref"
+     },
++    {
++      "from": ".agents/commands/smh-quick-dev.md",
++      "to": ".agents/commands/INDEX.md",
++      "kind": "ref"
++    },
+     {
+       "from": ".agents/commands/smh-quick-dev.md",
+       "to": ".agents/rules/command-shape.md",
+@@ -5455,6 +5460,11 @@
+       "to": ".agents/templates/project_overview_guide.md",
+       "kind": "ref"
+     },
++    {
++      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
++      "to": "docs/_scc_sops_prds/INDEX.md",
++      "kind": "ref"
++    },
+     {
+       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+       "to": ".agents/commands/adviser-board/ROSTER.md",
+@@ -8576,6 +8586,54 @@
+         "docs/AGENTS.md"
+       ]
+     },
++    {
++      "from": ".agents/scripts/INDEX.md",
++      "target": "README.md",
++      "candidates": [
++        ".agents/bmad",
++        ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
++        ".agents/skills/react-best-practices/README.md",
++        "docs/migrations/vscode_sync/README.md"
++      ]
++    },
++    {
++      "from": ".agents/scripts/INDEX.md",
++      "target": "frontend/public/INDEX.md",
++      "candidates": [
++        ".agents/INDEX.md",
++        ".agents/bmad",
++        ".agents/commands/INDEX.md",
++        ".agents/hooks/INDEX.md",
++        ".agents/opencode-agents/INDEX.md",
++        ".agents/permissions/INDEX.md",
++        ".agents/rules/INDEX.md",
++        ".agents/scripts/INDEX.md",
++        ".agents/skills/INDEX.md",
++        ".agents/templates/INDEX.md",
++        ".agents/tools/INDEX.md",
++        "docs/_scc_sops_prds/INDEX.md",
++        "docs/migrations/INDEX.md"
++      ]
++    },
++    {
++      "from": ".agents/scripts/INDEX.md",
++      "target": "frontend/scripts/INDEX.md",
++      "candidates": [
++        ".agents/INDEX.md",
++        ".agents/bmad",
++        ".agents/commands/INDEX.md",
++        ".agents/hooks/INDEX.md",
++        ".agents/opencode-agents/INDEX.md",
++        ".agents/permissions/INDEX.md",
++        ".agents/rules/INDEX.md",
++        ".agents/scripts/INDEX.md",
++        ".agents/skills/INDEX.md",
++        ".agents/templates/INDEX.md",
++        ".agents/tools/INDEX.md",
++        "docs/_scc_sops_prds/INDEX.md",
++        "docs/migrations/INDEX.md"
++      ]
++    },
+     {
+       "from": ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
+       "target": "SKILL.md",
+@@ -10383,6 +10441,25 @@
+         "docs/migrations/vscode_sync/README.md"
+       ]
+     },
++    {
++      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
++      "target": "frontend/public/INDEX.md",
++      "candidates": [
++        ".agents/INDEX.md",
++        ".agents/bmad",
++        ".agents/commands/INDEX.md",
++        ".agents/hooks/INDEX.md",
++        ".agents/opencode-agents/INDEX.md",
++        ".agents/permissions/INDEX.md",
++        ".agents/rules/INDEX.md",
++        ".agents/scripts/INDEX.md",
++        ".agents/skills/INDEX.md",
++        ".agents/templates/INDEX.md",
++        ".agents/tools/INDEX.md",
++        "docs/_scc_sops_prds/INDEX.md",
++        "docs/migrations/INDEX.md"
++      ]
++    },
+     {
+       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+       "target": "/.codex/AGENTS.md",
+@@ -10417,6 +10494,16 @@
+         "docs/GEMINI.md"
+       ]
+     },
++    {
++      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
++      "target": "README.md",
++      "candidates": [
++        ".agents/bmad",
++        ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
++        ".agents/skills/react-best-practices/README.md",
++        "docs/migrations/vscode_sync/README.md"
++      ]
++    },
+     {
+       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+       "target": "_routing-canary/README.md",
+@@ -10427,6 +10514,44 @@
+         "docs/migrations/vscode_sync/README.md"
+       ]
+     },
++    {
++      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
++      "target": "frontend/public/INDEX.md",
++      "candidates": [
++        ".agents/INDEX.md",
++        ".agents/bmad",
++        ".agents/commands/INDEX.md",
++        ".agents/hooks/INDEX.md",
++        ".agents/opencode-agents/INDEX.md",
++        ".agents/permissions/INDEX.md",
++        ".agents/rules/INDEX.md",
++        ".agents/scripts/INDEX.md",
++        ".agents/skills/INDEX.md",
++        ".agents/templates/INDEX.md",
++        ".agents/tools/INDEX.md",
++        "docs/_scc_sops_prds/INDEX.md",
++        "docs/migrations/INDEX.md"
++      ]
++    },
++    {
++      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
++      "target": "frontend/scripts/INDEX.md",
++      "candidates": [
++        ".agents/INDEX.md",
++        ".agents/bmad",
++        ".agents/commands/INDEX.md",
++        ".agents/hooks/INDEX.md",
++        ".agents/opencode-agents/INDEX.md",
++        ".agents/permissions/INDEX.md",
++        ".agents/rules/INDEX.md",
++        ".agents/scripts/INDEX.md",
++        ".agents/skills/INDEX.md",
++        ".agents/templates/INDEX.md",
++        ".agents/tools/INDEX.md",
++        "docs/_scc_sops_prds/INDEX.md",
++        "docs/migrations/INDEX.md"
++      ]
++    },
+     {
+       "from": "docs/migrations/INDEX.md",
+       "target": "AGENTS.md",
+diff --git a/docs/doc-graph.md b/docs/doc-graph.md
+index 5b627225..0ad99813 100644
+--- a/docs/doc-graph.md
++++ b/docs/doc-graph.md
+@@ -41,7 +41,7 @@
+ <!-- generated by .agents/scripts/generate_doc_graph.py -- do NOT hand-edit this block;
+      edit the CURATED block above. Rebuild: python .agents/scripts/generate_doc_graph.py -->
+ 
+-**Scope:** `.agents` + `docs` | **381** authored docs + **1** bmad packs (2 vendor docs summarized) | **795** resolved edges | **59** broken-path refs | **204** bare-name refs | **175** ambiguous | **35** external | **9** unresolvable (inside an uninitialized submodule -- this tree cannot see them, so they are NOT counted broken).
++**Scope:** `.agents` + `docs` | **381** authored docs + **1** bmad packs (2 vendor docs summarized) | **797** resolved edges | **59** broken-path refs | **204** bare-name refs | **182** ambiguous | **35** external | **9** unresolvable (inside an uninitialized submodule -- this tree cannot see them, so they are NOT counted broken).
+ _Human summary -- tables capped at 60 rows; the complete lists are in `doc-graph.json`._
+ 
+ ## Hubs (most-referenced docs, top 15)
+@@ -279,9 +279,9 @@ _Usually generated-artifact filenames a workflow mentions (e.g. `walkthrough.md`
+ | `.agents/rules/mobile-mode.md` | `AGENTS.md` | `.agents/AGENTS.md`, `.agents/skills/react-best-practices/AGENTS.md`, `docs/AGENTS.md` |
+ | `.agents/rules/project-law.md` | `AGENTS.md` | `.agents/AGENTS.md`, `.agents/skills/react-best-practices/AGENTS.md`, `docs/AGENTS.md` |
+ | `.agents/rules/sop-currency.md` | `AGENTS.md` | `.agents/AGENTS.md`, `.agents/skills/react-best-practices/AGENTS.md`, `docs/AGENTS.md` |
+-| ... | _+47 more_ | _in doc-graph.json_ |
++| ... | _+49 more_ | _in doc-graph.json_ |
+ 
+-_Plus 68 refs to generic names omitted: `SKILL.md` x21, `_artifacts/INDEX.md` x7, `rules/INDEX.md` x7, `INDEX.md` x7, `PROJECT_ROOT/.agents/INDEX.md` x6, `/SKILL.md` x4, `/INDEX.md` x3, `PROJECT_ROOT/_artifacts/INDEX.md` x2 ..._
++_Plus 73 refs to generic names omitted: `SKILL.md` x21, `_artifacts/INDEX.md` x7, `rules/INDEX.md` x7, `INDEX.md` x7, `PROJECT_ROOT/.agents/INDEX.md` x6, `/SKILL.md` x4, `/INDEX.md` x3, `frontend/public/INDEX.md` x3 ..._
+ 
+ ## BMAD skill packs (1, summarized -- internals not enumerated)
+ _Each is one vendor skill pack: `docs` = md files inside it; `from` = links to it from our toolkit._

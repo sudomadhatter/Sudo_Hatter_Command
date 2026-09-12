@@ -194,6 +194,45 @@ is a paragraph, not a ceremony. `lane_qualify.py` is no longer called by any dev
 qualify `LIGHT` with it): it answered
 size, and a lane with a plan and `approved` does not need a size verdict.
 
+### Step 1.5 — Size the ceremony to what actually ships (SCC-451)
+
+The scope check above answers *is this a critical surface*. This answers *how much of the system
+depends on it*, and it is what stops six `INDEX.md` files from making a one-file change look like a
+seven-file one:
+
+```bash
+L=$(pwd)
+cd "$L" && python3 -c "import sys; sys.path.insert(0, '.agents/scripts'); \
+from pathlib import Path; from task_preflight import ceremony_tier, deployable_paths, inert_paths, all_inert; \
+r=Path(sys.argv[1]); p=sys.argv[2:]; \
+print('ships:     ' + (', '.join(deployable_paths(r, p)) or '(nothing deployable)')); \
+print('inert:     ' + (', '.join(inert_paths(r, p)) or '(none)')); \
+print('all-inert: ' + ('yes' if all_inert(r, p) else 'no')); \
+print('tier:      ' + ceremony_tier(r, p))" "$REPO" <the planned set>   # PC: `python`
+```
+
+| Tier | What this lane does |
+|---|---|
+| `full` | ⛔ **stop.** A critical surface, a dependency manifest, CI config or an **entry point** — this is `/smh-dev-task-tests` work, with its audit and its review |
+| `quick` | the five steps below, unchanged |
+| `tiny` | the plan is two sentences and the walkthrough is three; Step 3's RED/GREEN still runs |
+
+⛔ **`all-inert: yes` short-circuits Step 2 and Step 3 entirely.** There is no design to review and no
+assertion to write for a file nothing reads at runtime. Keep the lean walkthrough and keep the Step 5
+tripwire; skip the plan, the literal `approved` and the TDD. This is the mechanical form of the
+exemption `artifacts-always-first` § When to Skip already grants by prose, and it is a property of
+**the diff**, not of the command's name.
+
+⛔ **Read `all-inert:`, NEVER `ships:`, and the difference is a hole that was live in the first draft
+of this step.** "Nothing ships" is true of **every** diff in the command centre, because the lobby has
+no product directories at all — so an edit to `git-policy.md`, the law itself, satisfied it and
+skipped the plan and the TDD. The question is *is every path inert*, which `all_inert()` answers and
+an empty `ships:` does not. An empty path list is `no`: silence is unknown scope, never empty scope.
+
+⛔ **`tier` is read from the command, never judged.** At this step there is no diff yet, so
+`ceremony_tier` is called without line evidence and **`tiny` is unreachable** — a tier is never
+lowered on an assumption. Step 5 re-runs it on the real diff, where the line count exists.
+
 ## Step 2 — Plan, then the literal `approved`
 
 Write `implementation_plan.md` into `_artifacts/_main/<YYYY-MM-DD>_<slug>/`, with `task.yaml` beside

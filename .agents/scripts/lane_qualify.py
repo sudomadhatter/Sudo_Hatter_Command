@@ -77,7 +77,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 # only ever runs in the command centre, which ships nothing. So PRODUCT_DIRS is the whole
 # deployable question here, and `.github/` belongs below, in the toolkit — CI and the gates
 # ARE the development system.
-from task_preflight import PRODUCT_DIRS
+from task_preflight import PRODUCT_DIRS, deployable_paths
 
 # The toolkit itself. Prefix match, plus one exact filename.
 TOOLKIT_PREFIXES = (".agents/", ".githooks/", ".github/", "_bmad/", "_bmad-output/")
@@ -145,7 +145,12 @@ def classify(repo: Path, paths: list[str], no_file_changes: bool,
                 "no paths given - that is UNKNOWN scope, not empty scope. Silence is never a "
                 "pass; declare --no-file-changes if this genuinely edits nothing")
 
-    hits = [p for p in clean if p.startswith(PRODUCT_DIRS)]
+    # SCC-451: the prefix test alone called a markdown map under `frontend/` a product change.
+    # `deployable_paths` runs it and then removes what nothing reads at runtime - one predicate,
+    # imported, never a fourth copy of the rule. ⛔ Still PRODUCT_DIRS and never DEPLOY_DIRS:
+    # the inert carve-out narrows nothing about `.github/`, which reaches this script as a
+    # TOOLKIT prefix below (SCC-118).
+    hits = [p for p in deployable_paths(repo, clean) if p.startswith(PRODUCT_DIRS)]
     if hits:
         return ("HANDOFF",
                 f"deployable path(s): {', '.join(hits[:3])} - the product has one road to "

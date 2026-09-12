@@ -40,6 +40,14 @@ verdict this command has no instruction for, and the agent then answers by judge
 one thing putting the question in a script was meant to prevent. `tests/test_lane_qualify.py` fails
 if `lane_qualify.VERDICTS` ever grows a sixth and this table does not.
 
+⭐ **`HANDOFF` now asks a different question (SCC-451).** `lane_qualify.py` calls
+`task_preflight.deployable_paths`, which runs the folder test and then removes the **inert** part —
+paths nothing reads when the system runs and no gate reads as law. A markdown map file under a
+product folder is no longer "deployable code", because `check_maps.py` check 2.5 demands those files
+exist and this door used to refuse the very thing another gate manufactured. One predicate, in one
+module, called by all four doors; nothing here re-implements it. Notes, artifacts and `docs/` were
+always accepted — measured — so a plan for a todo item was never this gate's doing.
+
 ---
 
 ## Step 1 — Resolve or auto-provision the Standing Push Ticket
