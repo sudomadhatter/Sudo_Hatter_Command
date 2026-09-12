@@ -310,7 +310,7 @@ block H 4/24 → 24/24 (634/634 whole file) · `test_command_surfaces` 344/345 �
 
 - NEW `.agents/scripts/review_scope.py` — the diff a lens reads: one part, masters only, no cap; `--audit` keeps mirrors → D
 - NEW `.agents/scripts/repro_receipt.py` — the door's receipt writer; a reproduction is a receipt → D
-- NEW `.agents/scripts/tests/test_review_disposition.py` — the prose pins with counter-examples (blocks A–H) → A
+- NEW `.agents/scripts/tests/test_review_disposition.py` — the prose pins with counter-examples (blocks A–I; I pins the records) → A
 - NEW `.agents/scripts/tests/test_review_scope.py` — the scope script seen red → D
 - NEW `.agents/scripts/tests/test_repro_receipt.py` — the receipt writer seen red → D
 - NEW `.agents/scripts/tests/test_walkthrough_roster_dispositions.py` — the new refusals seen red → D

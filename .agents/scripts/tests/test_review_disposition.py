@@ -855,6 +855,121 @@ CHECKS_H: tuple[tuple[str, str, str, int, str, str], ...] = (
 )
 
 
+# ══ BLOCK I — the RECORDS (the quickref and the SOP's hand-drawn appendix) ════════════════════
+#
+# ⛔ WHY A PICTURE IS PINNED. The quickref is the page the operator reads INSTEAD of the doors, and
+# the SOP's appendix tables are its hand-written twins — no generator exists (`grep -rln
+# "quickref|mermaid|appendix" .agents/scripts/*.py` → none), so nothing but a check keeps either
+# drawn against the engine that runs. v1 of this lane declared the quickref conditionally (AUDIT
+# FINDING 8); at Part 6 every token banned below was still in it, five parts after the thing it
+# names was retired. A picture that draws a retired stage is that stage's last surviving copy.
+
+QUICKREF = "docs/_scc_sops_prds/operator_workflows_quickref.md"
+RECORDS = (QUICKREF, LANE_SOP)
+
+# The three diagrams this lane redraws, by the `####` heading each sits under in BOTH files. The
+# SOP's twin of each is a `| `ID` | label | next |` table whose label column is the mermaid label
+# with every `\n` folded to one space — that fold IS the generator, and it is done by hand.
+DIAGRAMS = ("#### /cicd-code-review", "#### code-review-engine (the shared reviewer)",
+            "#### /smh-code-review")
+
+# Tokens of the engine that no longer runs, banned where the operator reads. The SOP body keeps
+# historical mentions a ban must not catch — "with the Blind Hunter retired" (:2571), SCC-295's
+# "three of five lenses" (:2540) — so its bans are the appendix-shaped tokens, not the lens's name.
+RECORD_BANS: tuple[tuple[str, str, int, tuple[str, ...]], ...] = (
+    ("`Blind Hunter` (a retired lens)", r"Blind Hunter", 0, (QUICKREF,)),
+    ("`Literal-Correctness` (a retired lens)", r"Literal-Correctness", 0, RECORDS),
+    ("the verify wave (retired, SCC-447)", r"verify wave", re.I, RECORDS),
+    ("`Evidence Verifier` / `Compound Synthesis` (retired wave seats)",
+     r"Evidence Verifier|Compound Synthesis", 0, RECORDS),
+    ("`lens_budget` (an input the engine no longer reads)", r"lens_budget", 0, RECORDS),
+    ("`decision_needed` (a retired bucket)", r"decision_needed", 0, RECORDS),
+    ("a five-lens roster", r"5 lenses ·|five independent lenses", re.I, RECORDS),
+    ("the Blind Hunter DROPPED under inline (SCC-203, superseded by SCC-447)",
+     r"Blind Hunter is DROPPED|the other four are handed", 0, (LANE_SOP,)),
+    ("the autopilot's fix cycle and second verdict (retired, Part 5)",
+     r"fix cycle|new sha|second verdict", re.I, (QUICKREF,)),
+)
+
+# The paragraph under `#### code-review-engine` — the SAME words in both files, like block H's
+# asymmetry sentence: nothing generates one from the other.
+ENGINE_BLURB = (
+    "three independent lenses in parallel, each running the command that proves its own finding "
+    "in its own copy of the tree; a triage that keeps what carries its proof and drops what does "
+    "not — two buckets, no third; and a record. The floor it hands back is PROVISIONAL: it holds "
+    "no Bash, so the door re-runs every survivor on the real tree and resolves the verdict at the "
+    "stamp. It never verdicts, never writes the board, never stops to ask."
+)
+
+CHECKS_I: tuple[tuple[str, str, str, int, str, str], ...] = (
+    ("I · the atlas node says three lenses that each reproduce", QUICKREF,
+     r"CRE\[\"code-review-engine skill\\n3 lenses · each reproduces · triage\"\]", 0,
+     "3 lenses · each reproduces · triage", "5 lenses · verify wave · triage"),
+    ("I · the engine diagram's hunter contract: the lens RUNS its own command first", QUICKREF,
+     r"the hunter contract — every critical and important\\ncarries reproduce: and "
+     r"expected_wrong_output:\\nand the lens RUNS it in its own copy first", 0,
+     "and the lens RUNS it in its own copy first", "and a verify wave checks it"),
+    ("I · the engine diagram's gate is a PRESENCE check — the engine holds no Bash", QUICKREF,
+     r"the engine holds no Bash — this is\\na PRESENCE check, never a run", 0,
+     "a PRESENCE check, never a run", "a run, in the engine's own copy"),
+    ("I · the engine diagram records two buckets and no third", QUICKREF,
+     r"two buckets, and there is no third", 0,
+     "two buckets, and there is no third", "one bucket each"),
+    ("I · the autopilot diagram stops at a non-PASS verdict", QUICKREF,
+     r"R -- \"CONCERNS or FAIL\" --> ESCR\[\"ESCALATE - the door's end-of-review message\\n"
+     r"on the ticket: no fix child, no second reviewer", 0,
+     "no fix child, no second reviewer", "ONE fix cycle, in the lane"),
+    ("I · the autopilot blurb counts the children", QUICKREF,
+     one_line("one fresh headless child per step — four for a story, two for a quick fix"), 0,
+     "four for a story, two for a quick fix", "six for a story, four for a quick fix"),
+    ("I · the SOP's engine row no longer drops a Blind Hunter under inline", LANE_SOP,
+     one_line("the Blind Hunter that SCC-203 let a contaminated inline context DROP is retired "
+              "(SCC-447), and with it the drop"), 0,
+     "is retired (SCC-447), and with it the drop", "is DROPPED rather than faked"),
+)
+
+# Sentences that must appear in BOTH the story door's and the task door's diagram, so a count of
+# two is the check — and a count of one is the half-port this lane keeps finding.
+PAIRED_NODES = (
+    ("review_scope.py cutting ONE PART", r"review_scope\.py cuts ONE PART, masters only"),
+    ("Step 1.4 reproducing on the REAL tree through repro_receipt.py",
+     r"Step 1\.4 — reproduce on the REAL tree\\nrepro_receipt\.py runs every critical and important"),
+    ("the verdict resolved at the STAMP on rows still OPEN",
+     r"resolved at the STAMP on rows still OPEN"),
+    ("Step 6 ending the turn with one screen", r"Step 6 — END THE TURN with one screen"),
+)
+
+# A mermaid node: `ID["label"]`, `ID{"label"}` or `ID(["label"])`, wherever it sits on the line.
+# Edge labels (`-- "text" -->`) are preceded by a space, not by an id and a bracket, so they miss.
+NODE_RX = re.compile(r'(\w+)(?:\(\[|\[|\{)"([^"]*)"(?:\]\)|\]|\})')
+
+
+def diagram_nodes(heading: str) -> list[tuple[str, str]]:
+    """(id, label with `\\n` folded to one space) for every node in the quickref diagram under `heading`."""
+    txt = read(QUICKREF)
+    start = txt.find("\n" + heading + "\n")
+    if start < 0:
+        return []
+    fence = txt.find("```mermaid", start)
+    end = txt.find("```", fence + 10) if fence >= 0 else -1
+    if fence < 0 or end < 0:
+        return []
+    seen: dict[str, str] = {}
+    for m in NODE_RX.finditer(txt[fence:end]):
+        seen.setdefault(m.group(1), " ".join(m.group(2).replace("\\n", " ").split()))
+    return list(seen.items())
+
+
+def appendix_section(heading: str) -> str:
+    """The SOP appendix text under `heading`, up to the next `####` heading."""
+    txt = read(LANE_SOP)
+    start = txt.find("\n" + heading + "\n")
+    if start < 0:
+        return ""
+    nxt = txt.find("\n#### ", start + 1)
+    return txt[start:nxt if nxt > 0 else len(txt)]
+
+
 def read(rel: str) -> str:
     p = ROOT / rel
     return p.read_text(encoding="utf-8") if p.is_file() else ""
@@ -1012,6 +1127,60 @@ def main() -> int:
                     "" if len(m) > 2000 and len(mir) > 2000 else "master or mirror absent/short")
             c.check(f"H · mirror {name} is byte-identical", bool(m) and m == mir,
                     "" if m == mir else f"{MIRROR}/{name} has drifted from the master")
+
+    if c.block("I · the records (the quickref and the SOP's hand-drawn appendix)"):
+        for name, ok, detail in check_rows(CHECKS_I):
+            c.check(name, ok, detail)
+
+        for name, pattern, flags, files in RECORD_BANS:
+            rx = re.compile(pattern, flags | re.M)
+            for rel in files:
+                txt = read(rel)
+                c.check(f"I · {Path(rel).name} has a body for the ban scan", len(txt) > 2000,
+                        "" if len(txt) > 2000 else f"{rel} absent or under 2000 chars")
+                c.check(f"I · {Path(rel).name}: no {name}",
+                        bool(txt) and rx.search(txt) is None,
+                        "" if rx.search(txt) is None else f"{rel} still carries {name}")
+
+        qr = read(QUICKREF)
+        for name, pattern in PAIRED_NODES:
+            n = len(re.findall(pattern, qr))
+            c.check(f"I · both door diagrams draw {name}", n == 2,
+                    "" if n == 2 else f"found {n}, expected 2 (③ and /smh-code-review)")
+
+        rx = re.compile(one_line(ENGINE_BLURB))
+        found = []
+        for rel in RECORDS:
+            m = rx.search(read(rel))
+            found.append(" ".join(m.group(0).split()) if m else "")
+        c.check("I · both records carry the engine blurb", all(found),
+                "" if all(found) else
+                f"missing from {[Path(r).name for r, f in zip(RECORDS, found) if not f]}")
+        c.check("I · the engine blurb is the SAME paragraph in both records",
+                bool(found[0]) and found[0] == found[1],
+                "" if found[0] == found[1] else "the records state the engine differently")
+
+        # ⭐ The parity check: every node the quickref draws is a row in the SOP's twin table,
+        # label for label. This is the generator that does not exist, run backwards — and it is
+        # what turns "the appendix is a hand-written twin" from a description into a law.
+        for heading in DIAGRAMS:
+            short = heading[5:].split(" (")[0]
+            nodes = diagram_nodes(heading)
+            section = appendix_section(heading)
+            c.check(f"I · {short}: the quickref diagram has its nodes", len(nodes) >= 12,
+                    "" if len(nodes) >= 12 else f"{len(nodes)} nodes parsed under {heading!r}")
+            c.check(f"I · {short}: the SOP appendix has the twin table",
+                    "| Stage / Step |" in section,
+                    "" if "| Stage / Step |" in section else f"no table under {heading!r} in the SOP")
+            missing = [nid for nid, label in nodes if f"| `{nid}` | {label} |" not in section]
+            c.check(f"I · {short}: every node is a row in the SOP twin, label for label",
+                    bool(nodes) and not missing,
+                    "" if nodes and not missing else f"drifted or missing rows: {missing}")
+            if nodes:
+                nid, label = nodes[0]
+                c.check(f"I · {short}: the parity check can fail",
+                        f"| `{nid}` | {label} (mutated) |" not in section,
+                        "a mutated label was found in the twin — the check cannot fail")
 
     return c.finish()
 
