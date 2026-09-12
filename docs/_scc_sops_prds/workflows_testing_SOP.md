@@ -1810,6 +1810,17 @@ doc and index edits, memory files, `_artifacts` INDEX rows, notes, and quick ref
   markdown map under `frontend/` goes out through this lane; `frontend/public/INDEX.md`, which is
   served on production, does not. The predicate is `task_preflight.deployable_paths`, the carve-out
   is declared in the project's `.agents/inert-paths.json`, and the declaration cannot list itself.
+- **Sizes the review by BLAST RADIUS, not by line count** — `task_preflight.ceremony_tier` answers
+  `tiny` · `quick` · `full`, and the cheapest verdict is earned, never assumed. It asks how many
+  other files reach the ones you touched, reading `code-review-graph impact`; a reach above ten
+  forces `quick` however small the diff, because three lines in a module forty files import is not
+  a small change. **Every rule there runs one way, toward more ceremony.** Where there is no
+  measurement — no graph built, a language the graph has a known blind spot in — the line count
+  decides as before, so an absent graph costs you a `quick` review you may not have needed and
+  never a skipped one. Run `code-review-graph update --repo <r>` to buy the sharper answer.
+  Critical surfaces, dependency manifests, CI config and router entry points are refused outright:
+  `app/layout.tsx` wraps every screen and nothing imports it, so a score alone would call the
+  riskiest file in the tree the safest.
 - **Names a door that will actually run when it refuses** — it reads `epic_mode.py` first:
   `FULL`/`LIGHT` → `/cicd-push-e2e`; `TRUNK` → `/cicd-quick-dev`, then `/cicd-close-story-merge-tree`
   Arm B. Naming `/cicd-push-e2e` in a trunk project is a refusal the operator cannot comply with.
