@@ -1,0 +1,15 @@
+{
+  "id": "f6",
+  "result": "reproduced",
+  "command": [
+    "bash",
+    "-c",
+    "python3 -c \"import sys, inspect; sys.path.insert(0, '.agents/scripts'); sys.path.insert(0, '.agents/scripts/tests'); import test_antigravity_posix, check_antigravity_workspace; src = inspect.getsource(test_antigravity_posix) + inspect.getsource(check_antigravity_workspace); sys.exit(0 if ('config' in src and 'projects' in src) else 1)\""
+  ],
+  "cwd": "/home/dlohn/Sudo_Hatter_Command/.claude/worktrees/SCC-450",
+  "exit_code": 1,
+  "sha": "5eeca18efab5df1b26375839fd160001648b3d91",
+  "dirty_tree": true,
+  "recorded_at": "2026-09-12T16:04:30+00:00",
+  "output_tail": ""
+}

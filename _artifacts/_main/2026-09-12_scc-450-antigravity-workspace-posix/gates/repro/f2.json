@@ -1,0 +1,15 @@
+{
+  "id": "f2",
+  "result": "reproduced",
+  "command": [
+    "bash",
+    "-c",
+    "python3 -c \"import tempfile, shutil, sys; from pathlib import Path; sys.path.insert(0, '.agents/scripts'); import patch_agy_posix; td = Path(tempfile.mkdtemp()); bin_p = td / 'agy'; bin_p.write_text('v2'); (td / 'agy.bak.orig').write_text('v1_orig'); (td / 'agy.bak.20261001_120000').write_text('v2_recent'); patch_agy_posix.restore_backup(bin_p); restored = bin_p.read_text(); shutil.rmtree(td); sys.exit(1 if restored == 'v1_orig' else 0)\""
+  ],
+  "cwd": "/home/dlohn/Sudo_Hatter_Command/.claude/worktrees/SCC-450",
+  "exit_code": 1,
+  "sha": "5eeca18efab5df1b26375839fd160001648b3d91",
+  "dirty_tree": true,
+  "recorded_at": "2026-09-12T16:04:21+00:00",
+  "output_tail": "Restored /tmp/tmpp98a1vc3/agy from /tmp/tmpp98a1vc3/agy.bak.orig\n"
+}

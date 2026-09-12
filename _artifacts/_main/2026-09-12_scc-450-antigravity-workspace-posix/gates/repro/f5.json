@@ -1,0 +1,15 @@
+{
+  "id": "f5",
+  "result": "reproduced",
+  "command": [
+    "bash",
+    "-c",
+    "python3 -c \"import sys; sys.path.insert(0, '.agents/scripts'); import patch_agy_posix; patch_agy_posix.check_status(sys.executable)\""
+  ],
+  "cwd": "/home/dlohn/Sudo_Hatter_Command/.claude/worktrees/SCC-450",
+  "exit_code": 1,
+  "sha": "5eeca18efab5df1b26375839fd160001648b3d91",
+  "dirty_tree": true,
+  "recorded_at": "2026-09-12T16:04:28+00:00",
+  "output_tail": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"/home/dlohn/Sudo_Hatter_Command/.claude/worktrees/SCC-450/.agents/scripts/patch_agy_posix.py\", line 69, in check_status\n    if not bin_path.exists():\n           ^^^^^^^^^^^^^^^\nAttributeError: 'str' object has no attribute 'exists'\n"
+}

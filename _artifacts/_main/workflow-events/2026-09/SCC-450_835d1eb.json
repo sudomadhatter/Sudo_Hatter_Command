@@ -1,0 +1,36 @@
+{
+  "v": 1,
+  "task": "SCC-450",
+  "sha": "835d1ebec37d96867dafb5827ae653f13e56c797",
+  "tip": "255fcc8a0d844b2dda23e2b3f4c9ac6b37e8bef7",
+  "trigger": "close-out",
+  "when": "2026-09-12T12:09:14-04:00",
+  "changes": [
+    ".agents/scripts/INDEX.md",
+    ".agents/scripts/check_antigravity_workspace.py",
+    ".agents/scripts/patch_agy_posix.py",
+    ".agents/scripts/tests/test_antigravity_posix.py",
+    "_artifacts/_main/2026-09-12_scc-450-antigravity-workspace-posix/implementation_plan.md",
+    "_artifacts/_main/2026-09-12_scc-450-antigravity-workspace-posix/review/diff.patch",
+    "_artifacts/_main/2026-09-12_scc-450-antigravity-workspace-posix/walkthrough.md",
+    "_artifacts/_main/INDEX.md",
+    "docs/_scc_sops_prds/workflows_testing_SOP.md"
+  ],
+  "evidence": {
+    "walkthrough": "_artifacts/_main/2026-09-12_scc-450-antigravity-workspace-posix/walkthrough.md",
+    "verdict": "PASS @ 835d1eb",
+    "gates": {
+      "suite": "pass@835d1eb"
+    }
+  },
+  "expected": {
+    "verdict": "PASS"
+  },
+  "outcome": {
+    "verdict": "PASS"
+  },
+  "decisions": [],
+  "pitfalls": [],
+  "followons": [],
+  "fingerprints": []
+}
