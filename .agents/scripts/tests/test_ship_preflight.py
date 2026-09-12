@@ -283,6 +283,27 @@ def main() -> int:
             c.check("SP-F ...naming the REASON: the repo has no deployable surface at all",
                     "no deployable surface" in out.lower(), out.strip()[-300:])
 
+        # ⛔ SCC-451 · THE PREDICATE'S OWN CONTRIBUTION AT THIS CALLER, WHICH NOTHING ASKED
+        # ABOUT. A surviving mutant found it (R4, 2026-09-12: "ship_preflight: ships = changed,
+        # predicate bypassed"): every arm above uses either a real source file under a product
+        # dir or a path outside them entirely, and BOTH route the same way with the carve-out
+        # deleted. The only input that separates them is a path that IS under a product dir and
+        # ships nothing - which is the whole reason this lane exists.
+        with TempDir() as t:
+            repo = make_repo(t, deployable=True)
+            branch(repo, "chore/SCC-11-thing", {"frontend/scripts/INDEX.md": "# map\n"})
+            code, out = ship(repo, "chore/SCC-11-thing")
+            c.check("⛔ SP-F a map file UNDER a product dir is not a deployable diff -> exit 2",
+                    code == 2, out.strip()[-300:])
+            c.check("⛔ SP-F ...and it is NOT admitted to the light gate (bypassing the "
+                    "predicate here sends a docs-only lane through the ship gate)",
+                    "light gate" not in out.lower(), out.strip()[-300:])
+            # The control that keeps the pin honest: the same folder, a file that DOES ship.
+            branch(repo, "chore/SCC-11-src", {"frontend/scripts/build.ts": "export {}\n"})
+            code, out = ship(repo, "chore/SCC-11-src")
+            c.check("SP-F CONTROL: a real source file in the SAME folder still ships -> light",
+                    code == 0 and "light gate" in out.lower(), out.strip()[-300:])
+
         # ⛔ AND THE CONTROL THAT KEEPS THE LANE HONEST IN THE OTHER DIRECTION: an epic
         # branch is never subjected to the deployable-diff question. An epic ships whatever
         # it ships; the question exists only to decide whether a CHORE lane belongs here.

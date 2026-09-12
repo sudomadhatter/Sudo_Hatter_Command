@@ -206,7 +206,7 @@ narrows nothing about CI paths.
 
 ## Declared Change Set
 
-- EDIT `.agents/scripts/task_preflight.py` - `DEFAULT_INERT`, `SERVED_SEGMENTS`, `LAW_PREFIXES`, `INERT_REL`, `ENTRY_POINT_GLOBS`, `MANIFEST_NAMES`, `load_inert`, `inert_paths`, `deployable_paths`, `ceremony_tier`; `check_scope` calls the predicate → A, B, C, G, H
+- EDIT `.agents/scripts/task_preflight.py` - `DEFAULT_INERT`, `SERVED_SEGMENTS`, `LAW_PREFIXES`, `INERT_REL`, `_GLOB_CANARIES`, `ENTRY_POINT_NAMES`, `ROUTER_DIRS`, `PY_ENTRY_NAMES`, `MANIFEST_NAMES`, `TINY_MAX_LINES`, `TINY_MAX_FILES`, `_norm_rel`, `load_inert`, `inert_paths`, `deployable_paths`, `all_inert`, `_is_entry_point`, `ceremony_tier`; `check_scope` calls the predicate → A, B, C, G, H
 - EDIT `.agents/scripts/lane_qualify.py` - the `HANDOFF` hit list uses `deployable_paths` → A
 - EDIT `.agents/scripts/ship_preflight.py` - `check_lane` uses `deployable_paths`; the handoff names the project door when the repo has a surface → A, F
 - NEW `.agents/scripts/tests/test_inert_paths.py` - the nine assertion groups → A, B, C, D, E, F, G, H, I
@@ -226,6 +226,17 @@ across three files would have put one predicate's pins in three places, which is
 ticket is against. Four rows were **added**: the lobby declaration (the SOP names the path, and a
 prose path that resolves nowhere fails `test_sops_prds_folder.py` T9), its self-listing row,
 `test_epic_mode.py`'s roster count, and the two generated map files.
+
+**Symbol drift after the build, and why.** The `task_preflight.py` row above is the post-review
+list, not the pre-approval one. `ENTRY_POINT_GLOBS` **does not exist**: `PurePosixPath.match` is
+right-anchored on whole components, so a fixed-depth glob list pinned exact segment counts and no
+real App-Router handler (`app/api/<name>/route.ts`) could ever match it — replaced by
+`ENTRY_POINT_NAMES` + `ROUTER_DIRS` + `PY_ENTRY_NAMES`, matched by filename inside a router folder at
+any depth. `_GLOB_CANARIES` replaced a spelling blacklist that accepted `?*.md` and refused
+`docs/*.md`. `all_inert`, `_norm_rel`, `_is_entry_point`, `TINY_MAX_LINES` and `TINY_MAX_FILES` are
+new; each is named in the commit that added it with the defect it answers. **No file-level drift:
+`git diff --name-only origin/main...HEAD` is 26 files, every one declared above except this plan and
+its `task.yaml`.**
 - EDIT `.agents/commands/cicd-non-crit-pr-push.md` - the fenced check calls `deployable_paths`; the HANDOFF line reads `epic_mode.py` → D, F
 - EDIT `.agents/commands/smh-non-crit-pr-push.md` - the fenced check calls `deployable_paths` → D
 - EDIT `.agents/commands/cicd-quick-dev.md` - Step 1 sizes the ceremony to the non-inert remainder → E, I

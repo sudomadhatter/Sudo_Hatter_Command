@@ -185,9 +185,24 @@ def main() -> int:
                     "list",
                     tp.deployable_paths(repo, dotted_served) == dotted_served,
                     repr(tp.deployable_paths(repo, dotted_served)))
-            c.check("B · a planned DIRECTORY that IS the served folder is not inert",
-                    tp.inert_paths(repo, ["frontend/public/"]) == [],
-                    repr(tp.inert_paths(repo, ["frontend/public/"])))
+            # ⛔ THIS PIN WAS VACUOUS AND A SURVIVING MUTANT SAID SO (N5, 2026-09-12: "served-guard
+            # directory arm dropped - `parts[:-1]` always"). `frontend/public/` matches NEITHER
+            # default basename, so `inert_paths` returned `[]` from the glob step and the served
+            # guard was never reached - the assertion passed with the guard deleted. Same failure
+            # mode as the law-guard pin at 6463df0a: an assertion about a guard must use input the
+            # glob actually ADMITS, or it is testing nothing.
+            with TempDir() as t2:
+                served = bare(t2)
+                # Right-anchored on whole components, so a bare word matches the DIRECTORY itself.
+                declare(served, "public", "private")
+                c.check("⛔ B · a planned DIRECTORY that IS the served folder is not inert - and "
+                        "the glob ADMITS it, so the served guard is the only thing refusing",
+                        tp.inert_paths(served, ["frontend/public/"]) == [],
+                        repr(tp.inert_paths(served, ["frontend/public/"])))
+                c.check("B · CONTROL: the same glob on a NON-served directory IS inert, so the "
+                        "check above cannot pass by the glob missing",
+                        tp.inert_paths(served, ["frontend/private/"]) == ["frontend/private/"],
+                        repr(tp.inert_paths(served, ["frontend/private/"])))
 
             # RUNTIME DOC. Markdown a loader reads, and the loader raises if it is missing.
             runtime = "backend/knowledge/aviationchat_pitch.md"
@@ -476,6 +491,64 @@ def main() -> int:
                     ("load_inert", "inert_paths", "deployable_paths", "ceremony_tier")),
                 repr([n for n in ("load_inert", "inert_paths", "deployable_paths",
                                   "ceremony_tier") if not hasattr(tp, n)]))
+
+    # ── J · MUTANTS THAT SURVIVED THE SUITE AT b01dbe25 ───────────────────────────────────
+    # The Test-Adequacy lens ran 45 hand-written mutants against this file. These three lived:
+    # the suite passed with the code deliberately broken, which means nothing here was asking
+    # the question. Each pin below was seen RED against its own mutant before being kept.
+    if c.block("J · the boundary, the empty glob, and the declared map - three surviving mutants"):
+        with TempDir() as t:
+            repo = bare(t)
+            surfaces(repo, "backend/middleware/auth.py")
+
+            # ⛔ R3 · `lines <= TINY_MAX_LINES` -> `<` SURVIVED. Every existing pin used 3 lines
+            # or 40+, so the boundary itself was never touched. A threshold nobody tests AT the
+            # threshold is a number, not a rule.
+            at = tp.TINY_MAX_LINES
+            c.check(f"⛔ J · exactly TINY_MAX_LINES ({at}) is still `tiny` - the comparison is "
+                    f"`<=`, and an off-by-one here silently narrows every quick lane",
+                    tp.ceremony_tier(repo, ["frontend/src/lib/fmt.ts"],
+                                     lines=at, structural=False) == "tiny",
+                    tp.ceremony_tier(repo, ["frontend/src/lib/fmt.ts"],
+                                     lines=at, structural=False))
+            c.check(f"J · …and one line over ({at + 1}) is `quick`, so the pin above cannot pass "
+                    f"by the threshold being ignored",
+                    tp.ceremony_tier(repo, ["frontend/src/lib/fmt.ts"],
+                                     lines=at + 1, structural=False) == "quick",
+                    tp.ceremony_tier(repo, ["frontend/src/lib/fmt.ts"],
+                                     lines=at + 1, structural=False))
+
+        # ⛔ N2 · dropping the `not g` clause SURVIVED. An empty glob is not exotic - it is what
+        # a hand-edited declaration leaves behind, and `PurePosixPath(x).match("")` raises, so
+        # the refusal is what stands between a stray comma and a crashing gate.
+        with TempDir() as t:
+            repo = bare(t)
+            declare(repo, "INDEX.md", "")
+            c.check("⛔ J · an EMPTY glob refuses the whole declaration - nothing is inert",
+                    tp.load_inert(repo) == (), repr(tp.load_inert(repo)))
+            c.check("J · …and the caller sees it: a path the good glob would have carved out "
+                    "stays deployable while the declaration is broken",
+                    tp.inert_paths(repo, ["frontend/scripts/INDEX.md"]) == [],
+                    repr(tp.inert_paths(repo, ["frontend/scripts/INDEX.md"])))
+
+        # ⛔ N9 · "declared rows ignored, GENERIC always" SURVIVED. Every veto pin used a path
+        # the GENERIC fallback ALSO matches (`auth`), so the repo's own map was never the thing
+        # being read. A repo that declares a surface the house list has never heard of is the
+        # only input that can tell the two apart.
+        with TempDir() as t:
+            repo = bare(t)
+            own = "backend/ranking/weights.py"          # matches no GENERIC fragment
+            surfaces(repo, own)
+            c.check("⛔ J · a surface this repo DECLARED is an absolute veto even though the "
+                    "GENERIC fallback has never heard of it",
+                    tp.ceremony_tier(repo, [own], lines=3, structural=False) == "full",
+                    tp.ceremony_tier(repo, [own], lines=3, structural=False))
+            c.check("J · CONTROL: an undeclared sibling in the same folder is NOT vetoed, so "
+                    "the check above is reading the map and not the folder",
+                    tp.ceremony_tier(repo, ["backend/ranking/format.py"],
+                                     lines=3, structural=False) == "tiny",
+                    tp.ceremony_tier(repo, ["backend/ranking/format.py"],
+                                     lines=3, structural=False))
 
     return c.finish()
 
