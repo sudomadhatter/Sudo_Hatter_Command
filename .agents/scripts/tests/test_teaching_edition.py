@@ -1174,6 +1174,43 @@ def main() -> int:
                     and "provenance stamp" in nogit_transcript,
                     nogit_transcript)
 
+            # E5 - THE STAMP IS SCANNED LIKE EVERY OTHER BYTE, proven behaviourally rather than by
+            # reading the pass order. The needle is the source sha's own first eight characters:
+            # nothing else in this fixture contains them, so the ONLY file that can trip the scan
+            # is the stamp. If the stamp were ever written AFTER the leak scan - which is the
+            # natural way to write it, and a hole straight to a public repo - this export would
+            # come back clean and this case would go red.
+            scanned = temp / "source2"
+            scanned.mkdir()
+            (scanned / "payload.txt").write_text("nothing interesting\n", encoding="utf-8")
+            (scanned / "manifest.json").write_text(
+                json.dumps({"name": "stamp-is-scanned probe", "source": ".",
+                            "include": ["payload.txt"],
+                            "leakScan": {"literals": [], "wordLiterals": []}}),
+                encoding="utf-8",
+            )
+            git_seed(scanned)
+            scanned_head = subprocess.run(
+                ["git", "rev-parse", "HEAD"], cwd=str(scanned),
+                check=True, capture_output=True, text=True,
+            ).stdout.strip()
+            (scanned / "manifest.json").write_text(
+                json.dumps({"name": "stamp-is-scanned probe", "source": ".",
+                            "include": ["payload.txt"],
+                            "leakScan": {"literals": [scanned_head[:8]], "wordLiterals": []}}),
+                encoding="utf-8",
+            )
+            scanned_proc = subprocess.run(
+                ["pwsh", "-NoProfile", "-File", str(exporter),
+                 "-Manifest", str(scanned / "manifest.json"), "-Target", str(temp / "public3")],
+                cwd=REPO, capture_output=True, text=True, errors="replace",
+            )
+            scanned_transcript = (scanned_proc.stdout or "") + (scanned_proc.stderr or "")
+            c.check("E5 · the stamp is written BEFORE the leak scan, so the scan sees it",
+                    scanned_proc.returncode != 0
+                    and "LEAK SCAN FAILED" in scanned_transcript,
+                    scanned_transcript)
+
     if c.block("F · the publish recipe DELETES, and only what git tracks"):
         door = REPO / ".agents" / "commands" / "smh-publish-teaching-edition.md"
         door_body = door.read_text(encoding="utf-8") if door.is_file() else ""
