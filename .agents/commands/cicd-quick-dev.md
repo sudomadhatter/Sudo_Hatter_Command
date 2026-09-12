@@ -267,13 +267,14 @@ depends on it*, and it is what stops six `INDEX.md` map files from making a one-
 like a seven-file one:
 
 ```bash
-L=<the lobby's absolute path>
+L=$(pwd)
 cd "$L" && python3 -c "import sys; sys.path.insert(0, '.agents/scripts'); \
-from pathlib import Path; from task_preflight import ceremony_tier, deployable_paths, inert_paths; \
+from pathlib import Path; from task_preflight import ceremony_tier, deployable_paths, inert_paths, all_inert; \
 r=Path(sys.argv[1]); p=sys.argv[2:]; \
-print('ships:  ' + (', '.join(deployable_paths(r, p)) or '(nothing deployable)')); \
-print('inert:  ' + (', '.join(inert_paths(r, p)) or '(none)')); \
-print('tier:   ' + ceremony_tier(r, p))" "$PROJECT_ROOT" <the planned set>   # PC: `python`
+print('ships:     ' + (', '.join(deployable_paths(r, p)) or '(nothing deployable)')); \
+print('inert:     ' + (', '.join(inert_paths(r, p)) or '(none)')); \
+print('all-inert: ' + ('yes' if all_inert(r, p) else 'no')); \
+print('tier:      ' + ceremony_tier(r, p))" "$PROJECT_ROOT" <the planned set>   # PC: `python`
 ```
 
 | Tier | What this lane does |
@@ -282,11 +283,16 @@ print('tier:   ' + ceremony_tier(r, p))" "$PROJECT_ROOT" <the planned set>   # P
 | `quick` | the five steps below, unchanged |
 | `tiny` | the plan is two sentences and the walkthrough is three; Step 3's RED/GREEN still runs |
 
-⛔ **An ALL-INERT diff — `ships:` empty — short-circuits Step 2 and Step 3 entirely.** There is no
-design to review and no assertion to write for a file nothing reads at runtime. Keep the lean
-walkthrough and keep the Step 5 tripwire; skip the plan, the literal `approved` and the TDD. The
-project's own `.agents/inert-paths.json` declares what qualifies, it cannot list itself, and nothing
-under a `public/` or `static/` folder is ever inert — that is served on production.
+⛔ **`all-inert: yes` short-circuits Step 2 and Step 3 entirely.** There is no design to review and no
+assertion to write for a file nothing reads at runtime. Keep the lean walkthrough and keep the Step 5
+tripwire; skip the plan, the literal `approved` and the TDD. The project's own
+`.agents/inert-paths.json` declares what qualifies, it cannot list itself, and nothing under a
+`public/` or `static/` folder is ever inert — that is served on production.
+
+⛔ **Read `all-inert:`, NEVER `ships:`.** "Nothing ships" is a different question and a weaker one —
+in the command centre it is true of *every* diff, so the lobby twin of this step would have skipped
+the plan and the TDD for an edit to the law. `all_inert()` asks whether **every** path is inert. An
+empty path list is `no`: silence is unknown scope, never empty scope.
 
 ⛔ **`tier` is read from the command, never judged.** At this step there is no diff yet, so
 `ceremony_tier` is called without line evidence and **`tiny` is unreachable** — a tier is never

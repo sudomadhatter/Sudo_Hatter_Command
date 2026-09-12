@@ -9,7 +9,7 @@
     "pack_docs": 2,
     "edges": 797,
     "external": 35,
-    "ambiguous": 182,
+    "ambiguous": 183,
     "dangling": 263,
     "broken_paths": 59,
     "unresolved_names": 204,
@@ -763,7 +763,7 @@
     },
     {
       "path": ".agents/rules/git-policy.md",
-      "in": 59,
+      "in": 60,
       "out": 5
     },
     {
@@ -1829,7 +1829,7 @@
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "in": 4,
-      "out": 23
+      "out": 24
     },
     {
       "path": "docs/code-review-graph.md",
@@ -10458,6 +10458,16 @@
         ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
+      ]
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "target": ".agents/rules/README.md",
+      "candidates": [
+        ".agents/bmad",
+        ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
+        ".agents/skills/react-best-practices/README.md",
+        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {

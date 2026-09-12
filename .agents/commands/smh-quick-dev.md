@@ -203,11 +203,12 @@ seven-file one:
 ```bash
 L=$(pwd)
 cd "$L" && python3 -c "import sys; sys.path.insert(0, '.agents/scripts'); \
-from pathlib import Path; from task_preflight import ceremony_tier, deployable_paths, inert_paths; \
+from pathlib import Path; from task_preflight import ceremony_tier, deployable_paths, inert_paths, all_inert; \
 r=Path(sys.argv[1]); p=sys.argv[2:]; \
-print('ships:  ' + (', '.join(deployable_paths(r, p)) or '(nothing deployable)')); \
-print('inert:  ' + (', '.join(inert_paths(r, p)) or '(none)')); \
-print('tier:   ' + ceremony_tier(r, p))" "$REPO" <the planned set>   # PC: `python`
+print('ships:     ' + (', '.join(deployable_paths(r, p)) or '(nothing deployable)')); \
+print('inert:     ' + (', '.join(inert_paths(r, p)) or '(none)')); \
+print('all-inert: ' + ('yes' if all_inert(r, p) else 'no')); \
+print('tier:      ' + ceremony_tier(r, p))" "$REPO" <the planned set>   # PC: `python`
 ```
 
 | Tier | What this lane does |
@@ -216,11 +217,17 @@ print('tier:   ' + ceremony_tier(r, p))" "$REPO" <the planned set>   # PC: `pyth
 | `quick` | the five steps below, unchanged |
 | `tiny` | the plan is two sentences and the walkthrough is three; Step 3's RED/GREEN still runs |
 
-⛔ **An ALL-INERT diff — `ships:` empty — short-circuits Step 2 and Step 3 entirely.** There is no
-design to review and no assertion to write for a file nothing reads at runtime. Keep the lean
-walkthrough and keep the Step 5 tripwire; skip the plan, the literal `approved` and the TDD. This is
-the mechanical form of the exemption `artifacts-always-first` § When to Skip already grants by
-prose, and it is a property of **the diff**, not of the command's name.
+⛔ **`all-inert: yes` short-circuits Step 2 and Step 3 entirely.** There is no design to review and no
+assertion to write for a file nothing reads at runtime. Keep the lean walkthrough and keep the Step 5
+tripwire; skip the plan, the literal `approved` and the TDD. This is the mechanical form of the
+exemption `artifacts-always-first` § When to Skip already grants by prose, and it is a property of
+**the diff**, not of the command's name.
+
+⛔ **Read `all-inert:`, NEVER `ships:`, and the difference is a hole that was live in the first draft
+of this step.** "Nothing ships" is true of **every** diff in the command centre, because the lobby has
+no product directories at all — so an edit to `git-policy.md`, the law itself, satisfied it and
+skipped the plan and the TDD. The question is *is every path inert*, which `all_inert()` answers and
+an empty `ships:` does not. An empty path list is `no`: silence is unknown scope, never empty scope.
 
 ⛔ **`tier` is read from the command, never judged.** At this step there is no diff yet, so
 `ceremony_tier` is called without line evidence and **`tiny` is unreachable** — a tier is never

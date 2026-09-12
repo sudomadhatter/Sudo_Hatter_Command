@@ -136,6 +136,22 @@ LAW_PREFIXES = (".agents/rules/", ".agents/commands/")
 INERT_REL = ".agents/inert-paths.json"
 
 
+def _norm_rel(path: str) -> str:
+    """Repo-relative, forward slashes, no leading `./`.
+
+    ⛔ NOT `lstrip("./")`, and this repo has the scar twice now. `lstrip` takes a character SET,
+    so it eats the leading dot off every `.agents/...` path - `.agents/rules/README.md` became
+    `agents/rules/README.md`, `LAW_PREFIXES` could never match, and a RULE FILE was declared
+    inert because `README.md` is a default glob. `lane_qualify.norm` carries the same warning
+    in its docstring, from `sop_currency._norm` shipping it first. Three normalisers that
+    disagree is how the drift case starts failing, so this one is written the same way.
+    """
+    p = path.replace("\\", "/").strip()
+    while p.startswith("./"):
+        p = p[2:]
+    return p
+
+
 def load_inert(repo: Path) -> tuple[str, ...]:
     """The globs this repo declares as inert. Absent file -> `DEFAULT_INERT`.
 
@@ -187,7 +203,7 @@ def inert_paths(repo: Path, paths: Iterable[str]) -> list[str]:
         return []
     out: list[str] = []
     for p in paths:
-        rel = p.replace("\\", "/").lstrip("./")
+        rel = _norm_rel(p)
         if rel == INERT_REL or rel.startswith(LAW_PREFIXES):
             continue
         if any(seg in SERVED_SEGMENTS for seg in PurePosixPath(rel).parts[:-1]):
@@ -207,7 +223,25 @@ def deployable_paths(repo: Path, paths: Iterable[str]) -> list[str]:
     """
     inert = set(inert_paths(repo, paths))
     return [p for p in paths
-            if p.replace("\\", "/").startswith(DEPLOY_DIRS) and p not in inert]
+            if _norm_rel(p).startswith(DEPLOY_DIRS) and p not in inert]
+
+
+def all_inert(repo: Path, paths: Iterable[str]) -> bool:
+    """Is EVERY path in this diff inert? The predicate that lets a door skip the plan, the
+    literal `approved` and the RED/GREEN - so it is the highest-stakes question here.
+
+    ⛔ THE TEST IS "EVERY PATH IS INERT", NEVER "NOTHING SHIPS", and the difference is the hole
+    this function exists to close. The doors first read an empty `deployable_paths()` as
+    "all inert" - but the COMMAND CENTRE HAS NO PRODUCT DIRS AT ALL, so nothing ever ships
+    there and every lobby diff satisfied it. An edit to `git-policy.md` - the law itself -
+    would have skipped the plan and the TDD. `deployable_paths` answers *what still ships*;
+    only this answers *is there anything here worth a ceremony*.
+
+    An EMPTY path list is False: silence is unknown scope, not empty scope (the same rule
+    `lane_qualify` applies to a caller that names nothing).
+    """
+    kept = list(paths)
+    return bool(kept) and set(kept) == set(inert_paths(repo, kept))
 
 
 # ── HOW MUCH CEREMONY (SCC-451 step one; SCC-452 replaces the `tiny` arm) ──────

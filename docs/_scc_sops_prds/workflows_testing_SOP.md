@@ -391,7 +391,8 @@ question the system will not answer for you at the end.
 | System/toolkit work off the critical-surfaces list — a guide, a reference, a small rule edit | **The Quick Lane** | `/smh-quick-dev` | Step 1 scope check against the lobby's `.agents/critical-surfaces.json` (its gates): an overlap is a **soft stop** only your word lifts. Step 5 re-runs it on the real diff; an uncovered overlap **ejects to the Task Lane**. |
 
 **⭐ How much ceremony a change earns is now a command, not a feeling (SCC-451).** Both quick lanes
-run a Step 1.5 that prints three lines — what **ships**, what is **inert**, and the **tier**:
+run a Step 1.5 that prints four lines — what **ships**, what is **inert**, whether the diff is
+**all-inert**, and the **tier**:
 
 | Tier | What happens |
 |---|---|
@@ -399,11 +400,17 @@ run a Step 1.5 that prints three lines — what **ships**, what is **inert**, an
 | `quick` | the five steps, unchanged |
 | `tiny` | the plan is two sentences and the walkthrough is three; the RED/GREEN still runs |
 
-An **all-inert diff** — nothing in it is read when the system runs and no gate reads it as law —
+An **all-inert diff** — *every* path in it is read by nothing at runtime and by no gate as law —
 skips the plan, the literal `approved` and the TDD altogether, because there is no design to review
 and no assertion to write. It keeps the lean walkthrough and the close-out tripwire. This is the
 first exemption in `artifacts-always-first` § When to Skip that is **mechanical**: a property of the
 diff rather than of the command's name, so a lane cannot talk its way into it.
+
+⛔ **"All inert" is not "nothing ships", and the difference matters most here in the lobby.** The
+command centre has no product directories at all, so *nothing ever ships* in it — a door gating the
+short-circuit on an empty `ships:` would skip the plan and the TDD for an edit to `git-policy.md`
+itself. The doors read `all-inert:`, which asks whether **every** path is inert. An empty path list
+answers `no`: silence is unknown scope, never empty scope.
 
 Two traps are handled by name, and both are measured rather than argued. **Nothing served from a
 `public/` or `static/` folder is ever inert** — `frontend/public/INDEX.md` is tracked and answers

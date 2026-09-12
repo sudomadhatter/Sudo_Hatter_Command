@@ -155,6 +155,21 @@ def main() -> int:
             law = [".agents/rules/git-policy.md", ".agents/commands/smh-quick-dev.md"]
             c.check("⛔ B · nothing under .agents/rules/ or .agents/commands/ is ever inert",
                     tp.inert_paths(repo, law) == [], repr(tp.inert_paths(repo, law)))
+            # ⛔ AND THE CASE THAT MAKES THAT CHECK NON-VACUOUS. The two paths above match no
+            # declared glob, so they would come back empty with the LAW guard deleted - the
+            # assertion passed for the wrong reason. `README.md` IS a default glob, so this is
+            # the first case where the guard is the only thing standing between a law file and
+            # the carve-out. It reproduced the repo's own `norm()` scar: `lstrip("./")` takes a
+            # CHARACTER SET, so it ate the leading dot off `.agents/...` and the prefix test
+            # could never match (lane_qualify.norm carries the same warning in its docstring).
+            law_readme = [".agents/rules/README.md", ".agents/commands/README.md"]
+            c.check("⛔ B · a README under .agents/rules/ or .agents/commands/ is NOT inert - "
+                    "it matches a DEFAULT glob, so only the law guard stops it",
+                    tp.inert_paths(repo, law_readme) == [],
+                    repr(tp.inert_paths(repo, law_readme)))
+            c.check("B · …and a leading `./` on the same path does not change the answer",
+                    tp.inert_paths(repo, ["./.agents/rules/README.md"]) == [],
+                    repr(tp.inert_paths(repo, ["./.agents/rules/README.md"])))
 
             # RUNTIME DOC. Markdown a loader reads, and the loader raises if it is missing.
             runtime = "backend/knowledge/aviationchat_pitch.md"
@@ -215,6 +230,36 @@ def main() -> int:
             c.check("⛔ D · CONTROL — a repo with a product surface STILL hands off on .github/; "
                     "the carve-out narrows nothing about CI paths",
                     lane2 == "HANDOFF" and ".github/" in touched2, f"{lane2} {touched2}")
+
+    # ── A2 ────────────────────────────────────────────────────────────────────────────────
+    if c.block("A2 · all_inert() - the predicate that skips the plan and the TDD"):
+        with TempDir() as t:
+            repo = bare(t)
+            maps = ["frontend/scripts/INDEX.md", "backend/agents/INDEX.md"]
+            c.check("A2 · a diff of nothing but map files under product dirs IS all-inert",
+                    tp.all_inert(repo, maps) is True, repr(tp.all_inert(repo, maps)))
+            # ⛔ THE HOLE THIS PREDICATE EXISTS TO CLOSE. The doors first read "nothing ships"
+            # as "all inert" - and in the COMMAND CENTRE nothing ever ships, because the lobby
+            # has no product dirs at all. So every lobby diff, an edit to `git-policy.md`
+            # included, satisfied the short-circuit and skipped the plan, the literal `approved`
+            # and the RED/GREEN. The question is not "does anything ship" but "is EVERY path
+            # inert", and only the second one is false for a rule edit.
+            c.check("⛔ A2 · a RULE edit is NOT all-inert - nothing ships in the lobby either, "
+                    "so 'nothing ships' can never be the test",
+                    tp.all_inert(repo, [".agents/rules/git-policy.md"]) is False,
+                    repr(tp.all_inert(repo, [".agents/rules/git-policy.md"])))
+            c.check("⛔ A2 · one real file alongside six map files is NOT all-inert",
+                    tp.all_inert(repo, maps + ["frontend/src/components/Button.tsx"]) is False,
+                    repr(tp.all_inert(repo, maps + ["frontend/src/components/Button.tsx"])))
+            c.check("⛔ A2 · an EMPTY path list is NOT all-inert - silence is unknown scope, "
+                    "never empty scope",
+                    tp.all_inert(repo, []) is False, repr(tp.all_inert(repo, [])))
+            c.check("⛔ A2 · a served map file is NOT all-inert (it is on production)",
+                    tp.all_inert(repo, ["frontend/public/INDEX.md"]) is False,
+                    repr(tp.all_inert(repo, ["frontend/public/INDEX.md"])))
+            declare(repo, "*.md")
+            c.check("⛔ A2 · a malformed/over-wide declaration makes nothing all-inert",
+                    tp.all_inert(repo, maps) is False, repr(tp.all_inert(repo, maps)))
 
     # ── E ─────────────────────────────────────────────────────────────────────────────────
     if c.block("E · ceremony sizes to the NON-INERT part of a mixed diff"):
@@ -304,6 +349,15 @@ def main() -> int:
             b = body(name)
             c.check(f"I · {name} calls ceremony_tier",
                     "ceremony_tier" in b, "not found in the body")
+            c.check(f"I · {name} calls all_inert and gates the short-circuit on `all-inert:`",
+                    "all_inert" in b and "all-inert:" in b,
+                    f"all_inert={'all_inert' in b} label={'all-inert:' in b}")
+            # ⛔ THE MUTANT THIS BLOCKS. The first draft of both doors read an empty `ships:` as
+            # the short-circuit; in the lobby nothing ever ships, so a rule edit skipped the
+            # plan and the TDD. A body that still tells the reader to gate on `ships:` being
+            # empty has the hole back, whatever it computes.
+            c.check(f"⛔ I · {name} does NOT gate the short-circuit on an empty `ships:`",
+                    "`ships:` empty" not in b, "the body still reads 'ships: empty' as all-inert")
         for name in DOORS:
             b = body(name)
             c.check(f"⛔ I · {name} does not re-type the prefix list as a startswith test",
