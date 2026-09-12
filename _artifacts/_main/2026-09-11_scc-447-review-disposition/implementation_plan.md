@@ -352,6 +352,43 @@ under `## Your Actions` (the merge, via the PR the reviews will carry). The Dev 
 **Then STOP, as the plan says.** The two `--range` reviews of D10 — Parts 1–3 `114deb3a..3233f2e8`, Parts 4–6
 `3233f2e8..c34edf5f` — run on the operator's word, under the doors this lane changed.
 
+### The review at the tip — as run (2026-09-12)
+
+**The two `--range` reviews D10 owes ran under the finished doors, and the doors reviewed the doors.** Parts
+1–3 (`114deb3a..3233f2e8`) and Parts 4–6 (`3233f2e8..3f482b30`), three lenses each in an isolated worktree,
+every `critical`/`important` re-run on this tree through `repro_receipt.py`, every reproduced row fixed here
+with a pin seen red, both verdicts **PASS @ `63399ba3`** — 24 reproduced findings fixed, 0 dropped, 0 held, 26
+suggestions and nitpicks recorded as counts. The record is the two `## Code Review` sections in
+[walkthrough.md](walkthrough.md); the receipts are `gates/repro/*.json`; the certifying run is
+`gates/suite.json` (90/90 @ `63399ba3`, clean tree); the sweep is 34/34 with fifteen new mutants (M20–M34).
+
+**What the doors found in their own author, in the order the doors found it.** Before any lens ran, the Step 1
+scope cut printed `review_scope.py` withholding ITSELF (`s1`): the "generated" class was a bare substring, and
+every master that talks about launchers carries the phrase. Then the lenses: the auditor rubric named "a suite
+that comes back green" as a reproduction — exit 0, which the receipt writer reads as NOT reproduced, so no
+auditor finding could ever have survived to a fix (`x1`); the receipt writer certified a typo'd `--case` label
+(`NO CASES RAN`, exit 3) as reproduced (`e2`) and split a piped command before it ever ran (`x3`);
+`KEY_RE` made `UTF-8` and `H-1` in real subjects into phantom parts (`x4`); a prefix was a mirror, so
+`.claude/settings.json` shipped unread (`x5`); a keyless tree guessed one part (`a1`); the roster gate refused
+the second part's first review as a re-review — the flow Rule 2 mandates (`x6`); `closeout_preflight.py` read
+the FIRST stamp while the doors say the LAST governs (`e3`); `<first>..<HEAD>` excluded the part's first commit
+(`e4`); the story door's two new fences used variables no fence binds (`e1`); both doors minted CONCERNS on
+grounds §7 does not have (`b1`, `b2`); "blind lens first" survived the six-site fix (`b3`); the story self-audit's
+fence ran the lobby's script from inside the project (`b4`); and eleven law sentences could be inverted with
+every pin green (`t1`–`t3`, `b5`–`b10`, `b7`, `b8`). Every one is fixed at `3f482b30` / `bcd1ba09`.
+
+**Three things the record should carry forward.** (1) The auditor-rubric polarity (`x1`) is the finding that
+matters most: the two auditor lenses in this very review only produced usable reproductions because they chose
+mutation commands ending in `test $rc -ne 0`; a lens following the rubric as written would have been neutered.
+(2) Rosters are now counted PER PART (`x6`): `code-standards` §7 and both doors say one review per part, and a
+consolidated lane's walkthrough carries one roster per part under a heading that names it. (3) Two receipts
+were taken with the pin as the command and came back `unrunnable` because the pinning test's own output quotes an
+unrunnable signature (`No module named`) — the tail-signature heuristic in `classify()` reads a test's printed
+detail as its own failure; retaken with the lens's direct command (`e2`). Recorded, not fixed: a suggestion.
+
+**Beyond the declared set:** `.agents/scripts/closeout_preflight.py` and `test_closeout_preflight.py` (row 13
+of the Parts 4–6 review) — declared below.
+
 ## Declared Change Set
 
 - NEW `.agents/scripts/review_scope.py` — the diff a lens reads: one part, masters only, no cap; `--audit` keeps mirrors → D
@@ -400,6 +437,8 @@ under `## Your Actions` (the merge, via the PR the reviews will carry). The Dev 
 - EDIT `.opencode/commands/smh-close-task-merge-tree.md` — byte mirror → C
 - EDIT `.agents/scripts/walkthrough_roster.py` — findings-table parser, the five refusals, the second-roster count, the mode-skip exemption under fan-out (AUDIT FINDING 7), the relabelled message → D
 - EDIT `.agents/scripts/tests/test_walkthrough_roster.py` — NA4: a mode-skip under fan-out passes (AUDIT FINDING 7) → D
+- EDIT `.agents/scripts/closeout_preflight.py` — the LAST `Verdict:` stamp governs, as in `task_preflight` (review row e3) → E
+- EDIT `.agents/scripts/tests/test_closeout_preflight.py` — block RS: a FAIL then a re-stamp PASS reads PASS; a later FAIL still blocks (review row e3) → E
 - EDIT `.agents/scripts/task_preflight.py` — the FAIL message string → D
 - EDIT `.agents/scripts/tests/test_task_preflight.py` — one case for the message → D
 - EDIT `.agents/scripts/workflow_lint.py` — the finding-producer trigger learns `fixed / held / dropped` (AUDIT FINDING 2) → C
