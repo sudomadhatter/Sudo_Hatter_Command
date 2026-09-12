@@ -18,6 +18,7 @@
   "chat.agentsControl.enabled": "hidden",
   "chat.unifiedAgentsBar.enabled": false,
   "antigravity.autoOpenFiles": false,
+  "antigravity.enableInlineDiff": false,
   "python.defaultInterpreterPath": "${workspaceFolder}/Projects/AGY_AVIATIONCHAT/backend/.venv/bin/python",
   "claudeCode.preferredLocation": "panel",
   "claudeCode.useTerminal": false,
