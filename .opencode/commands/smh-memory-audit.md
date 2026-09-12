@@ -96,6 +96,13 @@ system*, and claims outlive their subjects in silence. For each candidate, verif
 A candidate that **fails** its check is a retirement or a correction. A candidate that **passes** is
 kept, no matter how old — age is not the criterion, truth is.
 
+**Apply the deletion test (SCC-448).** Run the deletion test on every surviving memory: *delete it in
+your head, then look at the damage: slower means memory; wrong means a rule and a ticket.* If loss of
+this note causes an agent to make wrong architectural decisions, violate hard stops, or break
+contracts, it is **load-bearing** and does not belong solely in disposable memory — classify it as a
+candidate to **Promote to rule**. If loss only makes an agent slower (e.g. searching extra paths or
+testing an interface again), it remains legitimately memory.
+
 ## Step 4 — Propose (STOP)
 
 One scannable block, **before touching anything outside `_artifacts/`**. Every line carries what it
@@ -116,6 +123,9 @@ Index: <before> / 25600 bytes (<pct>%)  →  projected <after> (<pct>%)
 
 ### 🗜️ Compress (index line only, body untouched)
 - `<a>` + `<b>` + `<c>` → one grouped row                           [frees ~<N> B]
+
+### 📜 Promote to rule (load-bearing — fails deletion test; needs a rule/code home)
+- `<file>.md` — loss makes agent wrong: <consequence>; needs rule/code + ticket
 
 ### 📦 Relocate to a project store
 - `<file>.md` → `Projects/<name>/_artifacts/_memory/`                [frees ~<N> B from the index]

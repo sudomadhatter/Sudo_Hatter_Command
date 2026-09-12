@@ -99,6 +99,8 @@ Memory is the weakest surface in the system: private to one platform's store, in
 - EDIT `.roo/rules/constitution.md` — mirror constitution.md Always line for Zoo Code → B
 - EDIT `.agents/scripts/tests/test_memory_long_term_rule.py` — rewrite test suite for deletion test and disposable memory law → E
 - EDIT `.agents/commands/smh-memory-audit.md` — add deletion test sort pass and promote-to-rule candidate bucket → C
+- EDIT `.opencode/commands/smh-memory-audit.md` — synced mirror of smh-memory-audit.md → C
+- EDIT `.agents/.sync-manifest.json` — auto-updated sync manifest → C
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` — update memory law and link to memory-is-disposable.md → E
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP_changelog.md` — add SCC-448 changelog row → E
 - EDIT `_artifacts/_main/INDEX.md` — register today's artifact folder row → E
