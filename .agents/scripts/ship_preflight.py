@@ -330,16 +330,26 @@ def check_lane(repo: Path, branch: str, prefix: str | None, rep: wf.Report) -> s
     # live epic is epic work, and "deployable -> product change -> ship" must never see it.
     if tp.epic_freeze(repo, changed, base, "lane", rep):
         return "handoff"
-    touched = sorted({d for d in surface for p in changed if p.startswith(d)})
+    # SCC-451: one predicate, imported, exactly as `check_scope` reads it - the prefix test
+    # minus what nothing reads at runtime. A lane of nothing but map files under `frontend/`
+    # is Task work, not a product change.
+    ships = tp.deployable_paths(repo, changed)
+    touched = sorted({d for d in surface for p in ships if p.startswith(d)})
     if touched:
         rep.info("lane", f"chore branch touching {', '.join(touched)} -> the light gate "
                          f"(backend suite + frontend build); a change that reaches "
                          f"deployable code is a product change whatever its ticket says")
         return "light"
+    # ⛔ NAME A DOOR THAT ACTUALLY RUNS HERE (SCC-451). This arm is reachable ONLY when
+    # `surface` is non-empty - the `not surface` case returned above - so the repo is always a
+    # PROJECT, and `/smh-close-task-merge-tree` is the LOBBY's close-out. Sending a project's
+    # chore lane there was the second dead end of the same class as the standing-push one: two
+    # doors each naming the other. The diff here is routine project docs by definition, which
+    # is exactly `/cicd-non-crit-pr-push`'s subject, and its standing branch is reusable.
     rep.err("lane", f"chore branch, {len(changed)} file(s) changed, none of them deployable "
-                    f"({', '.join(surface)}) - this is Task work and the Task ceremony never "
-                    f"runs for a lane that lands here. STOP and close it out with "
-                    f"/smh-close-task-merge-tree")
+                    f"({', '.join(surface)}) - this is not product work and the ship gate has "
+                    f"nothing to certify. STOP and take it out through "
+                    f"/cicd-non-crit-pr-push, the project's standing-push door")
     return "handoff"
 
 

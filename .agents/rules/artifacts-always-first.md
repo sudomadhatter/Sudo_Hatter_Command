@@ -318,6 +318,28 @@ When Mr. Hatter says **"review"** (or asks to review a document/plan), EVERY age
 ## When to Skip
 - **Investigatory requests** ("explain how X works", "where is Y?") — no artifacts needed.
 - **Trivial one-liners** (typo, comment fix) — mention what you changed; skip the full cycle.
+- **⭐ AN ALL-INERT DIFF — the one exemption that is MECHANICAL, not a judgement (SCC-451).** Every
+  other entry here is read by an agent deciding about its own work, which is the one reader that
+  cannot be trusted with a size word. This one is a command:
+
+  ```bash
+  python3 -c "import sys; sys.path.insert(0, '.agents/scripts'); \
+  from pathlib import Path; from task_preflight import deployable_paths; \
+  print(deployable_paths(Path(sys.argv[1]), sys.argv[2:]) or 'ALL INERT')" <repo> <the paths>
+  ```
+
+  `ALL INERT` means nothing in the diff is read when the system runs and no gate reads any of it as
+  law — so there is **no design to review and no assertion to write.** Skip the plan, the literal
+  `approved` and the RED/GREEN; keep the lean `walkthrough.md` and keep the close-out tripwire.
+  The precedent is the LLM-approvals door below, already a complete carve-out on exactly this
+  reasoning; **what is new is that the exemption is a property of the DIFF rather than of the
+  command's name.**
+  A lane cannot talk its way into it: the declaration lives in `<repo>/.agents/inert-paths.json`, it
+  cannot list itself, nothing under a `public/` or `static/` folder is ever inert, nothing under
+  `.agents/rules/` or `.agents/commands/` is ever inert, and a malformed declaration means **nothing**
+  is inert. Markdown is not the test — `.agents/rules/*.md` IS the law, and a project's runtime
+  knowledge documents are markdown the product genuinely needs (AviationChat's greeting agent reads
+  its pitch file under `backend/knowledge/` and raises when it is missing).
 - **Mr. Hatter says** "skip the plan, just do it" / "quick dev this" — that phrase names **the quick
   lane**, and the quick lane still carries a plan: a paragraph, not a ceremony. It used to dead-end
   here, telling an agent to skip the plan and nothing about what to do instead; that gap is what put a

@@ -1,0 +1,14 @@
+task_key: SCC-451
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-451-inert-paths
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+# SCC-170 partial landing. Step one - the inert-path predicate and ceremony_tier - is built,
+# reviewed and green. Neither open subtask's work is in this diff, so `riders:` is empty: a
+# rider is a claim that a child's work is HERE, and task_preflight refuses one that is not.
+#   SCC-452  step two, the reverse-dependency reach score that replaces the line-count `tiny`
+#            arm. Deliberately a subtask so SCC-451 cannot read Done before it lands.
+#   SCC-453  the toolchain manifest - a different subject; see the walkthrough's Your Actions.
+# The parent STAYS OPEN at this close. Both are named in `## Your Actions`.
+landing_mode: partial
+riders: []

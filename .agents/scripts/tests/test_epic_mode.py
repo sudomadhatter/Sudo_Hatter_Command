@@ -280,8 +280,15 @@ def main() -> int:
         cmds = ROOT / ".agents" / "commands"
         callers = sorted(p.name for p in cmds.glob("cicd-*.md")
                          if "epic_mode.py --repo" in p.read_text(encoding="utf-8"))
-        c.check("twelve branch-touching cicd doors call it (the mode line at the top of Step 0)",
-                len(callers) == 12, f"{len(callers)}: {callers}")
+        # THIRTEEN since SCC-451: `cicd-non-crit-pr-push.md` joined them. Its HANDOFF used to
+        # name `/cicd-push-e2e` unconditionally — a door that REFUSES in a trunk project ("there
+        # is no epic for this door to ship"), so the two doors named each other and the routing
+        # graph had no exit node. It reads the mode now and routes TRUNK to `/cicd-quick-dev`.
+        c.check("thirteen branch-touching cicd doors call it (the mode line at the top of Step 0)",
+                len(callers) == 13, f"{len(callers)}: {callers}")
+        c.check("⛔ …and the standing-push door is one of them - its handoff must never name a "
+                "door that refuses (SCC-451)",
+                "cicd-non-crit-pr-push.md" in callers, f"{callers}")
         # ⛔ COUNTING CALLERS IS NOT CHECKING THEY CAN RUN (SCC-441 review, reproduced).
         # `epic_mode.py` lives in the LOBBY and no project ships it, while the line above the
         # call `cd`s into `$PROJECT_ROOT` to fetch. The shipped doors all carried a BARE

@@ -390,6 +390,43 @@ question the system will not answer for you at the end.
 | System/toolkit work on a critical surface (the gates: `.github/`, the hooks, the preflights), or needing the full cycle | **The Task Lane** | `/smh-dev-task-tests` | Worktree off `main`, closes via `/smh-close-task-merge-tree`. **Ejects to Story Lane** if deployable code touched. |
 | System/toolkit work off the critical-surfaces list — a guide, a reference, a small rule edit | **The Quick Lane** | `/smh-quick-dev` | Step 1 scope check against the lobby's `.agents/critical-surfaces.json` (its gates): an overlap is a **soft stop** only your word lifts. Step 5 re-runs it on the real diff; an uncovered overlap **ejects to the Task Lane**. |
 
+**⭐ How much ceremony a change earns is now a command, not a feeling (SCC-451).** Both quick lanes
+run a Step 1.5 that prints four lines — what **ships**, what is **inert**, whether the diff is
+**all-inert**, and the **tier**:
+
+| Tier | What happens |
+|---|---|
+| `full` | a critical surface, a dependency manifest, CI config, or an **entry point** — the quick lane refuses and the full lane takes it |
+| `quick` | the five steps, unchanged |
+| `tiny` | the plan is two sentences and the walkthrough is three; the RED/GREEN still runs |
+
+An **all-inert diff** — *every* path in it is read by nothing at runtime and by no gate as law —
+skips the plan, the literal `approved` and the TDD altogether, because there is no design to review
+and no assertion to write. It keeps the lean walkthrough and the close-out tripwire. This is the
+first exemption in `artifacts-always-first` § When to Skip that is **mechanical**: a property of the
+diff rather than of the command's name, so a lane cannot talk its way into it.
+
+⛔ **"All inert" is not "nothing ships", and the difference matters most here in the lobby.** The
+command centre has no product directories at all, so *nothing ever ships* in it — a door gating the
+short-circuit on an empty `ships:` would skip the plan and the TDD for an edit to `git-policy.md`
+itself. The doors read `all-inert:`, which asks whether **every** path is inert. An empty path list
+answers `no`: silence is unknown scope, never empty scope.
+
+Two traps are handled by name, and both are measured rather than argued. **Nothing served from a
+`public/` or `static/` folder is ever inert** — `frontend/public/INDEX.md` is tracked and answers
+200 on production. And **an entry point is never `tiny` whatever its size**: `app/layout.tsx` has a
+reverse-dependency reach of **0** and wraps every screen in the app, because nothing imports a page,
+the router loads it — so the obvious "how many files import this" score ranks the riskiest files as
+the safest. An entry point is recognised by its **filename inside a router folder**, at any depth,
+so `app/api/<name>/route.ts`, a layout inside a `(route group)` and a page under a `[dynamic]`
+segment are all caught.
+
+**In a repo with no critical-surfaces map the tier falls back to the generic surfaces**, exactly as
+the Step 1 scope check already does — six of the nine repos under `Projects/` carry no map, and a
+veto that simply did not run there would have rated an auth file `tiny` while the same command's
+Step 1 called it an overlap. A map that declares nothing is weaker than no map, so it gets the same
+fallback rather than a quieter one.
+
 
 **Read the arrows, they matter more than the boxes.** Both dotted lines are **ejects** — tripwires
 that fire mid-build and send the work back to the full loop. You do not get to argue with either one:
@@ -1768,7 +1805,14 @@ doc and index edits, memory files, `_artifacts` INDEX rows, notes, and quick ref
 - **Auto-provisions the Standing Push Ticket** — if the project does not have an open `"Standing Push Ticket"`
   (e.g. `AVCH-XX`), it auto-mints it via `acli` and keeps it open permanently.
 - **Maintains a persistent branch** — uses `chore/<KEY>-standing-push` synced from `origin/main`.
-- **Qualifies `LIGHT`** — refuses product code or deployable paths.
+- **Qualifies `LIGHT`** — refuses product code or deployable paths. **"Deployable" means *anything
+  reads this file when the system runs, or a gate reads it as law* — not "what folder is it in".** A
+  markdown map under `frontend/` goes out through this lane; `frontend/public/INDEX.md`, which is
+  served on production, does not. The predicate is `task_preflight.deployable_paths`, the carve-out
+  is declared in the project's `.agents/inert-paths.json`, and the declaration cannot list itself.
+- **Names a door that will actually run when it refuses** — it reads `epic_mode.py` first:
+  `FULL`/`LIGHT` → `/cicd-push-e2e`; `TRUNK` → `/cicd-quick-dev`, then `/cicd-close-story-merge-tree`
+  Arm B. Naming `/cicd-push-e2e` in a trunk project is a refusal the operator cannot comply with.
 - **Stages explicitly**, commits with `<KEY> <summary> [sop-ok]`, pushes, and opens the PR via `gh pr create`.
 - **Verifies `main-write-gate`** passes before handing back the PR link.
 - **Restores checkout to `main`** (`cd "$REPO" && git checkout main`) and pulls latest `main` once merged on GitHub (`cd "$REPO" && git pull origin main`).

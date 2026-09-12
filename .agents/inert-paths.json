@@ -1,0 +1,14 @@
+{
+  "_comment": "Paths that sit under a deployable folder but ship nothing - read by .agents/scripts/task_preflight.py (SCC-451). A glob is matched with PurePosixPath.match, which is RIGHT-ANCHORED, so a bare basename like INDEX.md matches at any depth. Three guards run AFTER the glob and no declaration can override them: nothing under a `public/` or `static/` segment (that is served verbatim on production), nothing under .agents/rules/ or .agents/commands/ (that IS the law), and never this file. A bare-extension glob (*.md) is refused at load - it would match the rules and the runtime-loaded docs in one line. An ABSENT file means the code defaults; a MALFORMED one means NOTHING is inert, because absence is a decision and corruption is not.",
+  "_lobby_note": "The command centre has no deployable surface at all - no backend/, frontend/, firebase/, functions/ or mobile/ - so deploy_surface() is empty here and this list never fires. It is carried anyway, the same way .agents/critical-surfaces.json carries keys with empty path lists: the schema is declared where the predicate lives, and a project clones a file it can read rather than a shape it has to infer.",
+  "inert": [
+    {
+      "glob": "INDEX.md",
+      "why": "a folder map. check_maps.py check 2.5 DEMANDS one in every level-2 folder, so the maps gate manufactures these files and the push gate used to refuse them - 45 tracked .md under AviationChat's product dirs, 23 of them INDEX/README. Nothing imports an INDEX and no gate reads one as law."
+    },
+    {
+      "glob": "README.md",
+      "why": "a human-facing folder note. Same shape as INDEX.md and the same reason. ⛔ A README a runtime loader actually reads is not this - name it in the loader's own folder and it stops matching, or drop this row for that repo."
+    }
+  ]
+}
