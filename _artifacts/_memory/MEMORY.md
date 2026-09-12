@@ -4,6 +4,7 @@
      Related memories share a line rather than getting one each — every file stays linked. -->
 
 ## ⛔ Read first
+- [⛔ NEVER DELETE — a close must land as a close](never-end-a-close-on-caveats.md) — state what FINISHED and stop. Unresolved items go in the Dev Record or walkthrough, never the closing paragraph; a real blocker is the FIRST line, not a footnote; a behavioural correction gets a behaviour change, never an engineering project.
 - [TWO machines: a Mac + ONE PC (Windows hosting Ubuntu in WSL2)](one-pc-windows-and-wsl.md) — run `uname` FIRST; PC is primary, Mac is the second seat and goes stale; `gcloud` is authenticated only on the Mac, so a machine-shaped blocker means "do it on the other seat", never "cannot be done"; three PC checkouts, only WSL `Ubuntu` is live.
 
 ## Project stores
