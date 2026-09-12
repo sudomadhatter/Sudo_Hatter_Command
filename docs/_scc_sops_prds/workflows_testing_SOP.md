@@ -576,8 +576,8 @@ recipes armed at nothing, which is what step 5 of
 
 `Projects/sudo-command-center` is the **published teaching edition**: a sanitized export of this
 lobby that other people clone and keep current with `git pull`. It is produced by
-[`export-teaching-edition.ps1`](../../.agents/scripts/export-teaching-edition.ps1) from
-[`lobby.manifest.json`](../../.agents/scripts/teaching-edition/lobby.manifest.json), and **nothing
+`.agents/scripts/export-teaching-edition.ps1` from
+`.agents/scripts/teaching-edition/lobby.manifest.json`, and **nothing
 ever flows back**. Editing a file in that repo is work the next export deletes.
 
 Three things about it are worth knowing before you touch anything near it.
@@ -589,7 +589,7 @@ bypasses it completely. That is the single strongest reason the repo is generate
 maintained.
 
 **A door that ships only to the teaching edition lives in `teaching-edition/overlay/`, not in the
-lobby.** `/smh-tour` and `/smh-training` are real doors in the published edition and do not exist
+lobby.** the tutor doors `smh-tour` and `smh-training` are real in the published edition and do not exist
 here — putting them in `.agents/commands/` would give this workspace two doors nobody uses and force
 every door-parity test to carry an exception. The overlay is written **before** the substitution and
 leak passes, never after: copy-last is the natural way to write it and it is a hole straight through

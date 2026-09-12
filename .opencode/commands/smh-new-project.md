@@ -47,7 +47,15 @@ Then finish the wiring — the script prints these, do them in order:
    ```
 
 **Optional, when it gets a Jira board:** `cp .agents/jira.conf.example .agents/jira.conf`, set
-`JIRA_KEYS`, then `touch .agents/scripts/git-hooks/JIRA-ENFORCE` to arm REJECT mode. Until then the
-commit gate no-ops — a fresh project is never blocked by a board it doesn't have yet.
+**`JIRA_SITE`** and **`JIRA_KEYS`**, then `touch .agents/scripts/git-hooks/JIRA-ENFORCE` to arm
+REJECT mode. Until then the commit gate no-ops — a fresh project is never blocked by a board it
+doesn't have yet.
+
+⛔ **Check the binding before you arm it, or the gate rejects every commit and names no reason.**
+`JIRA_KEYS` alone is half an address: the hook matches a key prefix, but the CLI answers from
+whatever site the machine is logged into, so a correct-looking `AVCH-12` can be validated against
+somebody else's board — or none. Run `acli jira auth status` and require the site it prints to be
+the `JIRA_SITE` you just wrote. A mismatch is a misconfiguration to fix now, while the project has
+no history, not a puzzle to debug on the first commit that matters.
 
 **Optional:** add it to `.agents/maintained-projects.txt` if the `check_maps --all` lint should cover it.
