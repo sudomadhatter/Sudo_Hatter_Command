@@ -123,9 +123,23 @@ def main() -> int:
              ("one line" in body_lower or "one-line" in body_lower)
              and ("chat" in body_lower or "narrat" in body_lower),
              "rule does not specify narrate-every-write duty")
+        c.check("rule defines qualifying memory categories",
+             "what qualifies for memory" in body_lower,
+             "rule missing qualifying categories section")
+        c.check("rule defines prohibited memory categories",
+             "what never qualifies" in body_lower,
+             "rule missing prohibited categories section")
 
     # ── 3. Counter-examples (The Deletion Test Logic) ──────────────────────────
     if c.block("3 · Counter-examples"):
+        rule_path = RULES / "memory-is-disposable.md"
+        rule_text = rule_path.read_text(encoding="utf-8") if rule_path.exists() else ""
+        c.check("rule articulates slower-means-memory counter-example",
+             "slower" in rule_text.lower() and "memory" in rule_text.lower(),
+             "rule missing slower-means-memory counter-example")
+        c.check("rule articulates wrong-means-rule counter-example",
+             "wrong" in rule_text.lower() and "rule" in rule_text.lower(),
+             "rule missing wrong-means-rule counter-example")
         res1 = deletion_test("Without this note, the agent will choose the WRONG branch base and fail review")
         c.check("counter-example 1: fact whose loss makes agent wrong must be a rule",
              res1 == "rule", f"expected 'rule', got '{res1}'")
@@ -167,6 +181,9 @@ def main() -> int:
         c.check("smh-memory-audit.md contains Promote to rule candidate classification",
              "### 📜 promote to rule" in audit_lower,
              "smh-memory-audit.md missing Promote to rule candidate bucket")
+        c.check("smh-memory-audit.md contains Step 5 Promote to rule handling",
+             "### 📜 promote to rule" in audit_text.split("## Step 5")[1].lower() if "## Step 5" in audit_text else False,
+             "smh-memory-audit.md missing Step 5 Promote to rule handling")
 
     # ── 6. SOP and changelog ─────────────────────────────────────────────────
     if c.block("6 · SOP and changelog"):

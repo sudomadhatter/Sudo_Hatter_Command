@@ -37,7 +37,7 @@ the **Deletion Test**:
 > **Delete it in your head, then look at the damage:**
 >
 > - **Slower** → It belongs in **memory**. It helps an agent avoid re-investigating a known quirk, recalls
->   Daniel's preferred communication nuance, or summarizes machine setup hints.
+>   Mr. Hatter's preferred communication nuance, or summarizes machine setup hints.
 > - **Wrong** → It belongs in a **rule and a ticket**. If deleting the note causes the next agent to make a
 >   breaking choice, violate an operator ruling, or fail a gate, it is NOT memory. It must be codified in
 >   `.agents/rules/` and backed by enforcement.
