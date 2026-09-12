@@ -83,12 +83,23 @@ Tests: **`python3 .agents/scripts/tests/run_all.py`** (stdlib only, no pytest; f
 
 ## Top-level contents
 <!-- auto-listed by /smh-update-maps-indexes — refresh via /smh-update-maps-indexes; do not hand-edit entries -->
+
+> `export-teaching-edition.ps1` and the `teaching-edition/` folder beside it are
+> **source distribution only; absent from the generated shell** — they are the machinery that
+> produces the published teaching edition, and the manifest excludes them from their own export.
+> Both inventory rows below are pruned at export time, so a reader of the shipped INDEX is never
+> offered a script their copy does not have. `validate_teaching_edition.py` is the exception and
+> **does** ship: it is what a reader runs against their own clone.
+
 - `__pycache__/`
 - `check_maps.py`
 - `check-repo-map-drift.ps1`
+- `export-teaching-edition.ps1`
 - `generate_doc_graph.py`
 - `generate_repo_map.py`
 - `jira_ticket.py`
 - `refresh_maps.py`
+- `teaching-edition/`
+- `validate_teaching_edition.py`
 - `new-project.ps1`
 - `sync-agents.ps1`

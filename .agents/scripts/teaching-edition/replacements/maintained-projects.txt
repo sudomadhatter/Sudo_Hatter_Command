@@ -1,0 +1,10 @@
+# Projects included in command-center lint sweeps.
+#
+# One Projects/ folder name per line. Blank lines and comments are ignored.
+# This is a lint worklist, not a sync target: projects stay thin and read shared workflow law here.
+#
+# Empty on purpose. After `/smh-new-project <name>`, add the name only if command-center map/index
+# checks should include that project.
+#
+# Example:
+#   MyFirstProject

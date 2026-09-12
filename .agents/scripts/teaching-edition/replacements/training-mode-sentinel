@@ -1,0 +1,3 @@
+# This file being here turns TRAINING MODE on.
+# Agents load .agents/rules/training-mode.md and teach the live workflow as they use it.
+# Turn it off with /smh-training off. Nothing is gated behind training mode.

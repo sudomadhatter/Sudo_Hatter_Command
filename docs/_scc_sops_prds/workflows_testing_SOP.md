@@ -572,6 +572,43 @@ and `epic write gate — light (AVCH-152)` — and every project cloned from the
 recipes armed at nothing, which is what step 5 of
 [`/smh-new-project`](../../.agents/commands/smh-new-project.md) is for.
 
+### The published teaching edition is GENERATED — never hand-edited (SCC-456)
+
+`Projects/sudo-command-center` is the **published teaching edition**: a sanitized export of this
+lobby that other people clone and keep current with `git pull`. It is produced by
+[`export-teaching-edition.ps1`](../../.agents/scripts/export-teaching-edition.ps1) from
+[`lobby.manifest.json`](../../.agents/scripts/teaching-edition/lobby.manifest.json), and **nothing
+ever flows back**. Editing a file in that repo is work the next export deletes.
+
+Three things about it are worth knowing before you touch anything near it.
+
+**The leak scan cannot be skipped, and it is the only thing standing between this workspace and a
+public repo.** It checks every exported byte — contents *and* paths — for the operator's name,
+email, machine name, the real Jira site and every client name. Any hand-edit to the published repo
+bypasses it completely. That is the single strongest reason the repo is generated rather than
+maintained.
+
+**A door that ships only to the teaching edition lives in `teaching-edition/overlay/`, not in the
+lobby.** `/smh-tour` and `/smh-training` are real doors in the published edition and do not exist
+here — putting them in `.agents/commands/` would give this workspace two doors nobody uses and force
+every door-parity test to carry an exception. The overlay is written **before** the substitution and
+leak passes, never after: copy-last is the natural way to write it and it is a hole straight through
+the guard. Being overwritten is prevented by a collision check instead, which reports the clash
+rather than silently winning it.
+
+**Publishing must DELETE, and until SCC-456 it could not.** The exporter refuses a non-empty target
+so stale files cannot survive invisibly, which meant publishing was "export to a folder and copy it
+over the repo" — and a copy adds and overwrites but never removes. Every retired command stayed in
+every reader's clone: 84 files `main` had deleted were still shipping, including the whole
+`.agents/workflows/` set, the v2 autopilot lane and `/smh-quick-fix`. A reader invoked a door no
+rule, SOP or test still matched. The publish step therefore clears the **tracked** tree
+(`git ls-files -z | xargs -0 rm -f`) before copying the export in — tracked-only, enumerated by git
+and never by the shell, so a reader's untracked files and the repo's history both survive.
+
+**When you change a door or a rule here, you do not have to do anything.** The export picks it up on
+its next run; that is the whole point of generating it. What you must not do is edit the published
+repo to make a change appear sooner.
+
 **TRUNK is the third answer, and it means this step cuts nothing** (SCC-423; AviationChat moved to it
 on 2026-09-06). There is no epic branch and no integration branch: every story lane is cut straight
 from `origin/main`, and it lands on `main` through a pull request you merge, under whatever checks
