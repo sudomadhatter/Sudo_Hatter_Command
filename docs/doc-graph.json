@@ -9,7 +9,7 @@
     "pack_docs": 2,
     "edges": 797,
     "external": 35,
-    "ambiguous": 183,
+    "ambiguous": 182,
     "dangling": 263,
     "broken_paths": 59,
     "unresolved_names": 204,
@@ -10458,16 +10458,6 @@
         ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
-      ]
-    },
-    {
-      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
-      "target": ".agents/rules/README.md",
-      "candidates": [
-        ".agents/bmad",
-        ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
-        ".agents/skills/react-best-practices/README.md",
-        "docs/migrations/vscode_sync/README.md"
       ]
     },
     {

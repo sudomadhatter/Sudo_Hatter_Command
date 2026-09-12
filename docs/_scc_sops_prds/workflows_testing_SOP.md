@@ -417,7 +417,15 @@ Two traps are handled by name, and both are measured rather than argued. **Nothi
 200 on production. And **an entry point is never `tiny` whatever its size**: `app/layout.tsx` has a
 reverse-dependency reach of **0** and wraps every screen in the app, because nothing imports a page,
 the router loads it — so the obvious "how many files import this" score ranks the riskiest files as
-the safest.
+the safest. An entry point is recognised by its **filename inside a router folder**, at any depth,
+so `app/api/<name>/route.ts`, a layout inside a `(route group)` and a page under a `[dynamic]`
+segment are all caught.
+
+**In a repo with no critical-surfaces map the tier falls back to the generic surfaces**, exactly as
+the Step 1 scope check already does — six of the nine repos under `Projects/` carry no map, and a
+veto that simply did not run there would have rated an auth file `tiny` while the same command's
+Step 1 called it an overlap. A map that declares nothing is weaker than no map, so it gets the same
+fallback rather than a quieter one.
 
 
 **Read the arrows, they matter more than the boxes.** Both dotted lines are **ejects** — tripwires

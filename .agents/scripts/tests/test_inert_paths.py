@@ -170,6 +170,24 @@ def main() -> int:
             c.check("B · …and a leading `./` on the same path does not change the answer",
                     tp.inert_paths(repo, ["./.agents/rules/README.md"]) == [],
                     repr(tp.inert_paths(repo, ["./.agents/rules/README.md"])))
+            # ⛔ THE TWO DOORS MUST NOT DISAGREE ON A SPELLING. `lane_qualify` normalises its
+            # input before calling the predicate; the fenced door commands pass argv straight
+            # through. With the prefix test un-normalised, `./frontend/src/x.tsx` was HANDOFF
+            # through one door and "carry on" through the other - and a SERVED production file
+            # appeared in neither list, so the door printed nothing about it at all.
+            dotted = ["./frontend/src/components/Button.tsx"]
+            c.check("⛔ B · a `./`-spelled product path is still deployable - the doors cannot "
+                    "disagree with lane_qualify about a spelling",
+                    tp.deployable_paths(repo, dotted) == dotted,
+                    repr(tp.deployable_paths(repo, dotted)))
+            dotted_served = ["./frontend/public/INDEX.md"]
+            c.check("⛔ B · a `./`-spelled SERVED file appears as deployable, never in neither "
+                    "list",
+                    tp.deployable_paths(repo, dotted_served) == dotted_served,
+                    repr(tp.deployable_paths(repo, dotted_served)))
+            c.check("B · a planned DIRECTORY that IS the served folder is not inert",
+                    tp.inert_paths(repo, ["frontend/public/"]) == [],
+                    repr(tp.inert_paths(repo, ["frontend/public/"])))
 
             # RUNTIME DOC. Markdown a loader reads, and the loader raises if it is missing.
             runtime = "backend/knowledge/aviationchat_pitch.md"
@@ -318,6 +336,55 @@ def main() -> int:
                     tp.ceremony_tier(repo, ["frontend/src/lib/fmt.ts"], **tiny) == "full",
                     tp.ceremony_tier(repo, ["frontend/src/lib/fmt.ts"], **tiny))
 
+    # ── G2 ────────────────────────────────────────────────────────────────────────────────
+    if c.block("G2 · the veto in an UNMAPPED repo - six of nine projects carry no map"):
+        with TempDir() as t:
+            repo = bare(t)                        # no .agents/critical-surfaces.json at all
+            tiny = dict(lines=3, structural=False)
+            # ⛔ `scope_check.load_map` returns (None, None) with no map and ([], None) for an
+            # empty one - both FALSY, so a veto written as `if rows and overlaps(...)` simply
+            # does not run. Measured 2026-09-12: six of the nine repos under Projects/ have no
+            # map (B-L-WorldWide, BRKN_Tattoos, NEXGen-Films, NEXgen-VR-Director,
+            # OpenChat-Openrouter, sudo-command-center). `scope_check.main` does NOT stop there -
+            # it falls back to GENERIC with fragment matching - so Step 1 said OVERLAP on an auth
+            # file while Step 1.5 said `tiny` about the same path, in the same command.
+            c.check("⛔ G2 · an auth path is `full` in a repo with NO map - the fallback is the "
+                    "same GENERIC set scope_check uses, never an empty veto",
+                    tp.ceremony_tier(repo, ["backend/middleware/auth.py"], **tiny) == "full",
+                    tp.ceremony_tier(repo, ["backend/middleware/auth.py"], **tiny))
+            surfaces(repo)                        # a map that declares NOTHING
+            c.check("⛔ G2 · …and a map declaring no paths is WEAKER than no map, so it must not "
+                    "be quieter - still `full`",
+                    tp.ceremony_tier(repo, ["backend/middleware/auth.py"], **tiny) == "full",
+                    tp.ceremony_tier(repo, ["backend/middleware/auth.py"], **tiny))
+            c.check("G2 · CONTROL: an ordinary file in an unmapped repo is still tiny",
+                    tp.ceremony_tier(repo, ["frontend/src/lib/fmt.ts"], **tiny) == "tiny",
+                    tp.ceremony_tier(repo, ["frontend/src/lib/fmt.ts"], **tiny))
+
+    # ── G3 ────────────────────────────────────────────────────────────────────────────────
+    if c.block("G3 · the declaration's shape check is SEMANTIC, not a spelling blacklist"):
+        with TempDir() as t:
+            repo = bare(t)
+            # The bypass: a literal-prefix test on `*.` is trivially spelled around, and
+            # PurePosixPath.match is fnmatch-based, so `?*.md` matches every .md with a
+            # one-or-more-character stem - including the runtime-loaded knowledge docs.
+            for g in ("?*.md", "*[.]md", "[a-z]*.md", "?*", "*?", "*.md", "**/*.md", "*", "**"):
+                declare(repo, g)
+                c.check(f"⛔ G3 · `{g}` is refused - it carves out by EXTENSION, which takes the "
+                        f"runtime-loaded docs with it",
+                        tp.load_inert(repo) == (), f"{g} -> {tp.load_inert(repo)}")
+            # …and the false refusal the spelling check also caused: a SCOPED extension glob is
+            # safe and must load. `docs/*.md` cannot reach a knowledge folder.
+            for g in ("docs/*.md", "frontend/docs/*.md"):
+                declare(repo, g)
+                c.check(f"G3 · `{g}` is SCOPED and loads - the check must not refuse a glob that "
+                        f"cannot reach a runtime doc",
+                        tp.load_inert(repo) == (g,), f"{g} -> {tp.load_inert(repo)}")
+            declare(repo, "/INDEX.md")
+            c.check("⛔ G3 · a leading-slash glob is refused - it loads clean and matches NOTHING, "
+                    "which is a dead row reading as a live guard",
+                    tp.load_inert(repo) == (), repr(tp.load_inert(repo)))
+
     # ── H ─────────────────────────────────────────────────────────────────────────────────
     if c.block("H · an entry point with reach 0 is NEVER tiny"):
         with TempDir() as t:
@@ -338,6 +405,47 @@ def main() -> int:
                                      lines=3, structural=True) == "quick",
                     tp.ceremony_tier(repo, ["frontend/src/lib/fmt.ts"],
                                      lines=3, structural=True))
+            # ⛔ THE APP-ROUTER SHAPES A FIXED-DEPTH GLOB LIST CANNOT REACH. `PurePosixPath.match`
+            # is right-anchored on WHOLE COMPONENTS, so every glob pins an exact segment count -
+            # and the App Router puts route handlers at `app/api/<name>/route.ts` or deeper,
+            # layouts inside `(route groups)`, and pages under `[dynamic]` segments. Each one
+            # came back `tiny`: "the plan is two sentences and the walkthrough is three", for an
+            # API route handler.
+            for p in ("frontend/src/app/api/chat/route.ts",
+                      "frontend/src/app/api/v1/chat/route.ts",
+                      "frontend/src/app/(app)/dashboard/layout.tsx",
+                      "frontend/src/app/(marketing)/blog/[slug]/page.tsx",
+                      "frontend/src/app/dashboard/page.jsx",
+                      "frontend/src/app/deeply/nested/route/page.tsx"):
+                c.check(f"⛔ H · {p} is an entry point at ANY depth",
+                        tp.ceremony_tier(repo, [p], lines=3, structural=False) == "full",
+                        tp.ceremony_tier(repo, [p], lines=3, structural=False))
+            c.check("H · CONTROL: a file merely NAMED like one is not an entry point",
+                    tp.ceremony_tier(repo, ["frontend/src/lib/page.helper.ts"],
+                                     lines=3, structural=False) == "tiny",
+                    tp.ceremony_tier(repo, ["frontend/src/lib/page.helper.ts"],
+                                     lines=3, structural=False))
+            c.check("⛔ H · …and a `page.tsx` OUTSIDE an app/ tree is not an entry point either",
+                    tp.ceremony_tier(repo, ["frontend/src/components/page.tsx"],
+                                     lines=3, structural=False) == "tiny",
+                    tp.ceremony_tier(repo, ["frontend/src/components/page.tsx"],
+                                     lines=3, structural=False))
+            # ⛔ THE FILE CAP COUNTED THE WRONG LIST. It counted `ships` - the DEPLOY_DIRS
+            # survivors - so outside the product dirs it was permanently 0 and the 5-file rule
+            # was dead. In the command centre that is EVERY diff: 40 files at 10 lines read
+            # `tiny`. It counts the non-inert paths now, which is what "how big is this change"
+            # actually means.
+            many = [f".agents/rules/probe_{i}.md" for i in range(40)]
+            c.check("⛔ H · 40 non-inert files at 10 lines is NOT tiny - the file cap counts the "
+                    "non-inert paths, never the deployable ones",
+                    tp.ceremony_tier(repo, many, lines=10, structural=False) == "quick",
+                    tp.ceremony_tier(repo, many, lines=10, structural=False))
+            c.check("H · CONTROL: five non-inert files at 10 lines is still tiny",
+                    tp.ceremony_tier(repo, many[:5], lines=10, structural=False) == "tiny",
+                    tp.ceremony_tier(repo, many[:5], lines=10, structural=False))
+            c.check("H · …and six is not (the cap is 5)",
+                    tp.ceremony_tier(repo, many[:6], lines=10, structural=False) == "quick",
+                    tp.ceremony_tier(repo, many[:6], lines=10, structural=False))
 
     # ── I ─────────────────────────────────────────────────────────────────────────────────
     if c.block("I · the doors CALL the seams; nobody re-implements the threshold"):

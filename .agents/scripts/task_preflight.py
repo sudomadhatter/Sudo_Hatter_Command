@@ -135,6 +135,22 @@ SERVED_SEGMENTS = ("public", "static")      # a folder a web server hands out ve
 LAW_PREFIXES = (".agents/rules/", ".agents/commands/")
 INERT_REL = ".agents/inert-paths.json"
 
+# ⛔ THE SHAPE CHECK IS SEMANTIC, NOT A SPELLING BLACKLIST, and the first version proved why.
+# It refused a glob whose basename started with `*.` - a literal-prefix test, so `?*.md`,
+# `[a-z]*.md` and `*[.]md` all loaded clean and all match every `.md` in the repo, taking the
+# runtime-loaded knowledge docs with them. It ALSO refused `docs/*.md`, which is scoped and
+# cannot reach one. Wrong in both directions at once.
+#
+# So the declaration is tested against files that must NEVER be inert: a glob that matches any
+# of them is refused, whatever it is spelled like. `INDEX.md`, `README.md` and `docs/*.md` match
+# none of these; `?*.md` and `*` match the first one.
+_GLOB_CANARIES = (
+    "backend/knowledge/runtime_doc.md",     # markdown a loader reads and raises without
+    ".agents/rules/constitution.md",        # markdown that IS the law
+    "frontend/src/App.tsx",                 # source
+    "backend/app/models.py",                # source
+)
+
 
 def _norm_rel(path: str) -> str:
     """Repo-relative, forward slashes, no leading `./`.
@@ -177,8 +193,13 @@ def load_inert(repo: Path) -> tuple[str, ...]:
     except (OSError, ValueError, KeyError, TypeError):
         return ()
     for g in globs:
-        stem = g.rsplit("/", 1)[-1]
-        if not stem or stem.lstrip("*").lstrip(".") == "" or stem.startswith("*."):
+        if not g or g.startswith("/"):
+            # A leading-slash pattern loads clean and matches NOTHING (`PurePosixPath.match`
+            # only matches an absolute pattern against an absolute path) - a dead row reading
+            # as a live guard, which `scope_check.parse_map` refuses outright for the same
+            # reason. Refuse it rather than carry a carve-out nobody gets.
+            return ()
+        if any(PurePosixPath(canary).match(g) for canary in _GLOB_CANARIES):
             return ()
     return globs
 
@@ -206,7 +227,12 @@ def inert_paths(repo: Path, paths: Iterable[str]) -> list[str]:
         rel = _norm_rel(p)
         if rel == INERT_REL or rel.startswith(LAW_PREFIXES):
             continue
-        if any(seg in SERVED_SEGMENTS for seg in PurePosixPath(rel).parts[:-1]):
+        # `parts[:-1]` is right for a FILE (its own name is not a folder it sits in) and wrong
+        # for a planned DIRECTORY, which the `--paths` arm of the quick-lane step really does
+        # produce with a trailing slash - `frontend/public/` would have escaped its own guard.
+        q = PurePosixPath(rel)
+        segs = q.parts if rel.endswith("/") else q.parts[:-1]
+        if any(seg in SERVED_SEGMENTS for seg in segs):
             continue
         if any(PurePosixPath(rel).match(g) for g in globs):
             out.append(p)
@@ -250,9 +276,18 @@ def all_inert(repo: Path, paths: Iterable[str]) -> bool:
 # line count behind a named interface: crude on purpose, honest about being a proxy, and it
 # gets the doors working today. SCC-452 swaps the `tiny` arm for a measured reverse-dependency
 # reach score and NOTHING else here moves.
-ENTRY_POINT_GLOBS = ("*/app/*/page.tsx", "*/app/*/*/page.tsx", "*/app/page.tsx",
-                     "*/app/*/layout.tsx", "*/app/layout.tsx", "*/app/*/route.ts",
-                     "*/main.py", "*/asgi.py", "*/wsgi.py", "*/__main__.py")
+# ⛔ MATCHED BY NAME PLUS ROUTER FOLDER, NEVER BY A FIXED-DEPTH GLOB. The first version was a
+# list of `*/app/*/page.tsx`-shaped patterns, and `PurePosixPath.match` is right-anchored on
+# WHOLE COMPONENTS - so every pattern pinned an exact segment count. The App Router puts route
+# handlers at `app/api/<name>/route.ts` or deeper, layouts inside `(route groups)`, and pages
+# under `[dynamic]` segments; every one of those came back `tiny`, which is "the plan is two
+# sentences", for an API route handler. Depth is not the property - the FILENAME is, and only
+# inside a router folder.
+ENTRY_POINT_NAMES = ("page.tsx", "page.jsx", "page.js", "layout.tsx", "layout.jsx", "layout.js",
+                     "route.ts", "route.js", "template.tsx", "default.tsx",
+                     "error.tsx", "loading.tsx", "not-found.tsx")
+ROUTER_DIRS = ("app", "pages")              # where those names mean "the router loads this"
+PY_ENTRY_NAMES = ("main.py", "asgi.py", "wsgi.py", "__main__.py")
 MANIFEST_NAMES = ("package.json", "package-lock.json", "pyproject.toml", "poetry.lock",
                   "requirements.txt", "firebase.json", "next.config.ts")
 TINY_MAX_LINES = 50
@@ -271,9 +306,18 @@ def _is_entry_point(rel: str) -> bool:
     So entry points are excluded from `tiny` BY NAME, before any score is consulted, and the
     exclusion survives SCC-452 unchanged. A reach score that quietly re-admitted them would be
     worse than the line count it replaces.
+
+    The router folder is required, not decoration: `components/page.tsx` is an ordinary
+    component that happens to be called `page`, and treating it as an entry point would make
+    the exclusion mean nothing.
     """
-    q = PurePosixPath("/" + rel)
-    return any(q.match(g) for g in ENTRY_POINT_GLOBS)
+    parts = PurePosixPath(rel).parts
+    if not parts:
+        return False
+    name, folders = parts[-1], parts[:-1]
+    if name in PY_ENTRY_NAMES:
+        return True
+    return name in ENTRY_POINT_NAMES and any(seg in ROUTER_DIRS for seg in folders)
 
 
 def ceremony_tier(repo: Path, paths: Iterable[str], *,
@@ -293,10 +337,21 @@ def ceremony_tier(repo: Path, paths: Iterable[str], *,
 
     # ⛔ THE MAP IS READ THROUGH `scope_check`, NEVER RE-PARSED HERE. It already owns the schema,
     # the prefix-vs-exact rule and the dead-row refusal; a second matcher is a second answer.
+    #
+    # ⛔ AND IT FALLS BACK EXACTLY AS `scope_check.main` DOES, because "no map" is the COMMON
+    # case, not the exception: measured 2026-09-12, six of the nine repos under `Projects/`
+    # carry none. `load_map` returns `(None, None)` with no map and `([], None)` for one that
+    # declares nothing - both falsy - so a veto written as `if rows and …` simply did not run,
+    # and an auth file came back `tiny` in six projects. Worse, Step 1 of the same command said
+    # OVERLAP about that file, because `scope_check` DOES fall back to the GENERIC set. Two
+    # answers from one command about one path. A map that declares nothing is WEAKER than no
+    # map, so it must not be quieter either.
     rows, err = sc.load_map(repo)
     if err:
         return "full"                        # an UNREADABLE map cannot clear anything
-    if rows and sc.overlaps(rels, rows, fragments=False):
+    hits = (sc.overlaps(rels, rows, fragments=False) if rows
+            else sc.overlaps(rels, list(sc.GENERIC), fragments=True))
+    if hits:
         return "full"                        # ABSOLUTE VETO - never overridden by a size
 
     for rel in rels:
@@ -305,10 +360,16 @@ def ceremony_tier(repo: Path, paths: Iterable[str], *,
         if _is_entry_point(rel):
             return "full"
 
-    ships = deployable_paths(repo, rels)
     if lines is None or structural:
         return "quick"
-    if lines <= TINY_MAX_LINES and len(ships) <= TINY_MAX_FILES:
+    # ⛔ COUNT THE NON-INERT PATHS, NOT THE DEPLOYABLE ONES. This counted `deployable_paths`,
+    # which keeps only `DEPLOY_DIRS` survivors - so outside a product folder the count was
+    # permanently 0 and the file cap was dead. In the command centre that is EVERY diff:
+    # 40 files at 10 lines each read `tiny`. "How big is this change" means how many files
+    # it touches that anything reads, which is exactly the non-inert set.
+    inert = set(inert_paths(repo, rels))
+    counted = [p for p in rels if p not in inert]
+    if lines <= TINY_MAX_LINES and len(counted) <= TINY_MAX_FILES:
         return "tiny"
     return "quick"
 
