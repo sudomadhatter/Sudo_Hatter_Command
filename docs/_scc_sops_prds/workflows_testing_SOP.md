@@ -847,6 +847,19 @@ solo door cannot do. The same holds on the Task side: `/smh-merge-multiple-worki
 merge and one combined gate on `main` at the end. Both Task doors prune their own worktrees and
 deliberately do **not** call `/cicd-prune-worktree`, which owns `claude/*` story trees only.
 
+⛔ **Every close-out deletes the REMOTE branch first, then the local one, and the order is
+mechanical.** `git branch -d` checks merged-into-**upstream** when an upstream exists, and
+merged-into-**HEAD** when one does not. Deleting the remote first removes the upstream, which forces
+`-d` onto a real ancestry question instead of a vacuous one. **A refusal does not mean the merge
+failed:** lanes here push without `-u` (the sandbox cannot write the lobby's `.git/config`), so there
+is usually no upstream at all, `-d` falls back to the shared lobby's `main`, and that checkout can be
+many commits behind the merge you just made. Prove the landing with
+`git rev-list --count origin/main..<branch>` — `0` means every commit is on `main` — then point the
+check at the ref that has it, `git branch --set-upstream-to=origin/main <branch>`, and run `-d` again.
+`-D` stays banned, and the shared lobby is never pulled to fix this. **A branch proven merged and
+still present is a close-out that did not finish**, not a branch to write up as retained; the one
+legal retention is a branch that did not land, and that has its own proof.
+
 ### `/cicd-close-story-merge-tree` — close out ONE story
 
 **This is the one you type** — named for what you asked for. It owns the part
