@@ -15,5 +15,8 @@ secondary_repos: []
 # task_preflight refuses one that is not named in a commit subject here. SCC-452 landed in the
 # previous lane and is already Done; SCC-453 left this parent entirely - it is SCC-455 under Epic
 # SCC-33 now, with SCC-453 closed as superseded. So this lane flips no child; it closes the parent.
-landing_mode: full
+#
+# NO `landing_mode:` KEY, DELIBERATELY. `partial` is the only value anything reads, and an
+# unrecognised one fails CLOSED - `landing_mode: full` was refused here, correctly, because a
+# declaration nothing reads is worse than no declaration. A complete landing IS the default.
 riders: []
