@@ -123,8 +123,8 @@
   {
    "id": "M12 roster · count rosters from the RAW text - a fenced example becomes a second roster",
    "file": ".agents/scripts/walkthrough_roster.py",
-   "original": "    roster_headers = sum(1 for ln in lines if _ROSTER_HEAD_RE.match(ln))",
-   "mutated": "    roster_headers = sum(1 for ln in raw_lines if _ROSTER_HEAD_RE.match(ln))",
+   "original": "    for ln in lines:\n        h = _REVIEW_HEAD_RE.match(ln)",
+   "mutated": "    for ln in raw_lines:\n        h = _REVIEW_HEAD_RE.match(ln)",
    "case": "R5 · a FENCED example roster above the real one is not a second roster",
    "block": "R ·"
   },
@@ -237,7 +237,7 @@
     "python3",
     ".agents/scripts/tests/test_review_scope.py"
    ],
-   "case": "10 no selector on a keyless tree is exit 2",
+   "case": "10 the refusal names the missing key",
    "block": "10 ·"
   },
   {
