@@ -211,9 +211,8 @@ they become functional.
    Source Control show-all-repos keybinding from Antigravity's `keybindings.json`; repoint
    `cmd+o cmd+o` from `roo-cline.openInNewTab` to `zoo-code.openInNewTab`.
 7. Uninstall Roo Code and (when ready) Antigravity IDE.
-8. **Suppress title bar search bar / Command Center during agent prompts (Antigravity in VS Code):**
-   When running the Antigravity agent in VS Code, prompt/approval requests trigger VS Code's experimental
-   Agent Status widget in the title bar, causing the Command Center search bar to pop open or steal focus.
+8. **Suppress title bar search bar / Command Center and diff focus popups during agent prompts (Antigravity in VS Code):**
+   When running the Antigravity agent in VS Code, prompt/approval requests and inline diff zone decorations trigger focus collisions and VS Code's search bar / Command Center. Specifically, Antigravity's default `InlineDiffZoneRenderer` sets `antigravity.hasActiveDiff` and injects dynamic menu items into the editor title bar and command palette, which steals focus and opens the search bar upon clicking "Accept changes".
    These settings are tracked at workspace level in `.vscode/settings.json` so they travel via Git across
    Mac, Windows, and Linux. In user `settings.json`, ensure they are present so Microsoft Cloud Settings Sync
    propagates them across all machines:
@@ -221,9 +220,10 @@ they become functional.
    "window.commandCenter": false,
    "chat.agentsControl.enabled": "hidden",
    "chat.unifiedAgentsBar.enabled": false,
-   "antigravity.autoOpenFiles": false
+   "antigravity.autoOpenFiles": false,
+   "antigravity.enableInlineDiff": false
    ```
-   **Important:** Updating `window.commandCenter` and `chat.agentsControl.enabled` requires a **Window Reload**
+   **Important:** Setting `"antigravity.enableInlineDiff": false` disables the in-editor inline diff zone and CodeLenses, allowing the agent to perform clean workspace edits without stealing editor focus or triggering search dropdowns. Updating `window.commandCenter` and `chat.agentsControl.enabled` requires a **Window Reload**
    (`Cmd+Shift+P` / `Ctrl+Shift+P` → `Developer: Reload Window`) or restarting VS Code for the title bar
    DOM to unmount and remove the active search bar listeners.
 
