@@ -37,6 +37,7 @@ with that reach score and this exclusion still binds there, which is why it is a
 from __future__ import annotations
 
 import json
+import shutil
 import sys
 from pathlib import Path
 
@@ -549,6 +550,151 @@ def main() -> int:
                                      lines=3, structural=False) == "tiny",
                     tp.ceremony_tier(repo, ["backend/ranking/format.py"],
                                      lines=3, structural=False))
+
+    # ── K · THE REACH VETO (SCC-452) ──────────────────────────────────────────────────────
+    # `reach_score` asks `code-review-graph` how many files reach the changed ones. The whole
+    # story is the FAIL DIRECTION, so the pins below are organised around it rather than around
+    # the happy path: `None` means NO EVIDENCE, never a low score, and a tier may only go UP.
+    if c.block("K · reach parses to evidence-or-None, and can only raise a tier"):
+        ok = {"status": "ok"}
+
+        def payload(files: object, conf: object = None) -> dict:
+            return {**ok, "impacted_files": files, "confidence": conf}
+
+        c.check("K · a non-empty impacted_files IS the score",
+                tp._reach_from_impact(payload(["a.py", "b.py", "c.py"])) == 3,
+                repr(tp._reach_from_impact(payload(["a.py", "b.py", "c.py"]))))
+
+        # ⛔ THE ARM THE WHOLE STORY EXISTS FOR. `code-review-graph` marks every empty result
+        # with WHY it is empty, and exactly one wording means "measured". The others are the
+        # tool saying it could not see - and for python and the js/ts family the blind-spot
+        # note is the ONLY zero the tool will ever emit (`uncertainty.LANGUAGE_GAPS` lists
+        # impact_radius under both their patterns), which is measured, not theoretical:
+        # 178 of 209 lobby source files answer 0 that way.
+        real = "changed files are indexed and the graph is current, so this 0 is a real absence"
+        blind = ("python getattr dispatch and decorator-based registration are not statically "
+                 "traced, so callers can be missing here")
+        c.check("K · a zero the tool CERTIFIES is a real 0 - that is the evidence case",
+                tp._reach_from_impact(payload([], real)) == 0,
+                repr(tp._reach_from_impact(payload([], real))))
+        for why, conf in (
+            ("a python blind-spot zero", blind),
+            ("a not-indexed zero", "target not indexed: no node matching 'x.py', so this 0 "
+                                   "is not evidence that none exist"),
+            ("a stale-graph zero", "graph is stale: built at an older commit than HEAD, so "
+                                   "this 0 may be out of date"),
+            ("an unverified-currency zero", "changed files are indexed and nothing depends on "
+                                            "them; graph currency unverified"),
+            ("a zero carrying no marker at all", None),
+        ):
+            c.check(f"⛔ K · {why} is None, NOT 0 - reading it as a low score is the "
+                    f"fail-toward-permissive hole this story closes",
+                    tp._reach_from_impact(payload([], conf)) is None,
+                    repr(tp._reach_from_impact(payload([], conf))))
+
+        for why, bad in (("a non-ok status", {"status": "error", "impacted_files": ["a"]}),
+                         ("output that is not an object", "No graph found at /x"),
+                         ("a wrong-typed impacted_files", {**ok, "impacted_files": "three"})):
+            c.check(f"⛔ K · {why} is None - a malformed answer is not an answer",
+                    tp._reach_from_impact(bad) is None, repr(tp._reach_from_impact(bad)))
+
+        # ⛔ THIS PIN SURVIVED ITS OWN MUTANT AT FIRST, AND THAT IS WHY IT LOOKS LIKE THIS.
+        # Written as `reach_score(repo, []) is None` it passed with the early return deleted,
+        # because `--files` is `nargs="+"` and argparse exits 2 on an empty one - so the
+        # assertion was about argparse, not about the guard. The guard's real job is that no
+        # process is spawned at all, so that is what gets asserted.
+        with TempDir() as t:
+            repo = bare(t)
+            spawned = []
+
+            def refuse(*a, **_k):
+                spawned.append(a)
+                raise RuntimeError("spawned")     # a row, not a traceback, when this fires
+
+            keep_run, tp.subprocess.run = tp.subprocess.run, refuse
+            try:
+                got = tp.reach_score(repo, [])
+            except RuntimeError:
+                got = "SPAWNED"
+            finally:
+                tp.subprocess.run = keep_run
+            c.check("⛔ K · an EMPTY path list is None and spawns NOTHING - the doors call this "
+                    "on every diff and an empty one must not cost a process",
+                    got is None and not spawned, f"got={got!r} spawned={len(spawned)}")
+            # With no graph the real binary prints "No graph found at …" as PLAIN TEXT and
+            # exits **0**; with no binary there is nothing to run. Both are no-evidence, and
+            # this is the state of eight of the ten repos here and of every worktree.
+            c.check("⛔ K · a repo with no graph is None, even though the tool exits 0 saying so",
+                    tp.reach_score(repo, ["backend/x.py"]) is None,
+                    repr(tp.reach_score(repo, ["backend/x.py"])))
+
+    if c.block("K2 · the veto's DIRECTION - it raises a tier and can never lower one"):
+        with TempDir() as t:
+            repo = bare(t)                       # no graph here, so reach is genuinely absent
+            surfaces(repo, "backend/middleware/auth.py")
+            small = dict(lines=3, structural=False)
+            one = ["frontend/src/lib/fmt.ts"]
+
+            # ⛔ THE PIN THAT KEEPS THE TIER ALIVE. The plan for this story said `None` ->
+            # `quick`. Two of the ten repos here have a graph, a worktree never inherits its
+            # parent's, and python zeros are never certified - so that rule would have made
+            # `tiny` unreachable everywhere and called it a tightening.
+            c.check("⛔ K2 · with NO evidence the line caps still decide - absence lowers "
+                    "nothing, and it must not delete the tier either",
+                    tp.ceremony_tier(repo, one, **small) == "tiny",
+                    tp.ceremony_tier(repo, one, **small))
+
+            keep = tp.reach_score
+            try:
+                cap = tp.TINY_MAX_REACH
+                tp.reach_score = lambda *_a, **_k: cap + 1
+                c.check(f"⛔ K2 · reach over the cap ({cap + 1}) is `quick` at THREE lines - "
+                        f"blast radius beats size, which is the entire point",
+                        tp.ceremony_tier(repo, one, **small) == "quick",
+                        tp.ceremony_tier(repo, one, **small))
+                # ⛔ CONTROL FOR THE PIN ABOVE. Without it, "over the cap is quick" passes with
+                # the whole reach check deleted, because a `quick` can come from anywhere.
+                tp.reach_score = lambda *_a, **_k: cap
+                c.check(f"⛔ K2 · CONTROL: reach exactly AT the cap ({cap}) is still `tiny`, so "
+                        f"the pin above is reading the score and the comparison is `>`",
+                        tp.ceremony_tier(repo, one, **small) == "tiny",
+                        tp.ceremony_tier(repo, one, **small))
+                # A certified leaf is the most permissive input the score can produce. It still
+                # cannot buy anything: 200 lines is `quick` whatever the graph says.
+                tp.reach_score = lambda *_a, **_k: 0
+                c.check("⛔ K2 · reach 0 does NOT rescue a 200-line diff - the score is a veto, "
+                        "never an admission ticket",
+                        tp.ceremony_tier(repo, one, lines=200, structural=False) == "quick",
+                        tp.ceremony_tier(repo, one, lines=200, structural=False))
+                # ⛔ THE REGRESSION THIS LANE WAS WARNED ABOUT. `app/layout.tsx` really does
+                # measure reach 0 - nothing imports a page, the router loads it - so a score
+                # consulted before the name would rank the riskiest file in the tree as the
+                # safest. `_is_entry_point` runs FIRST and this proves the order, not the rule.
+                for p in ("frontend/app/layout.tsx", "frontend/app/dashboard/page.tsx"):
+                    c.check(f"⛔ K2 · {p} has reach 0 and is STILL `full` - the entry-point "
+                            f"exclusion runs before any score",
+                            tp.ceremony_tier(repo, [p], **small) == "full",
+                            tp.ceremony_tier(repo, [p], **small))
+                c.check("⛔ K2 · a critical surface with reach 0 is STILL `full` - the veto is "
+                        "absolute and no score reaches it",
+                        tp.ceremony_tier(repo, ["backend/middleware/auth.py"],
+                                         **small) == "full",
+                        tp.ceremony_tier(repo, ["backend/middleware/auth.py"], **small))
+            finally:
+                tp.reach_score = keep
+
+        # One live pin so the subprocess wiring cannot rot unnoticed. Both branches assert real
+        # behaviour — `code-review-graph` is a per-machine install and CI does not carry it, so
+        # the absent case is the documented fallback, pinned rather than skipped.
+        target = [".agents/scripts/wf_common.py"]
+        live = tp.reach_score(ROOT, target)
+        if shutil.which("code-review-graph") and (ROOT / ".code-review-graph/graph.db").exists():
+            c.check("K2 · LIVE: the real binary against this repo's own graph returns a number",
+                    isinstance(live, int) and live > 0, f"reach_score -> {live!r}")
+        else:
+            c.check("K2 · LIVE: no graph on this machine, so reach_score is None and the line "
+                    "caps decide - the documented fallback",
+                    live is None, f"reach_score -> {live!r}")
 
     return c.finish()
 

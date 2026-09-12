@@ -270,12 +270,12 @@ def all_inert(repo: Path, paths: Iterable[str]) -> bool:
     return bool(kept) and set(kept) == set(inert_paths(repo, kept))
 
 
-# ── HOW MUCH CEREMONY (SCC-451 step one; SCC-452 replaces the `tiny` arm) ──────
+# ── HOW MUCH CEREMONY (SCC-451 step one; SCC-452 added the reach veto) ─────────
 # The predicate above answers "does this file do anything". This answers "how much of the
-# system depends on what you touched" - what the industry calls blast radius. Step one is a
-# line count behind a named interface: crude on purpose, honest about being a proxy, and it
-# gets the doors working today. SCC-452 swaps the `tiny` arm for a measured reverse-dependency
-# reach score and NOTHING else here moves.
+# system depends on what you touched" - what the industry calls blast radius. SCC-451 shipped
+# a line count behind a named interface, crude on purpose and honest about being a proxy.
+# SCC-452 put a MEASURED reverse-dependency reach score in front of it, as a veto that can only
+# raise the tier - see the block inside `ceremony_tier` for why one direction, not two.
 # ⛔ MATCHED BY NAME PLUS ROUTER FOLDER, NEVER BY A FIXED-DEPTH GLOB. The first version was a
 # list of `*/app/*/page.tsx`-shaped patterns, and `PurePosixPath.match` is right-anchored on
 # WHOLE COMPONENTS - so every pattern pinned an exact segment count. The App Router puts route
@@ -292,6 +292,38 @@ MANIFEST_NAMES = ("package.json", "package-lock.json", "pyproject.toml", "poetry
                   "requirements.txt", "firebase.json", "next.config.ts")
 TINY_MAX_LINES = 50
 TINY_MAX_FILES = 5
+
+# ⛔ MEASURED, NOT CHOSEN. Run 2026-09-12 over every tracked source file in both repos that
+# carry a graph, at the same depth this code queries (2 hops):
+#
+#   lobby        209 files,  29 measured: p50=2 p75=4 p90=9  p95=10 max=86  (tests/_harness.py)
+#   AviationChat 899 files, 308 measured: p50=6 p75=18 p90=50 p95=96 max=204
+#
+# The knee is where the long tail starts, and it lands in the same place in both repos. In
+# AviationChat the per-value counts run 37·27·39·31·20·16·9·9·10·9 for reach 1 through 10 and
+# then collapse to 4·8·2·1·1 - two thirds of every measured file sits at 10 or under, and the
+# lobby's 95th percentile is exactly 10. Everything above it is a hub. So the cap sits ON the
+# knee: the veto fires for hubs and stays silent for the files people actually edit.
+TINY_MAX_REACH = 10
+
+# How long the graph query may take before the gate stops waiting for it. A door blocks on
+# this call, so a hung binary must cost a few seconds and a `quick` review, never the lane.
+REACH_TIMEOUT_S = 20
+
+# ⛔ THE ONLY ZERO THAT IS EVIDENCE. `code-review-graph` attaches a `confidence` note to EVERY
+# empty result, and this is the one wording that means "measured, and nothing depends on it"
+# (`uncertainty.py::_confirmed_note`). The other four - target not indexed, graph stale, a
+# language blind spot, currency unverified - all mean "I could not see".
+#
+# ⛔ AND IT IS UNREACHABLE FOR PYTHON AND TYPESCRIPT, WHICH IS WHY THE TIER USES REACH AS A
+# VETO AND NOT AS AN ADMISSION TICKET. `uncertainty.LANGUAGE_GAPS` lists `impact_radius` under
+# BOTH the call patterns and the import patterns for python and the whole js/ts family, so a
+# zero about a `.py` or a `.tsx` ALWAYS carries a blind-spot note instead - measured, 178 of 209
+# lobby files. The tool will never certify that a Python leaf is safe, so nothing may be let
+# into `tiny` on the strength of one. What it certifies confidently is a NON-zero, and a
+# non-zero is exactly what a veto needs. (The branch is live, not dead: shell scripts have no
+# gap and do return this - measured on `.agents/hooks/run-hook.sh`.)
+REAL_ABSENCE = "real absence"
 
 
 def _is_entry_point(rel: str) -> bool:
@@ -320,6 +352,70 @@ def _is_entry_point(rel: str) -> bool:
     return name in ENTRY_POINT_NAMES and any(seg in ROUTER_DIRS for seg in folders)
 
 
+def reach_score(repo: Path, rels: Iterable[str]) -> int | None:
+    """How many OTHER files reach these paths, per `code-review-graph`. `None` = NO EVIDENCE.
+
+    ⛔ `None` IS NOT ZERO. Zero means "measured, and nothing depends on it"; `None` means "not
+    measured". Every arm that cannot produce a real number returns `None`: no paths to score,
+    the binary absent, no graph built, a non-zero exit, output that is not JSON, a `status`
+    that is not `ok`, a timeout, and - the one that matters most - an empty result whose own
+    `confidence` note says the graph could not see.
+
+    ⛔ THE GRAPH IS READ, NEVER RE-IMPLEMENTED. `code-review-graph impact` already owns the
+    import parsing for six languages and publishes its own uncertainty; a second import parser
+    living here would be a second answer to a question already answered, and would have to get
+    TypeScript, JSX and Python right to be worth anything.
+
+    An empty path list returns before spawning anything. `--files` is `nargs="+"`, so the tool
+    would refuse it at argparse and exit 2 anyway (measured) - the guard buys no safety, only
+    the process the doors would otherwise start to be told off.
+    """
+    paths = [p.replace("\\", "/") for p in rels]
+    if not paths:
+        return None
+    binary = shutil.which("code-review-graph")
+    if not binary:
+        return None
+    try:
+        # `encoding="utf-8"` is not optional here (SCC-335): a captured stream decoded with the
+        # machine locale corrupts on the Windows side, and `test_jira_feed.py` E1 walks every
+        # spawn in `.agents/scripts/` looking for exactly this omission.
+        cp = subprocess.run([binary, "impact", "--repo", str(repo), "--depth", "2",
+                             "--files", *paths],
+                            capture_output=True, text=True, encoding="utf-8",
+                            errors="replace", timeout=REACH_TIMEOUT_S)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if cp.returncode != 0:
+        return None
+    try:
+        return _reach_from_impact(json.loads(cp.stdout))
+    except (json.JSONDecodeError, ValueError):
+        # ⛔ THE COMMON PATH, NOT AN EDGE CASE. With no graph the tool prints
+        # "No graph found at …" as PLAIN TEXT and exits **0** - so a returncode check alone
+        # reads that as a successful measurement. Only the parse catches it. Eight of the ten
+        # repos in this workspace have no graph, and a worktree never inherits its parent's.
+        return None
+
+
+def _reach_from_impact(payload: object) -> int | None:
+    """The reach contract, as a pure function of one `impact` payload. `None` = no evidence.
+
+    ⛔ SPLIT OUT SO THE CONTRACT IS TESTABLE WHERE THE BINARY IS NOT. `code-review-graph` is a
+    per-machine `pip --user` install and CI does not have it, so a test that could only reach
+    these arms through a subprocess would quietly assert nothing on the one runner that gates
+    `main`. Every arm below is pinned directly, on every machine.
+    """
+    if not isinstance(payload, dict) or payload.get("status") != "ok":
+        return None
+    hit = payload.get("impacted_files")
+    if not isinstance(hit, list):
+        return None                          # the field is the answer; a wrong type is no answer
+    if hit:
+        return len(hit)
+    return 0 if REAL_ABSENCE in str(payload.get("confidence") or "") else None
+
+
 def ceremony_tier(repo: Path, paths: Iterable[str], *,
                   lines: int | None = None, structural: bool | None = None) -> str:
     """`"tiny"` · `"quick"` · `"full"` - how much ceremony this change has earned.
@@ -331,6 +427,12 @@ def ceremony_tier(repo: Path, paths: Iterable[str], *,
 
     ⛔ It touches NO TESTS. Which suites run is the CI classifier's job (AVCH-153); this decides
     REVIEW DEPTH only, and conflating the two is the failure mode to avoid.
+
+    ⛔ EVERY RULE HERE RUNS IN ONE DIRECTION: toward more ceremony. The critical-surface veto,
+    the manifest and CI checks, the entry-point exclusion and the reach veto can each force a
+    tier UP, and nothing in this function can force one down. That is what makes the order safe
+    to read - `_is_entry_point` comes BEFORE the reach score on purpose, because an entry point
+    has reach 0 and a score consulted first would rank the riskiest files as the safest.
     """
     import scope_check as sc
     rels = [p.replace("\\", "/") for p in paths]
@@ -362,6 +464,32 @@ def ceremony_tier(repo: Path, paths: Iterable[str], *,
 
     if lines is None or structural:
         return "quick"
+
+    # ── BLAST RADIUS (SCC-452) ────────────────────────────────────────────────────────────
+    # ⛔ REACH CAN ONLY RAISE CEREMONY. IT IS NEVER AN ADMISSION TICKET.
+    #
+    # The line count below is a proxy for blast radius and a bad one: three lines in a module
+    # forty files import is not small, and forty lines in a leaf nobody imports is. This asks
+    # the real question, and it asks it in ONE direction only.
+    #
+    # The plan for this story said `None` -> `quick`, so that a change with no evidence could
+    # never be `tiny`. Measured on the way in, that rule DELETES the tier instead of tightening
+    # it: two of the ten repos in this workspace have a graph at all, a worktree never inherits
+    # its parent's, and in a Python repo 178 of 209 files answer 0 with a blind-spot note. Under
+    # `None -> quick` every one of those is `quick` forever, and `tiny` is dead code wearing a
+    # threshold.
+    #
+    # The principle underneath that rule is what actually binds: ABSENCE OF EVIDENCE LOWERS
+    # NOTHING. A veto satisfies it exactly. With no evidence the line caps decide, which is
+    # precisely today's behaviour, so no repo gets weaker than it is now; with evidence, a hub
+    # is pushed up to `quick` no matter how small the diff. It also retires the staleness
+    # problem rather than guarding it: a stale number that is too HIGH costs one `quick` review
+    # nobody needed, and one that is too LOW falls through to the caps. Neither can make this
+    # answer permissive, which is why there is no staleness gate here.
+    reach = reach_score(repo, rels)
+    if reach is not None and reach > TINY_MAX_REACH:
+        return "quick"
+
     # ⛔ COUNT THE NON-INERT PATHS, NOT THE DEPLOYABLE ONES. This counted `deployable_paths`,
     # which keeps only `DEPLOY_DIRS` survivors - so outside a product folder the count was
     # permanently 0 and the file cap was dead. In the command centre that is EVERY diff:
