@@ -1,0 +1,15 @@
+{
+  "id": "f1",
+  "result": "reproduced",
+  "command": [
+    "bash",
+    "-c",
+    "python3 -c \"import sys, subprocess, urllib.request; sys.path.insert(0, '.agents/scripts'); import check_antigravity_workspace; port = check_antigravity_workspace.detect_running_hub_port(); req = urllib.request.Request(f'http://127.0.0.1:{port}/'); html = urllib.request.urlopen(req).read().decode(); rc = subprocess.call(['python3', '.agents/scripts/check_antigravity_workspace.py'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); sys.exit(1 if ('win32' in html and rc == 0) else 0)\""
+  ],
+  "cwd": "/home/dlohn/Sudo_Hatter_Command/.claude/worktrees/SCC-450",
+  "exit_code": 1,
+  "sha": "5eeca18efab5df1b26375839fd160001648b3d91",
+  "dirty_tree": true,
+  "recorded_at": "2026-09-12T16:04:17+00:00",
+  "output_tail": ""
+}
