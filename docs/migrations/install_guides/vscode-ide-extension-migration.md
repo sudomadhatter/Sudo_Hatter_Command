@@ -215,15 +215,9 @@ they become functional.
    When running the Antigravity agent in VS Code, prompt/approval requests trigger VS Code's experimental
    Agent Status widget in the title bar, causing the Command Center search bar to pop open or steal focus.
    These settings are tracked at workspace level in `.vscode/settings.json` so they travel via Git across
-   Mac, Windows, and Linux and cannot be rolled back by Microsoft Cloud Settings Sync.
-   In user `settings.json`, add them and protect them against cloud sync rollback:
+   Mac, Windows, and Linux. In user `settings.json`, ensure they are present so Microsoft Cloud Settings Sync
+   propagates them across all machines:
    ```json
-   "settingsSync.ignoredSettings": [
-       "window.commandCenter",
-       "chat.agentsControl.enabled",
-       "chat.unifiedAgentsBar.enabled",
-       "antigravity.autoOpenFiles"
-   ],
    "window.commandCenter": false,
    "chat.agentsControl.enabled": "hidden",
    "chat.unifiedAgentsBar.enabled": false,
