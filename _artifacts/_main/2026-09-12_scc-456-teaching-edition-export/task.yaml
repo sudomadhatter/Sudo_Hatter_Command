@@ -1,0 +1,13 @@
+task_key: SCC-456
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-456-teaching-edition-export
+close_command: smh-close-task-merge-tree
+# NO SUBTASKS, so no `riders:` key. Proposed at /smh-plan-task Step 2 and the operator's `go`
+# accepted it: the four parts are strictly sequential in one repo — the export cannot re-run
+# until the engine lands on main, and the published repo cannot be updated until the export
+# runs — so none of them earns its own branch. A ticket with no branch is a row nothing writes to.
+#
+# `sudo-command-center` is a SUBMODULE and its tree is REGENERATED, never edited: it lands by
+# its own PR in that repo (no Jira key, separate history) and this lane carries only the
+# pointer bump. That is what the secondary_repos row below declares.
+secondary_repos: [sudo-command-center]
