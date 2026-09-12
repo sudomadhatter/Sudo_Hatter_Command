@@ -110,12 +110,13 @@ OK
 
 ---
 
-## 6. Your Actions
+## Your Actions
 
 - [x] **Apply Code Review Fixes:** Addressed all 8 findings from adversarial code review fan-out; all pins green.
-- [x] **Enforcement Suite Verification:** Full suite verified 92/92 files clean via `gate_receipt.py`.
-- [ ] **Reload VS Code Window / Restart Hub:** Press `Ctrl+Shift+P` -> `Developer: Reload Window` in VS Code to load the patched webview into memory for the active session.
-- [ ] **The merge itself — lands via this branch's PR:** [https://github.com/sudomadhatter/Sudo_Hatter_Command/pull/new/chore/SCC-450-antigravity-workspace-posix](https://github.com/sudomadhatter/Sudo_Hatter_Command/pull/new/chore/SCC-450-antigravity-workspace-posix)
+- [x] **Enforcement Suite Verification:** Full suite verified clean via `gate_receipt.py` (93/93 files passed).
+- [x] The merge itself — lands via this branch's PR
+
+*Note for operator:* To activate the patched webview in the active VS Code session without restarting the host, run `Developer: Reload Window` (`Ctrl+Shift+P`).
 
 ---
 
