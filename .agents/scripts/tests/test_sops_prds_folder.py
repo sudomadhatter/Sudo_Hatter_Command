@@ -106,6 +106,7 @@ EXPECTED = {
     "workflows_testing_SOP.md",          # was _quick_reference/sudo_workflows_testing.md
     "workflows_testing_SOP_changelog.md",  # SCC change history, one line per change (2026-08-21 cleanup)
     "operator_workflows_quickref.md",    # SCC-380: Human flight manual & visual quick-reference
+    "pr_push_system_guide.md",           # SCC-460 - the PR push road: lanes, hooks, gates, overrides
     "jira_manual.md",
     "jira_integration_guide.md",
     "git_walkthrough_settings.md",

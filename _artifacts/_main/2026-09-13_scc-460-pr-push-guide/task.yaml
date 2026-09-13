@@ -1,0 +1,12 @@
+task_key: SCC-460
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-460-pr-push-guide
+close_command: smh-close-task-merge-tree
+# NO SUBTASKS, so no `riders:` key. One document, its INDEX row and one manifest string; nothing
+# here is separable into a lane of its own.
+#
+# NO `secondary_repos:`. The guide describes the lobby's doors and gates and lives in the lobby.
+# `Projects/sudo-project-skeleton` is initialised in this worktree ONLY so `test_command_surfaces.py`
+# CS-26 J can verify the skeleton README against the door - a worktree never inherits its parent's
+# submodule checkouts, and on this machine that check's remedy is actionable, so it is a real red
+# until it is run. Nothing in the submodule is edited by this lane.

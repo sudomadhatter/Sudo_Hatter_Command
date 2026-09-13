@@ -4,12 +4,12 @@
     "docs"
   ],
   "counts": {
-    "files": 389,
+    "files": 390,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 805,
+    "edges": 821,
     "external": 26,
-    "ambiguous": 200,
+    "ambiguous": 201,
     "dangling": 262,
     "broken_paths": 58,
     "unresolved_names": 204,
@@ -328,7 +328,7 @@
     },
     {
       "path": ".agents/commands/cicd-close-story-merge-tree.md",
-      "in": 1,
+      "in": 2,
       "out": 11
     },
     {
@@ -373,7 +373,7 @@
     },
     {
       "path": ".agents/commands/cicd-non-crit-pr-push.md",
-      "in": 1,
+      "in": 2,
       "out": 6
     },
     {
@@ -393,7 +393,7 @@
     },
     {
       "path": ".agents/commands/cicd-push-e2e.md",
-      "in": 3,
+      "in": 4,
       "out": 6
     },
     {
@@ -458,7 +458,7 @@
     },
     {
       "path": ".agents/commands/smh-close-task-merge-tree.md",
-      "in": 2,
+      "in": 3,
       "out": 10
     },
     {
@@ -473,7 +473,7 @@
     },
     {
       "path": ".agents/commands/smh-dev-task-tests.md",
-      "in": 1,
+      "in": 2,
       "out": 10
     },
     {
@@ -503,7 +503,7 @@
     },
     {
       "path": ".agents/commands/smh-non-crit-pr-push.md",
-      "in": 1,
+      "in": 2,
       "out": 3
     },
     {
@@ -518,7 +518,7 @@
     },
     {
       "path": ".agents/commands/smh-quick-dev.md",
-      "in": 1,
+      "in": 2,
       "out": 15
     },
     {
@@ -753,7 +753,7 @@
     },
     {
       "path": ".agents/rules/critical-surfaces.md",
-      "in": 10,
+      "in": 11,
       "out": 1
     },
     {
@@ -763,7 +763,7 @@
     },
     {
       "path": ".agents/rules/git-policy.md",
-      "in": 61,
+      "in": 62,
       "out": 5
     },
     {
@@ -838,7 +838,7 @@
     },
     {
       "path": ".agents/rules/tests-must-gate-for-real.md",
-      "in": 14,
+      "in": 15,
       "out": 0
     },
     {
@@ -863,7 +863,7 @@
     },
     {
       "path": ".agents/scripts/INDEX.md",
-      "in": 3,
+      "in": 4,
       "out": 7
     },
     {
@@ -1793,8 +1793,8 @@
     },
     {
       "path": "docs/_scc_sops_prds/INDEX.md",
-      "in": 4,
-      "out": 20
+      "in": 5,
+      "out": 21
     },
     {
       "path": "docs/_scc_sops_prds/autopilot_SOP.md",
@@ -1813,7 +1813,7 @@
     },
     {
       "path": "docs/_scc_sops_prds/git_walkthrough_settings.md",
-      "in": 4,
+      "in": 6,
       "out": 5
     },
     {
@@ -1828,8 +1828,13 @@
     },
     {
       "path": "docs/_scc_sops_prds/operator_workflows_quickref.md",
-      "in": 4,
+      "in": 5,
       "out": 6
+    },
+    {
+      "path": "docs/_scc_sops_prds/pr_push_system_guide.md",
+      "in": 1,
+      "out": 16
     },
     {
       "path": "docs/_scc_sops_prds/sentry_error_response_team.md",
@@ -1863,7 +1868,7 @@
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
-      "in": 32,
+      "in": 33,
       "out": 65
     },
     {
@@ -4937,6 +4942,11 @@
     },
     {
       "from": "docs/_scc_sops_prds/INDEX.md",
+      "to": "docs/_scc_sops_prds/pr_push_system_guide.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/INDEX.md",
       "to": "docs/_scc_sops_prds/sentry_error_response_team.md",
       "kind": "link"
     },
@@ -5194,6 +5204,81 @@
       "from": "docs/_scc_sops_prds/operator_workflows_quickref.md",
       "to": ".agents/rules/git-policy.md",
       "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/pr_push_system_guide.md",
+      "to": ".agents/commands/cicd-close-story-merge-tree.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/pr_push_system_guide.md",
+      "to": ".agents/commands/cicd-non-crit-pr-push.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/pr_push_system_guide.md",
+      "to": ".agents/commands/cicd-push-e2e.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/pr_push_system_guide.md",
+      "to": ".agents/commands/smh-close-task-merge-tree.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/pr_push_system_guide.md",
+      "to": ".agents/commands/smh-dev-task-tests.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/pr_push_system_guide.md",
+      "to": ".agents/commands/smh-non-crit-pr-push.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/pr_push_system_guide.md",
+      "to": ".agents/commands/smh-quick-dev.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/pr_push_system_guide.md",
+      "to": ".agents/rules/critical-surfaces.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/pr_push_system_guide.md",
+      "to": ".agents/rules/git-policy.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/pr_push_system_guide.md",
+      "to": ".agents/rules/tests-must-gate-for-real.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/pr_push_system_guide.md",
+      "to": ".agents/scripts/INDEX.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/pr_push_system_guide.md",
+      "to": "docs/_scc_sops_prds/INDEX.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/pr_push_system_guide.md",
+      "to": "docs/_scc_sops_prds/git_walkthrough_settings.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/pr_push_system_guide.md",
+      "to": "docs/_scc_sops_prds/operator_workflows_quickref.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/pr_push_system_guide.md",
+      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "link"
     },
     {
       "from": "docs/_scc_sops_prds/sentry_error_response_team.md",
@@ -10320,6 +10405,25 @@
         ".agents/AGENTS.md",
         ".agents/skills/react-best-practices/AGENTS.md",
         "docs/AGENTS.md"
+      ]
+    },
+    {
+      "from": "docs/_scc_sops_prds/pr_push_system_guide.md",
+      "target": "frontend/scripts/INDEX.md",
+      "candidates": [
+        ".agents/INDEX.md",
+        ".agents/bmad",
+        ".agents/commands/INDEX.md",
+        ".agents/hooks/INDEX.md",
+        ".agents/opencode-agents/INDEX.md",
+        ".agents/permissions/INDEX.md",
+        ".agents/rules/INDEX.md",
+        ".agents/scripts/INDEX.md",
+        ".agents/skills/INDEX.md",
+        ".agents/templates/INDEX.md",
+        ".agents/tools/INDEX.md",
+        "docs/_scc_sops_prds/INDEX.md",
+        "docs/migrations/INDEX.md"
       ]
     },
     {
