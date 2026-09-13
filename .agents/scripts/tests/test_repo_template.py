@@ -146,6 +146,97 @@ def main() -> int:
             c.check("no unexpected error escaped a block", False,
                     f"{type(exc).__name__}: {exc}{loc} — a defect has to become a red ROW; a file that dies prints no "
                     f"FAILED: line, and a sweep cannot tell that from a survivor")
+    if c.block("T6 · SCC-459 · the TWO POSTURES, on one repo shape, differing only in the markers"):
+        # ⛔ WHY THE TWO FIXTURES ARE THE SAME SHAPE. Acceptance G and H are a PAIR — "a yes clone
+        # is armed" and "a no clone is frictionless" — and building them from two different repos
+        # would let any other difference explain the result. Same builder, same scripts, same
+        # dispatchers; the ONLY thing that varies is whether the `*-ENFORCE` markers are present.
+        # So what these rows measure is the posture and nothing else.
+        #
+        # ⛔ AND BOTH HALVES, because one half is not a gate. This file already learned that at
+        # T4: asserting only that the legal path SUCCEEDS is satisfied by a repo running no hook
+        # at all (measured — delete `core.hooksPath` and the old single-sided row still passed
+        # 24/24). The "no" posture here is that same vacuous shape made deliberate, which is
+        # exactly why it must sit beside a "yes" posture that REFUSES the identical operations.
+        MARKERS = ("JIRA-ENFORCE", "MERGE-TARGET-ENFORCE", "MAIN-PUSH-ENFORCE")
+        hookdir = ".agents/scripts/git-hooks"
+
+        # ── Jira = YES: the full enterprise dev system ───────────────────────────────────
+        with TempDir() as t6:
+            d, _bare = gh.make_pushable(t6, extra_flags=("MAIN-PUSH-ENFORCE",))
+            c.check("YES · the merge gate and the main-push gate are both armed",
+                    (d / hookdir / "MERGE-TARGET-ENFORCE").is_file()
+                    and (d / hookdir / "MAIN-PUSH-ENFORCE").is_file(),
+                    "the fixture is not in the 'yes' posture, so nothing below proves anything")
+
+            # G1 · a merge onto the wrong branch is REFUSED. Two sibling chore lanes off `main`,
+            # merged into each other — the SCC-97 signature, and the shape that printed success
+            # on 2026-08-11 and was caught only by suspicion. REFUSE FIRST, while both are still
+            # siblings: cutting `b` after `a` landed makes the merge a no-op ("Already up to
+            # date", rc 0, HEAD unmoved) and git never invokes the hook at all.
+            gh.lane(d, "chore/SCC-459-a")
+            gh.lane(d, "chore/SCC-459-b", "main")
+            rc, out, moved = gh.merge(d, "chore/SCC-459-b", "chore/SCC-459-a")
+            c.check("YES · a wrong-target merge is REFUSED, exit non-zero, HEAD unmoved",
+                    rc != 0 and not moved,
+                    f"rc={rc} moved={moved} — an armed project did not refuse chore -> chore: "
+                    f"{out.strip()[-300:]}")
+            gh.sh("git", "merge", "--abort", cwd=d)
+
+            # G2 · and `main` cannot be reached without a minted token.
+            gh.sh("git", "checkout", "-q", "main", cwd=d)
+            (d / "shipped.txt").write_text("armed\n", encoding="utf-8")
+            gh.sh("git", "add", "shipped.txt", cwd=d)
+            gh.sh("git", "commit", "-qm", "SCC-459 armed push attempt", cwd=d)
+            rc, out = gh.sh("git", "push", "origin", "main", cwd=d)
+            c.check("YES · a push to main with NO approval token is REFUSED",
+                    rc != 0,
+                    f"rc={rc} — main took an untokened push in the enterprise posture: "
+                    f"{out.strip()[-300:]}")
+
+        # ── Jira = NO: a quick project, and ZERO friction is the whole product ───────────
+        with TempDir() as t6:
+            d, _bare = gh.make_pushable(t6)
+            # The "no" posture writes nothing and arms nothing. `make_pushable` builds through
+            # `_build_repo(arm=True)`, so the one marker it creates is removed here rather than
+            # by a new builder flag — the clone is this scenario's own copy and a marker is a
+            # plain file, which is precisely what makes arming a `touch` in the real system too.
+            (d / hookdir / "MERGE-TARGET-ENFORCE").unlink()
+
+            present = [m for m in MARKERS if (d / hookdir / m).exists()]
+            c.check("NO · no *-ENFORCE marker and no jira.conf exist at all",
+                    not present and not (d / ".agents/jira.conf").exists(),
+                    f"markers present: {present} — the quick-dev posture is not what shipped")
+
+            # H1 · the SAME merge the armed repo refused now succeeds, silently. This is the row
+            # that makes the pair meaningful: identical repo, identical operation, opposite
+            # verdict, and the markers are the only difference between the two fixtures.
+            gh.lane(d, "chore/SCC-459-a")
+            gh.lane(d, "chore/SCC-459-b", "main")
+            rc, out, moved = gh.merge(d, "chore/SCC-459-b", "chore/SCC-459-a")
+            c.check("NO · the identical merge the armed repo refused now SUCCEEDS",
+                    rc == 0 and moved,
+                    f"rc={rc} moved={moved} — an unarmed gate must never block: "
+                    f"{out.strip()[-300:]}")
+
+            # H2 · and main takes a push with no token, no prompt, and nothing printed. The
+            # SILENCE is the assertion, not a nicety: the operator's ruling is that a boardless
+            # project is never told about the board it does not have.
+            gh.sh("git", "checkout", "-q", "main", cwd=d)
+            (d / "quick.txt").write_text("fast\n", encoding="utf-8")
+            gh.sh("git", "add", "quick.txt", cwd=d)
+            gh.sh("git", "commit", "-qm", "quick fix, no key, no ceremony", cwd=d)
+            rc, out = gh.sh("git", "push", "origin", "main", cwd=d)
+            c.check("NO · a commit goes straight to main with no token",
+                    rc == 0, f"rc={rc} — the quick posture is not frictionless: "
+                             f"{out.strip()[-300:]}")
+            noise = [w for w in ("REFUSED", "approval token", "jira.conf", "JIRA")
+                     if w in out]
+            c.check("NO · ...and the gates say NOTHING about the board it does not have",
+                    not noise,
+                    f"the push printed {noise} — 'there is no nag' is the ruling, and a "
+                    f"warning on every push is the nag")
+
     return c.finish()
 
 

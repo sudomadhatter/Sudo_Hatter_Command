@@ -119,8 +119,8 @@
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
-      "contains": "| `/smh-new-project` | Scaffold a new workspace. |",
-      "replacement": "| `/smh-new-project` | Scaffold a new workspace. |\n| `/smh-tour` | **Teaching edition only.** Walks a new owner through this command centre from the live SOP — the branch model, the Jira flow, the gates, the artifacts, the worktrees and the close-out — stopping at each step so you drive. Start here. |\n| `/smh-training` | **Teaching edition only.** Turns tutor mode on and off. The `.training-mode` sentinel at the repo root is what the tutor reads; this door is how you set it, and `.training-mode-off` disables it locally without editing the tracked file. |"
+      "contains": "| `/smh-new-project` | Scaffold a new workspace — and it **asks you two questions first**: what the project is called, and whether it has a Jira board. The second answer sets the whole posture (see the box below). It substitutes the project name across the skeleton's 24 placeholder files for you; you no longer grep for `{{`. |",
+      "replacement": "| `/smh-new-project` | Scaffold a new workspace — and it **asks you two questions first**: what the project is called, and whether it has a Jira board. The second answer sets the whole posture (see the box below). It substitutes the project name across the skeleton's 24 placeholder files for you; you no longer grep for `{{`. |\n| `/smh-tour` | **Teaching edition only.** Walks a new owner through this command centre from the live SOP — the branch model, the Jira flow, the gates, the artifacts, the worktrees and the close-out — stopping at each step so you drive. Start here. |\n| `/smh-training` | **Teaching edition only.** Turns tutor mode on and off. The `.training-mode` sentinel at the repo root is what the tutor reads; this door is how you set it, and `.training-mode-off` disables it locally without editing the tracked file. |"
     },
     {
       "path": ".agents/commands/INDEX.md",

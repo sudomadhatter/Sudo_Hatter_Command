@@ -33,6 +33,13 @@ on:
   # there is to check. Deliberately the weaker of the two.
   pull_request:
     branches: [main]
+    # ⛔ `ready_for_review` IS HALF THE FIX AND IT IS NOT OPTIONAL (SCC-459, operator 2026-09-13).
+    # The job below skips while the PR is a draft. GitHub's DEFAULT types are
+    # opened/synchronize/reopened — none of which fire when you flip a draft to ready — so
+    # without this line the gate would never run on a PR that was opened as a draft, the
+    # required context would never report, and the PR would be permanently unmergeable. The
+    # draft filter and this list are one change; never land one without the other.
+    types: [opened, synchronize, reopened, ready_for_review]
 
   # Road 2 — the local shipping doors. They merge on the machine, so the finished merge commit
   # has never been to GitHub and carries no check; a required status check would refuse it.
@@ -60,6 +67,24 @@ jobs:
     # or — worse — a check that never runs is simply never required. Keep them in step;
     # test_main_ruleset_armed.py compares the two.
     name: main-write-gate
+    # ⛔ A DRAFT PR DOES NOT RUN THIS GATE. Measured 2026-09-13 on this very lane: the PR road is
+    # opened on the FIRST push (a pushed branch with no open PR runs zero CI), so a lane's PR is
+    # open for its whole life — and for all of that time the close-out receipt legitimately does
+    # not exist yet, because `/smh-close-task-merge-tree` Step 1 writes it. So the gate reported
+    # `[FAIL] close-out receipts` on every push, correctly, and emailed the operator every time:
+    # seven identical failures on one lane before he asked. A check that is red by design for
+    # most of a lane's life teaches its reader to ignore it, which is how a REAL red gets missed.
+    #
+    # ⭐ NOTHING IS WEAKENED. `main-write-gate` is the required status context in the ruleset, so
+    # a skipped job means the check never reports and the PR CANNOT be merged — which is already
+    # what "draft" means. Marking it ready fires `ready_for_review` (see the types above) and the
+    # gate runs on the same head sha before any merge is possible. The gate moved from "runs
+    # constantly and is ignored" to "runs when it decides something".
+    #
+    # ⛔ This is a job-level `if:`, NOT a soft step. The file's own rule at the top stands: no
+    # `continue-on-error`, no `|| true`, no `if: always()` on a gating STEP. A job that does not
+    # run reports nothing; a step that runs and is forgiven reports green. Those are opposites.
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
 
     steps:

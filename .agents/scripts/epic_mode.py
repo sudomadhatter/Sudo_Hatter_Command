@@ -107,8 +107,8 @@ def light_armed(repo: Path) -> bool:
 
     ⛔ THE COST LINE IS A PROMISE, AND AN UNARMED REPO BREAKS IT (SCC-446 review, reproduced).
     LIGHT is a local convention until a repo's `pr-check.yml` skips its E2E jobs on the token —
-    which today NO repo does (AVCH-152 is the lane that arms AviationChat, and the skeleton every
-    new project clones ships no classifier either). Printing "two checks, E2E once" in a repo that
+    which today NO repo does (AVCH-152 is the lane that arms AviationChat; the skeleton every new
+    project clones DOES ship one since SCC-441, so a clone's own `pr-check.yml` decides). Printing "two checks, E2E once" in a repo that
     still runs all four is the worst kind of wrong: the operator chose LIGHT precisely to avoid
     that cost, and the close-out door tells the agent a skipped E2E "is the design, not a red" —
     so a genuinely red E2E reads as the expected skip. Derived from the repo, never asserted, so

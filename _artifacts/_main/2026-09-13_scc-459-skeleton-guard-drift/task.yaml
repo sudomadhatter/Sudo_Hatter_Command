@@ -1,0 +1,21 @@
+task_key: SCC-459
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-459-skeleton-guard-drift
+close_command: smh-close-task-merge-tree
+# NO SUBTASKS, so no `riders:` key. Proposed at /smh-plan-task Step 2 and refused the bar: the parts
+# are strictly sequential in one repo pair, so neither earns its own branch. A ticket with no branch
+# is a row nothing writes to.
+#
+# `sudo-project-skeleton` is a SUBMODULE. Part A edits four of its files; they land by their own PR
+# in that repo (its commit gate no-ops — jira.conf.example ships JIRA_KEYS="" — so an SCC-keyed
+# commit is accepted, as SCC-441 already proved) — they landed as that repo's PRs #2 and #3. This
+# lane carries the lobby setup interview and the pointer bump.
+#
+# ⚠ Projects/AGY_AVIATIONCHAT is DELIBERATELY NOT a secondary repo here. It carries 5 dead
+# .agents/rules/ paths of the same class this lane fixed in the skeleton, but its armed commit-msg
+# gate rejects an SCC key by design (port-checklist check 6), so this lane physically cannot land
+# there. That repair needs an AVCH key and is named in the plan's `## Your Actions`.
+secondary_repos:
+  - repo: Projects/sudo-project-skeleton
+    landing: independent-task
+    ticket: SCC-459

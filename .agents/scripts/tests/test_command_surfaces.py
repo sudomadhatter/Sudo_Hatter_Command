@@ -4475,6 +4475,110 @@ def main() -> int:
                 "fan out" in body and "no subagent" in body,
                 "the door does not explain why the no-seat review is the real gate")
 
+    if c.block("CS-26 · SCC-459 · setup is ONE question with TWO postures, and the "
+               "\"yes\" half actually arms"):
+        # ⛔ WHY THIS BLOCK EXISTS AT ALL. Before SCC-459 nothing anywhere tested
+        # `new-project.ps1` — ten files name it and `ls .agents/scripts/tests/test_new_project*`
+        # returned "No such file or directory". So the ticket's own acceptance ("a yes clone is
+        # armed, a no clone is frictionless") could only ever be a one-time transcript in a
+        # walkthrough, and six months from now the interview could quietly stop arming the
+        # markers with the suite still green. That is THIS TICKET'S OWN DISEASE one level up:
+        # the skeleton drifted 104 executable lines behind the lobby for exactly the reason that
+        # nothing compared them.
+        DOOR = (ROOT / ".agents/commands/smh-new-project.md").read_text(encoding="utf-8")
+        PS1 = (ROOT / ".agents/scripts/new-project.ps1").read_text(encoding="utf-8")
+        MARKERS = ("JIRA-ENFORCE", "MERGE-TARGET-ENFORCE", "MAIN-PUSH-ENFORCE")
+
+        # 1. BOTH questions, in the door, before anything runs. One question is not an
+        #    interview: the name alone is what the door already asked for as `$ARGUMENTS`.
+        c.check("CS-26 A the door asks the NAME question",
+                "What is the project called?" in DOOR,
+                "Q1 is gone — the door would run the scaffold on an unconfirmed name")
+        c.check("CS-26 B the door asks the JIRA BOARD question",
+                "Do you have a Jira board for this project?" in DOOR,
+                "Q2 is gone — the posture would be decided by default rather than by the operator")
+
+        # 2. ⛔ ALL THREE MARKERS, IN THE SCRIPT. This is the half that did not exist: the old
+        #    script armed `core.hooksPath` so the hooks RAN, created no marker at all, and named
+        #    only JIRA-ENFORCE in closing prose for the reader to touch by hand. A project that
+        #    answered "yes" and wanted enterprise protection got warn-only gates, silently.
+        #    Pinned on the SCRIPT, not the door, because the script is what actually writes them.
+        missing_ps = [m for m in MARKERS if m not in PS1]
+        c.check("CS-26 C the SCRIPT arms all three *-ENFORCE markers on a yes",
+                not missing_ps,
+                f"new-project.ps1 never writes: {missing_ps} — a 'yes' project gets warn-only "
+                f"gates and is told nothing, which is the defect SCC-459 closed")
+        missing_door = [m for m in MARKERS if m not in DOOR]
+        c.check("CS-26 D the DOOR names all three, so a hand setup lands in the same state",
+                not missing_door, f"the door omits: {missing_door}")
+
+        # 3. The rename is WIRED, not documented. `scripts/rename-project.py` shipped in the
+        #    skeleton from the start and nothing ever called it — the rename was README step 2,
+        #    by hand, so every clone's first commit carried {{PROJECT_NAME}}.
+        c.check("CS-26 E the script CALLS the skeleton's rename helper",
+                "rename-project.py" in PS1,
+                "the placeholders would survive into the project's own first commit")
+
+        # 4. The "no" side is ONE SENTENCE AND THEN SILENCE (operator, 2026-09-13: "if they say
+        #    no it tells them they can change this at any time and drops it — there is no nag").
+        #    A NEGATIVE row: what must NOT be there is the point.
+        c.check("CS-26 F the door promises the upgrade is available at any time",
+                "add one at any time" in DOOR,
+                "the one sentence lost its promise, which is what makes 'no' a real answer "
+                "rather than a deferral")
+        c.check("CS-26 G ...and forbids raising it again",
+                "never raise it again" in DOOR and "not a deferral" in DOOR,
+                "without this the next agent reads a boardless project as unfinished setup")
+
+        # 5. ⛔ NO KEY IS INVENTED FOR A BOARDLESS PROJECT, and the door must say why. An earlier
+        #    draft of this design minted a local date-derived key so a boardless lane had
+        #    something to name branches after; it was struck on measurement — the guards classify
+        #    a branch by PREFIX alone. If the door stops saying so, the next agent re-invents it.
+        c.check("CS-26 H the door says a boardless project needs no key, and why",
+                "PREFIX alone" in DOOR and "Do not invent a local key scheme" in DOOR,
+                "the struck local-key scheme would be re-derived by the next reader")
+
+        # 6. ⛔ ACCEPTANCE J — the README and the door must brief the SAME setup. A clone set up
+        #    from the README alone and one set up by the door have to land in the same state, or
+        #    the two paths silently diverge and only one of them arms anything.
+        SKEL = ROOT / "Projects/sudo-project-skeleton"
+        readme = SKEL / "README.md"
+        if not readme.is_file():
+            # ⛔ STRICT WHERE THE REMEDY IS ACTIONABLE, INCONCLUSIVE ONLY ON A RUNNER — SCC-118's
+            # ruling, reached here from the same direction `t9_inconclusive` reached it.
+            #
+            # The first cut of this row failed outright, on the `pwsh` reasoning: absence must be
+            # NAMED and NON-PASSING, never a silent skip. That is right on a workstation, where
+            # `git submodule update --init` complies and a red is a real red. **A CI runner is the
+            # case that reasoning never met.** `actions/checkout@v4` clones no submodules, and
+            # several of the declared ones are PRIVATE — the runner holds no credential for them,
+            # and parking one in a public repo's Actions to satisfy a doc-parity check is not a
+            # trade anyone should make. So the remedy there is not merely unrun; it is
+            # UNAVAILABLE, and a gate that is permanently red on a correct state blocks every
+            # merge forever. Measured: this row turned `main-write-gate` red on the very lane that
+            # introduced it.
+            #
+            # Keyed on the environment the platform DECLARES, never inferred from the symptom —
+            # "the file is missing" cannot distinguish "not cloned" from "deleted", and inventing
+            # a classifier for that is how a check ships that nothing can falsify.
+            on_runner = bool(os.environ.get("GITHUB_ACTIONS") or os.environ.get("CI"))
+            c.check("CS-26 J the skeleton README briefs the same setup as the door",
+                    on_runner,
+                    "Projects/sudo-project-skeleton is UNINITIALISED here, so the README/door "
+                    "parity is UNVERIFIED — and on this machine the remedy IS actionable, so "
+                    "this is a real red. Run: git submodule update --init "
+                    "Projects/sudo-project-skeleton")
+        else:
+            RD = readme.read_text(encoding="utf-8")
+            c.check("CS-26 J the skeleton README asks the door's two questions",
+                    "What is the project called?" in RD
+                    and "Do you have a Jira board for this project?" in RD,
+                    "a setup done from the README alone would ask something else")
+            missing_rd = [m for m in MARKERS if m not in RD]
+            c.check("CS-26 K ...and names the same three markers",
+                    not missing_rd,
+                    f"the README omits: {missing_rd} — a hand setup would half-arm the project")
+
     return c.finish()
 
 
