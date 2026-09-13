@@ -4,10 +4,10 @@
     "docs"
   ],
   "counts": {
-    "files": 390,
+    "files": 392,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 821,
+    "edges": 827,
     "external": 26,
     "ambiguous": 201,
     "dangling": 262,
@@ -932,6 +932,16 @@
       "out": 1
     },
     {
+      "path": ".agents/skills/apple-glass/RECIPES.md",
+      "in": 1,
+      "out": 0
+    },
+    {
+      "path": ".agents/skills/apple-glass/SKILL.md",
+      "in": 4,
+      "out": 2
+    },
+    {
       "path": ".agents/skills/backend-dev-guidelines/SKILL.md",
       "in": 0,
       "out": 0
@@ -1734,17 +1744,17 @@
     {
       "path": ".agents/skills/visual-fx-3d/CATALOG.md",
       "in": 4,
-      "out": 0
+      "out": 1
     },
     {
       "path": ".agents/skills/visual-fx-3d/RECIPES.md",
       "in": 2,
-      "out": 0
+      "out": 1
     },
     {
       "path": ".agents/skills/visual-fx-3d/SKILL.md",
-      "in": 1,
-      "out": 3
+      "in": 2,
+      "out": 4
     },
     {
       "path": ".agents/skills/webm-alpha-video/SKILL.md",
@@ -1809,7 +1819,7 @@
     {
       "path": "docs/_scc_sops_prds/frontend_UI_design_guide.md",
       "in": 6,
-      "out": 12
+      "out": 13
     },
     {
       "path": "docs/_scc_sops_prds/git_walkthrough_settings.md",
@@ -4201,6 +4211,16 @@
       "kind": "link"
     },
     {
+      "from": ".agents/skills/apple-glass/SKILL.md",
+      "to": ".agents/skills/visual-fx-3d/SKILL.md",
+      "kind": "link"
+    },
+    {
+      "from": ".agents/skills/apple-glass/SKILL.md",
+      "to": ".agents/skills/apple-glass/RECIPES.md",
+      "kind": "link"
+    },
+    {
       "from": ".agents/skills/backend-dev-guidelines/resources/architecture-overview.md",
       "to": ".agents/skills/backend-dev-guidelines/resources/routing-and-controllers.md",
       "kind": "link"
@@ -4781,6 +4801,21 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/skills/visual-fx-3d/CATALOG.md",
+      "to": ".agents/skills/apple-glass/SKILL.md",
+      "kind": "link"
+    },
+    {
+      "from": ".agents/skills/visual-fx-3d/RECIPES.md",
+      "to": ".agents/skills/apple-glass/SKILL.md",
+      "kind": "link"
+    },
+    {
+      "from": ".agents/skills/visual-fx-3d/SKILL.md",
+      "to": ".agents/skills/apple-glass/SKILL.md",
+      "kind": "link"
+    },
+    {
       "from": ".agents/skills/visual-fx-3d/SKILL.md",
       "to": ".agents/skills/vgpu/SKILL.md",
       "kind": "link"
@@ -5068,6 +5103,11 @@
     {
       "from": "docs/_scc_sops_prds/frontend_UI_design_guide.md",
       "to": ".agents/skills/animate-expo/SKILL.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/frontend_UI_design_guide.md",
+      "to": ".agents/skills/apple-glass/SKILL.md",
       "kind": "link"
     },
     {
@@ -7252,6 +7292,7 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
+        ".agents/skills/apple-glass/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -7347,6 +7388,7 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
+        ".agents/skills/apple-glass/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -7614,6 +7656,7 @@
       "target": "RECIPES.md",
       "candidates": [
         ".agents/skills/animate-expo/RECIPES.md",
+        ".agents/skills/apple-glass/RECIPES.md",
         ".agents/skills/emil-design-eng/RECIPES.md",
         ".agents/skills/visual-fx-3d/RECIPES.md"
       ]
@@ -7773,6 +7816,7 @@
       "target": "/SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
+        ".agents/skills/apple-glass/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -7858,6 +7902,7 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
+        ".agents/skills/apple-glass/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -8273,6 +8318,7 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
+        ".agents/skills/apple-glass/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -8860,6 +8906,7 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
+        ".agents/skills/apple-glass/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -8936,6 +8983,7 @@
       "target": "/SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
+        ".agents/skills/apple-glass/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -9012,6 +9060,7 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
+        ".agents/skills/apple-glass/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -9088,6 +9137,7 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
+        ".agents/skills/apple-glass/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -9164,6 +9214,7 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
+        ".agents/skills/apple-glass/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -9240,6 +9291,7 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
+        ".agents/skills/apple-glass/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -9316,6 +9368,7 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
+        ".agents/skills/apple-glass/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -9392,6 +9445,7 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
+        ".agents/skills/apple-glass/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -9468,6 +9522,7 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
+        ".agents/skills/apple-glass/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -9544,6 +9599,7 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
+        ".agents/skills/apple-glass/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -9620,6 +9676,7 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
+        ".agents/skills/apple-glass/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -9696,6 +9753,7 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
+        ".agents/skills/apple-glass/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -9772,6 +9830,7 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
+        ".agents/skills/apple-glass/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -9848,6 +9907,7 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
+        ".agents/skills/apple-glass/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -9932,6 +9992,7 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
+        ".agents/skills/apple-glass/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -10016,6 +10077,7 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
+        ".agents/skills/apple-glass/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -10145,6 +10207,7 @@
       "target": "skill-creation/SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
+        ".agents/skills/apple-glass/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -10394,6 +10457,7 @@
       "target": "RECIPES.md",
       "candidates": [
         ".agents/skills/animate-expo/RECIPES.md",
+        ".agents/skills/apple-glass/RECIPES.md",
         ".agents/skills/emil-design-eng/RECIPES.md",
         ".agents/skills/visual-fx-3d/RECIPES.md"
       ]
@@ -10431,6 +10495,7 @@
       "target": "/SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
+        ".agents/skills/apple-glass/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -10635,6 +10700,7 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
+        ".agents/skills/apple-glass/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -11013,6 +11079,7 @@
       "target": "/SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
+        ".agents/skills/apple-glass/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
@@ -11118,6 +11185,7 @@
       "target": "SKILL.md",
       "candidates": [
         ".agents/skills/animate-expo/SKILL.md",
+        ".agents/skills/apple-glass/SKILL.md",
         ".agents/skills/backend-dev-guidelines/SKILL.md",
         ".agents/skills/cicd-bdd-tests/SKILL.md",
         ".agents/skills/cicd-boot-sprint-memory/SKILL.md",
