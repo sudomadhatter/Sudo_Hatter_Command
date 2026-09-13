@@ -157,6 +157,38 @@ def main() -> int:
             c.check("E4 scan() reports the dead one and not the live one", _ok,
                     "" if _ok else f"scan is not discriminating: dead={dead} checked={checked}")
 
+        if c.block("K · SCC-456 · an export-staging root resolves from where it is PUBLISHED"):
+            # `.agents/scripts/teaching-edition/overlay/` mirrors the ROOT of the generated teaching
+            # edition, so `overlay/.agents/commands/smh-tour.md` ships as
+            # `.agents/commands/smh-tour.md`. Its `../../docs/…` link is correct in the tree a reader
+            # gets and resolves to nothing where the file is staged. Two permanent false positives
+            # is how a gate gets ignored.
+            staged = (".agents/scripts/teaching-edition/overlay/"
+                      ".agents/commands/smh-tour.md")
+            _ok = r.resolve("../../docs/_scc_sops_prds/workflows_testing_SOP.md",
+                            staged) == "docs/_scc_sops_prds/workflows_testing_SOP.md"
+            c.check("K1 a staged file's link resolves from its published location", _ok,
+                    "" if _ok else "the overlay's correct links are reported dead and cannot be fixed")
+
+            # ⛔ AND IT MUST STILL BITE. The convention NARROWS - it retries one extra base - so a
+            # link that is dead in BOTH places has to stay dead, or the staging root becomes a
+            # blanket exemption for every path under it.
+            _ok = r.resolve("../../docs/_scc_sops_prds/no_such_page.md", staged) is None
+            c.check("K2 a link dead in BOTH places is still reported", _ok,
+                    "" if _ok else "the staging root is exempting paths rather than re-basing them")
+
+            # And it applies ONLY under a declared staging root. The control has to be a citing
+            # path at the SAME DEPTH whose ordinary resolution fails - `replacements/` is the
+            # overlay's own sibling, so `../../docs/…` from there lands on
+            # `.agents/scripts/teaching-edition/docs/…`, which is nothing. If the retry were
+            # unconditional it would re-base that to the real SOP and resolve.
+            # (First aimed at `.agents/commands/smh-tour.md`, which was a bad control: from there
+            # `../../` IS the repo root, so convention 2 resolves it and the case proved nothing.)
+            sibling = ".agents/scripts/teaching-edition/replacements/router.md"
+            _ok = r.resolve("../../docs/_scc_sops_prds/workflows_testing_SOP.md", sibling) is None
+            c.check("K3 a file OUTSIDE a staging root gets no retry", _ok,
+                    "" if _ok else "the convention is widening: every `../../x` would resolve")
+
         if c.block("H · SCC-288 · a GENERATED block is machine output, not authored links"):
             # ⛔ MEASURED, at the SCC-288 close-out. `docs/doc-graph.md`'s AUTO block is a REPORT:
             # its job is to LIST the dangling references the graph found. check_links read that

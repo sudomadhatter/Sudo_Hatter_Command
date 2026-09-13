@@ -67,7 +67,7 @@ source tree to prevent recursive self-copy"* — and the published repo lives at
 export can never be written straight to its destination, and a repo-local `scratch/` is refused too.
 Temp-then-publish is the only shape available.
 
-Read the tail of `/tmp/te-export.txt`. It must end with **`TEACHING EDITION VALID`**. Anything else
+Read the tail of the export log you just redirected. It must end with **`TEACHING EDITION VALID`**. Anything else
 — a leak hit, a missing overlay source, a missing line-transform anchor, a failed validator — is a
 **stop**. Report what it said and fix the cause; never re-run with a guard removed.
 
