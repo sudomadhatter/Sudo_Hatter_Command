@@ -189,64 +189,102 @@ holds a detector pointed at a pre-repair tree.
 
 ---
 
-## Part D — the two switches (operator ruling, 2026-09-13)
+## Part D — who issues the keys (operator ruling, 2026-09-13)
 
-> *"there will not be a Jira board set up yet when we make a new project. We may clone it first. It
-> should query the user to see if they plan to make a Jira board and then adjust if they are opting
-> to not use one. Some of the quick projects for just front end I do I never make a Jira board and I
-> still want to use the other features."*
+> *"there will not be a Jira board set up yet when we make a new project. We may clone it first …
+> Some of the quick projects for just front end I do I never make a Jira board and I still want to
+> use the other features."*
+> *"have a default local key with just the date to track the tickets, and we should be default to the
+> light git checkout. Then when we add Jira if needed we can then have the full ceremony too."*
 
-**The ruling resolves audit finding 2, and the code already agrees with it.** Measured: `grep -c
-'jira.conf\|JIRA_KEYS'` over all four guards returns **0, 0, 0, 0**. Not one of them reads a board.
-`mint-push-token.sh` already declares the key optional — `[--key <JIRA-KEY>]` in its usage, `${KEY:-<no
-key>}` in its banner, and the key match guarded by `if [ -n "$KEY" ]`. So branch protection and Jira
-were never one feature; they were one *marker convention* that made them look like one.
+**Jira is a MIRROR, not the system — measured, not asserted.** `jira_feed.py:2417` writes
+`Source: <walkthrough> -> Your Actions` into every Dev Record: the record is the walkthrough in
+`_artifacts/`, and `devrecord` / `describe` / `attach` all push **artifact → board**, never the
+reverse. A boardless project loses the mirror, not the record.
 
-**Two independent switches, and the mechanism already exists** — the three markers are three separate
-files, so nothing new is invented here. What changes is which ones ship set, and whether the reader is
-asked:
+**The one thing Jira actually provides is the KEY**, and nothing downstream cares who issued it:
+
+- `task_preflight.py:765` — `KEY_RE = re.compile(r"\b([A-Z][A-Z0-9]+-\d+)\b")`. Any uppercase
+  prefix, a dash, digits. Nothing Jira-specific.
+- `jira_feed.py:1295` — `_CONF_RE` reads `JIRA_KEYS` as free-form whitespace/comma tokens and
+  validates it against no board.
+- All four guards: `grep -c 'jira.conf\|JIRA_KEYS'` returns **0, 0, 0, 0**.
+
+So the switch is not *Jira on/off*. It is **who issues the keys**, and every branch shape, gate,
+preflight and close-out stays byte-identical either way.
+
+### The local issuer — date-derived, as ruled
+
+Default key form: **`<PREFIX>-<YYMMDDNN>`**, e.g. `NOVA-26091301` — the project's prefix, then the
+date, then a two-digit sequence for that day.
+
+- It satisfies `KEY_RE` **unchanged**: `[A-Z][A-Z0-9]+-\d+` matches it exactly, so no gate, regex,
+  branch rule or preflight is touched to support it.
+- It is date-derived, as ruled — no counter file, so nothing to collide across machines or worktrees.
+- The **8-digit shape is what distinguishes a local key from a Jira key on sight**: Jira numbers are
+  small and sequential (`NOVA-7`), local ones carry a date (`NOVA-26091301`). No ambiguity if a board
+  arrives later.
+- The prefix comes from the project name the setup already asks for, so the keys read correctly from
+  day one and keep reading correctly after an upgrade.
+
+### The mode: TRUNK is already the default, mechanically
+
+`epic_mode.py:5` — `TRUNK  no origin/epic/* at all`. A fresh clone has no epic branches, so it IS
+trunk from the first commit, with no configuration: *"lands on main by a PR the operator merges"*.
+**Nothing needs building for the ruled default; what is missing is that nothing SAYS so.** Upgrading
+to `LIGHT` or `FULL` means cutting an `epic/<KEY>-…` branch — which needs a key, and a key now exists
+in both worlds. The full ceremony becomes available without becoming mandatory.
+
+### The three markers, restated
 
 | Marker | Ships | Why |
 |---|---|---|
-| `MERGE-TARGET-ENFORCE` | **armed** | zero Jira references; a front-end project with no board still must not merge onto the wrong branch |
-| `MAIN-PUSH-ENFORCE` | **armed** | same; the approval token has no key requirement |
-| `JIRA-ENFORCE` | **off, and now ASKED** | it genuinely needs a board, and a fresh clone has none |
+| `MERGE-TARGET-ENFORCE` | **armed, tracked** | zero Jira references; a bare `git clone` must be protected without running the door |
+| `MAIN-PUSH-ENFORCE` | **armed, tracked** | same; the approval token's `--key` is already optional |
+| `JIRA-ENFORCE` | **armed by SETUP, both answers** | it enforces a KEY, not a board — and after Part D there is always a key. Misnamed, not mis-scoped; renaming it is a cross-repo break and is NOT in this lane |
 
-⭐ **The skeleton ships the two markers TRACKED, so a bare `git clone` is protected without running
-the door.** The operator's *"We may clone it first"* is the case that decides this: arming only inside
-`new-project.ps1` would leave every hand-cloned project unguarded, which is today's defect wearing a
-different hat.
+---
 
-### `/smh-new-project` asks, instead of documenting
+## Part E — the setup interview, and the README as the agent's brief
 
-Today the door treats Jira as optional in **prose** (`smh-new-project.md:49-58`, `new-project.ps1:106-113`)
-and never asks; and `new-project.ps1` **creates no ENFORCE marker at all** — it arms `core.hooksPath`
-via `Arm-HooksInclude.ps1` so the hooks *run*, then leaves every gate in warn-only. The door gains one
-question:
+> *"I do want the agent to query the user about this during the set up and clone of a new project …
+> We tell the project name, it edits this in the current places, we also tell it if we have a
+> [Jira] board for the project. All this should be in the readme for the agent that sets up the clone."*
 
-> **Will this project use a Jira board?**
->
-> - **Yes** → walk the existing four steps now, while the project has no history: `jira.conf`,
->   `JIRA_SITE`, `JIRA_KEYS`, `acli jira auth status` with the site required to match, then
->   `touch .agents/scripts/git-hooks/JIRA-ENFORCE`.
-> - **No** → write `.agents/jira.conf` carrying `JIRA_KEYS=""` and a dated line recording the
->   decision, and leave `JIRA-ENFORCE` absent.
+**One interview, asked once, at clone time.** It has exactly two questions, and every answer is
+written down rather than left implied:
 
-⛔ **The "no" answer is RECORDED, not silence, and that is the whole point of writing it down.** Today
-an absent `jira.conf` means two different things — *"asked, and this project does not use a board"* and
-*"nobody has set it up yet"* — and no reader can tell them apart, so every agent that meets one assumes
-the other. This is the same lesson as trunk mode, which is **read** from git (`epic_mode.py`) rather
-than guessed. The conf already no-ops on an empty `JIRA_KEYS` (`jira.conf.example`: *"no jira.conf
-means no keys to check, so commits pass untouched"*), so the recorded "no" costs nothing at runtime
-and answers the question permanently.
+1. **What is the project called?** → `scripts/rename-project.py` substitutes it across the **24 files
+   that carry `{{PROJECT_NAME}}` / `{{USER}}` / `{{PLACEHOLDER}}`** (measured by `grep -rln`). ⭐ That
+   script **already exists in the skeleton and `new-project.ps1` never calls it** — the rename is
+   documented as manual step 2 of the README and nothing automates it. Part E wires it.
+2. **Does this project have a Jira board?**
+   - **No — the default.** Key issuer is LOCAL; `jira.conf` is written with the derived prefix and a
+     dated line recording the decision; `JIRA-ENFORCE` is armed against that prefix. Trunk mode, full
+     guards, full walkthrough, full close-out, no mirror.
+   - **Yes.** `JIRA_SITE` + `JIRA_KEYS` written, `acli jira auth status` run and its site **required
+     to match** (the existing check at `smh-new-project.md:55-58` — a key prefix alone is half an
+     address), `JIRA-ENFORCE` armed. Everything as today.
 
-⚠️ **What this lane does NOT claim to deliver.** Making the *whole flow* run without a board is a
-larger, real question and it is **not** in this lane. Measured so the size is known rather than
-guessed: nine lobby scripts take a `--key` / `--expect-key`, and `jira_feed.py` already carries the
-beginnings of the answer — `ACLI_UNREACHABLE = 124` (`:123`) and a `need_board=False` path (`:1014`,
-*"an ad-hoc chore fix has a ticket and a walkthrough but no board"*). Part D makes the GUARDS work
-without a board, which is what the ruling asked for. The close-out ceremony running boardless is its
-own ticket, named in `## Your Actions`.
+⛔ **The "no" is recorded, and that is the point.** Today an absent `jira.conf` means both *"this
+project does not use a board"* and *"nobody has set it up yet"*, and no reader can tell them apart —
+so every agent that meets one assumes the other. Same lesson as trunk mode, which is **read** from git
+rather than guessed.
+
+### The README is rewritten FOR THE AGENT
+
+The skeleton's `README.md` is currently eight manual steps written for a human (`### 1. Clone` …
+`### 8. Initial Commit & Push`, with `## Jira Integration (Optional)` at `:126`). The operator's
+instruction is explicit: it is the brief for **the agent that sets up the clone**. So it leads with
+the interview — the two questions, what each answer writes, and what the project gets either way —
+and the manual steps become the fallback beneath it. A clone set up by hand, by `/smh-new-project`, or
+by an agent that only ever read the README must land in the same place.
+
+⚠️ **Out of lane, named once with its remedy:** `epic_mode.py:110` still says *"the skeleton every new
+project clones ships no classifier either"*. SCC-441 landed the routed gate and both epic toggles in
+the skeleton, so that sentence is now false and the LIGHT cost-line caveat it justifies no longer
+applies to a fresh clone. One-line docstring correction; it rides Part E's commit since Part E is the
+change that makes a reader trust that paragraph.
 
 ---
 
@@ -263,9 +301,12 @@ own ticket, named in `## Your Actions`.
 | G | An absent consumer is a named non-passing row | run with the submodule path emptied → the row is printed and the run does not score green |
 | H | The manifest cannot widen itself | a diff containing `.agents/template-ports.json` is still checked (test) |
 | I | Nothing else moved | `run_all.py` green; `workflow_lint --toolkit-only` 0 errors; `check_maps --depth3-only --strict` clean |
-| J | The skeleton ships the two non-Jira gates ARMED | `MERGE-TARGET-ENFORCE` and `MAIN-PUSH-ENFORCE` are tracked in the skeleton, seen absent first; a fixture clone refuses a wrong-target merge with `exit 1`, not `exit 0` |
-| K | Jira stays off, and is ASKED | `JIRA-ENFORCE` absent; `/smh-new-project` body carries the question and both branches; `new-project.ps1` writes the recorded `jira.conf` on a "no" |
-| L | A boardless project is distinguishable from an unconfigured one | after a "no", `.agents/jira.conf` exists with `JIRA_KEYS=""` and the dated decision line; the commit gate still no-ops (test) |
+| J | The skeleton ships the two non-Jira gates ARMED | `MERGE-TARGET-ENFORCE` and `MAIN-PUSH-ENFORCE` tracked, seen absent first; a fixture clone refuses a wrong-target merge with `exit 1`, not `exit 0` |
+| K | A local key passes every existing gate UNCHANGED | `NOVA-26091301` matches `task_preflight.KEY_RE`; a `chore/NOVA-26091301-slug` branch clears the preflight's branch + intent checks with no code change (test, seen against the real regex) |
+| L | The interview asks both questions and RECORDS both answers | after "no": `.agents/jira.conf` carries the derived prefix and the dated decision line, `JIRA-ENFORCE` armed; after "yes": `JIRA_SITE` + `JIRA_KEYS` written and the `acli` site verified to match |
+| M | The rename actually runs | `scripts/rename-project.py` is invoked by the setup; zero `{{PROJECT_NAME}}` / `{{USER}}` / `{{PLACEHOLDER}}` tokens remain in the 24 files afterwards, seen non-zero first |
+| N | A boardless clone is fully functional | a fixture project with no board: hooks armed, a wrong-target merge refused, a chore lane cut and closed with a walkthrough — every step green with no `acli` call |
+| O | The README briefs the AGENT | the interview is the README's first section, both answers' consequences stated; a setup done from the README alone lands in the same state as one done by `/smh-new-project` (test asserts the door and the README name the same two questions) |
 
 ## Declared Change Set
 
@@ -280,11 +321,13 @@ own ticket, named in `## Your Actions`.
 - EDIT `.agents/rules/living-template-sync.md` — the skeleton is now detected; say how → I
 - NEW `Projects/sudo-project-skeleton/.agents/scripts/git-hooks/MERGE-TARGET-ENFORCE` — ships armed → J
 - NEW `Projects/sudo-project-skeleton/.agents/scripts/git-hooks/MAIN-PUSH-ENFORCE` — ships armed → J
-- EDIT `Projects/sudo-project-skeleton/README.md` — the arming steps name all three markers, not only Jira → J, K
-- EDIT `Projects/sudo-project-skeleton/.agents/scripts/INDEX.md` — `:7` says "ships disarmed" of Jira ONLY; correct it → J, K
-- EDIT `.agents/commands/smh-new-project.md` — the Jira question and both branches → K, L
-- EDIT `.opencode/commands/smh-new-project.md` — mirror → K
-- EDIT `.agents/scripts/new-project.ps1` — ask; write the recorded `jira.conf` on a "no"; never touch the two non-Jira markers, which now arrive armed from the clone → K, L
+- EDIT `Projects/sudo-project-skeleton/README.md` — rewritten as the AGENT's brief: the two-question interview first, the manual steps beneath, all three markers named → J, L, M, O
+- EDIT `Projects/sudo-project-skeleton/.agents/scripts/INDEX.md` — `:7` says "ships disarmed" of Jira ONLY; correct it → J
+- EDIT `Projects/sudo-project-skeleton/.agents/jira.conf.example` — the local-issuer form and the recorded-decision line → K, L
+- EDIT `.agents/commands/smh-new-project.md` — the two-question interview, both branches, the local key form → K, L, M, O
+- EDIT `.opencode/commands/smh-new-project.md` — mirror → O
+- EDIT `.agents/scripts/new-project.ps1` — ask both questions; call `scripts/rename-project.py`; write the recorded `jira.conf`; the two non-Jira markers now arrive armed from the clone → K, L, M, N
+- EDIT `.agents/scripts/epic_mode.py` — `:110` claims the skeleton ships no classifier; SCC-441 landed one → O
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` + `_changelog.md` — the new gate, and the two switches → I, K
 
 ## Port section — the six checks (port-checklist rule 5)
@@ -327,9 +370,10 @@ bump in one commit, so `main` never holds a detector aimed at a pre-repair tree.
 
 - **Approve or redirect this plan.** Nothing outside `_artifacts/` has been written.
 - **Two things need your word specifically.**
-  1. ✅ **RULED 2026-09-13 — audit finding 2 is settled.** The two non-Jira gates ship armed; Jira
-     becomes a question `/smh-new-project` asks, with the "no" recorded rather than left silent. See
-     Part D. Nothing further is owed here.
+  1. ✅ **RULED 2026-09-13 — audit finding 2 is settled, and the scope grew with it.** The switch is
+     *who issues the keys*, not Jira on/off: local date-derived keys by default, trunk mode (already
+     automatic), both non-Jira gates armed from the clone, and a two-question setup interview that
+     records its answers. See Parts D and E. Nothing further is owed here.
   2. Whether AviationChat's 5 dead rule paths get an `AVCH` ticket now or wait. They cannot ride this
      lane — its commit gate rejects an `SCC` key by design (port check 6).
   3. Whether the **close-out ceremony running boardless** gets its own ticket. Part D makes the
