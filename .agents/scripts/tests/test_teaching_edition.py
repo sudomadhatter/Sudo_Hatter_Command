@@ -43,6 +43,29 @@ def git_seed(root: Path) -> None:
                        env=env)
 
 
+def _fenced_blocks(body: str) -> list[str]:
+    """Every fenced code block of a door body, as separate strings.
+
+    ⛔ COUNTING ACROSS THE WHOLE DOOR IS NOT A GUARD. F9 first asserted
+    `instructions.count("LOBBY=$(git rev-parse --show-toplevel)") >= 2` over the concatenated
+    instructions; the door has THREE such lines, so deleting the one that matters left the count
+    at 2 and the row green (measured - mutant R4 survived). The property is per-BLOCK: the block
+    that deletes files must re-derive its own paths, because a block is what a shell actually
+    receives.
+    """
+    out, cur, inside = [], [], False
+    for line in body.splitlines():
+        if line.startswith("```"):
+            if inside:
+                out.append("\n".join(cur))
+                cur = []
+            inside = not inside
+            continue
+        if inside:
+            cur.append(line)
+    return out
+
+
 def _uncommented_instructions(body: str) -> str:
     """Only the fenced COMMAND lines of a door body.
 
@@ -1344,18 +1367,25 @@ def main() -> int:
         # `PUB=/Projects/sudo-command-center`, fails the `cd`, and runs the tracked-file delete in
         # whatever directory it is standing in - measured, it deletes the LOBBY. Every fresh
         # terminal and most tool calls are that shell.
-        c.check("F9 · the destructive block re-derives its own paths",
-                instructions.count("LOBBY=$(git rev-parse --show-toplevel)") >= 2,
-                "Step 2 must not depend on a variable an earlier block set")
+        # Every assertion below is about THE BLOCK THAT DELETES, not about the door as a whole -
+        # a shell receives one block, and a safety line in a different block is not in scope when
+        # the delete runs.
+        destructive = next((b for b in _fenced_blocks(door_body) if "git ls-files -z" in b), "")
+        c.check("F9a · the destructive command lives in exactly one fenced block",
+                sum(1 for b in _fenced_blocks(door_body) if "git ls-files -z" in b) == 1,
+                "two copies means one of them is unguarded")
+        c.check("F9 · THAT block re-derives its own paths",
+                "LOBBY=$(git rev-parse --show-toplevel)" in destructive,
+                f"it must not depend on a variable an earlier block set. block={destructive!r}")
         c.check("F10 · ...and aborts on the first failure",
-                instructions.count("set -euo pipefail") >= 2,
+                "set -euo pipefail" in destructive,
                 "without it a failed `cd` is followed by the delete running where it landed")
         c.check("F11 · ...and refuses a target that is not the published repo",
-                "*/Projects/sudo-command-center)" in instructions
-                and '[ -d "$PUB/.git" ]' in instructions,
+                "*/Projects/sudo-command-center)" in destructive
+                and '[ -d "$PUB/.git" ]' in destructive,
                 "the wrong directory must be refused before anything is deleted")
         c.check("F12 · ...and refuses an empty or absent export",
-                '[ -d "$SCRATCH/.agents" ]' in instructions,
+                '[ -d "$SCRATCH/.agents" ]' in destructive,
                 "an unset SCRATCH makes the copy source `/.` - the filesystem root")
 
         # ⛔ A FAILED EXPORT MUST NOT REACH THE COPY. The only thing between a FAILED leak scan
