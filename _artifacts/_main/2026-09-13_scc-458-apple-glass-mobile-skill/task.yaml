@@ -1,0 +1,7 @@
+task_key: SCC-458
+primary_repo: Sudo_Hatter_Command
+branch: chore/SCC-458-apple-glass-mobile-skill
+close_command: smh-close-task-merge-tree
+secondary_repos: []
+riders: []
+

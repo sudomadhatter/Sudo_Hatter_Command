@@ -186,9 +186,11 @@ export function ScrollStorytelling() {
 
 ---
 
-## 4. Apple VisionOS Physical Optical Glass (`MeshTransmissionMaterial`)
+## 4. 3D Spatial Transmission Material (`MeshTransmissionMaterial`)
 
-Physical glass with real optical thickness, light transmission, surface roughness, and chromatic edge dispersion.
+Physical glass for 3D meshes with real optical thickness, light transmission, surface roughness, and chromatic edge dispersion.
+
+> **Boundary Note:** Strictly for 3D spatial objects inside a Three.js scene graph. For 2D/DOM UI glass (cards, navigation bars, buttons), use [`apple-glass`](../apple-glass/SKILL.md) to avoid WebGL context limits and mobile GPU battery drain.
 
 ```tsx
 import React, { Suspense } from 'react';

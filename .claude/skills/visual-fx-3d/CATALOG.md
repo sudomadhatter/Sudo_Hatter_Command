@@ -149,7 +149,8 @@ In-scene 3D transform gizmo with translate and rotate handles for interactive vi
 ## 4. Advanced Materials & Shaders (`@react-three/drei`)
 
 ### `<MeshTransmissionMaterial>`
-Physical optical glass with true thickness, refraction, chromatic dispersion, and surface roughness. The gold standard for Apple VisionOS-grade physical glass in WebGL.
+Physical optical glass for 3D meshes with true thickness, refraction, chromatic dispersion, and surface roughness.
+> **Boundary Note:** Strictly for 3D spatial geometry inside a Three.js scene graph. For 2D/DOM UI glass (cards, navigation bars, buttons), use [`apple-glass`](../apple-glass/SKILL.md) to avoid WebGL context limits and mobile GPU battery drain.
 - **Import:** `import { MeshTransmissionMaterial } from '@react-three/drei'`
 - **Key Props:**
   - `transmission={1}`: Light transmission ratio `[0, 1]`.

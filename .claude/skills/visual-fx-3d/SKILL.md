@@ -1,13 +1,16 @@
 ---
 name: visual-fx-3d
-description: Declarative 3D scenes, spatial models, gltfjsx pipeline, interactive spring tilt cards, physical optical glass, and real-time physics. Complete Poimandres (pmndrs) suite covering React Three Fiber (R3F), Drei, Postprocessing, and Rapier. For 2D/compute shaders and ambient fluid meshes, see vgpu.
+description: Declarative 3D scenes, spatial models, gltfjsx pipeline, interactive spring tilt cards, 3D spatial materials, and real-time physics. Complete Poimandres (pmndrs) suite covering React Three Fiber (R3F), Drei, Postprocessing, and Rapier. For 2D UI frosted glass and live-DOM optical refraction, see apple-glass. For 2D/compute shaders and ambient fluid meshes, see vgpu.
 ---
 
 # Visual FX & 3D Spatial Materials ([`pmndrs/react-three-fiber`](https://github.com/pmndrs/react-three-fiber) Suite)
 
-The house engine for high-end modern 3D spatial craft: declarative 3D scene graphs, glTF/GLB product models, tactile spring-damped tilt physics, Apple VisionOS-grade physical optical glass refraction, cinematic post-processing, and real-time rigid body physics.
+The house engine for high-end modern 3D spatial craft: declarative 3D scene graphs, glTF/GLB product models, tactile spring-damped tilt physics, 3D mesh transmission materials, cinematic post-processing, and real-time rigid body physics.
 
-> **Architecture Note:** Ambient fluid mesh backgrounds, 2D canvas shaders, and plasma noise have migrated to [`.agents/skills/vgpu`](../vgpu/SKILL.md). `visual-fx-3d` is dedicated to spatial 3D geometry, interactive 3D models, physical transmission materials, and real-time physics.
+> **Architecture Boundaries:** 
+> - **2D UI Frosted Glass & Live-DOM Refraction:** Use [`.agents/skills/apple-glass`](../apple-glass/SKILL.md) (hardware-composited CSS and SDF displacement maps). Do NOT use `visual-fx-3d` or `MeshTransmissionMaterial` for 2D UI cards, tab bars, or buttons — 3D WebGL FBO multi-sampling exhausts mobile GPU memory and cannot refract HTML DOM elements underneath it.
+> - **2D Surface Shaders & Plasma Backdrops:** Use [`.agents/skills/vgpu`](../vgpu/SKILL.md) (~25KB typed WGSL).
+> - **3D Spatial Geometry & GLTF Product Scenes:** Use `visual-fx-3d` strictly for true 3D spatial geometry, glTF models, 3D physics, and 3D spatial materials.
 
 ### Deep Reference Documentation
 * **Component & Tool Encyclopedia:** [`CATALOG.md`](./CATALOG.md) (All 8 domains, 100+ components, imports, and props)
@@ -19,22 +22,21 @@ The house engine for high-end modern 3D spatial craft: declarative 3D scene grap
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                      VISUAL FX & GRAPHICS DUAL ENGINE                       │
-├─────────────────────────────────────────┬───────────────────────────────────┤
-│ 1. WEBGPU SHADER ENGINE (vgpu)          │ 2. 3D SPATIAL SCENES (visual-fx-3d)│
-├─────────────────────────────────────────┼───────────────────────────────────┤
-│ • Fullscreen ambient fluid meshes       │ • Declarative 3D scene graphs     │
-│ • Interactive plasma & ripples          │ • glTF / GLB product models       │
-│ • Audio-reactive visualizers            │ • Spatial lighting & camera rigs  │
-│ • GPU particle simulations              │ • Optical physical glass (Drei)   │
-│ • ~25KB gzipped bundle (typed WGSL)     │ • Interactive spring tilt cards   │
-│ • Zero-GPU headless CI testable         │ • Cinematic post-processing passes│
-│                                         │ • Real-time physics (Rapier)      │
-│                                         │ • Full Poimandres Creative Suite  │
-└─────────────────────────────────────────┴───────────────────────────────────┘
+│                      FRONTEND VISUAL CRAFT ENGINES                          │
+├─────────────────────────┬───────────────────────────┬───────────────────────┤
+│ 1. 2D UI GLASS          │ 2. WEBGPU SHADERS         │ 3. 3D SPATIAL SCENES  │
+│    (apple-glass)        │    (vgpu)                 │    (visual-fx-3d)     │
+├─────────────────────────┼───────────────────────────┼───────────────────────┤
+│ • Apple HIG frosted     │ • Fullscreen ambient mesh │ • Declarative R3F     │
+│   glass (CSS/Tailwind)  │ • Interactive plasma      │ • glTF/GLB models     │
+│ • Live DOM liquid lens  │ • Audio-reactive ripples  │ • Spatial lighting    │
+│   refraction (SDF SVG)  │ • Particle compute        │ • 3D mesh transmission│
+│ • Locked 120fps mobile  │ • ~25KB WGSL bundle       │ • Interactive tilt    │
+│ • 0 canvas/screenshot   │ • Zero-GPU headless CI    │ • Postprocessing/Rapier│
+└─────────────────────────┴───────────────────────────┴───────────────────────┘
 ```
 
-> **House Rule:** Use `vgpu` for 2D surface shaders, fluid backdrops, and compute passes. Use `visual-fx-3d` strictly when rendering actual 3D spatial geometry, glTF models, optical glass, or 3D physics.
+> **House Rule:** Use `apple-glass` for all UI cards, headers, buttons, and navigation. Use `vgpu` for 2D surface shaders. Use `visual-fx-3d` strictly when rendering actual 3D spatial geometry, glTF models, or 3D physics.
 
 ---
 
@@ -156,9 +158,13 @@ export function SpatialTiltCard({ children }: { children?: React.ReactNode }) {
 
 ---
 
-## 5. Component Recipe: Physical Optical Glass (`MeshTransmissionMaterial`)
+## 5. Component Recipe: 3D Spatial Transmission Material (`MeshTransmissionMaterial`)
 
-Replaces synthetic 2D SVG filter hacks with true Apple VisionOS-grade physical optical glass: light transmission, chromatic edge dispersion, internal roughness, and refraction index ($IOR$).
+> [!WARNING]
+> **3D Spatial Geometry Only — Not for 2D UI:**
+> `MeshTransmissionMaterial` renders inside a WebGL `<Canvas>` and only refracts other 3D meshes inside that same canvas. It cannot refract HTML/DOM elements underneath it, and multi-pass FBO sampling causes severe frame drops and WebGL context exhaustion on mobile devices.
+> 
+> For all 2D UI glass (cards, bottom sheets, navigation bars, buttons), use [`.agents/skills/apple-glass`](../apple-glass/SKILL.md). Reserve `MeshTransmissionMaterial` strictly for true 3D spatial objects (e.g. glass sculptures, lenses, or crystals in a 3D scene).
 
 ```tsx
 'use client';

@@ -57,9 +57,23 @@ in the source command centre `teaching_edition_staleness.py` reads it from
 `.agents/hooks/session-start-context.sh` and says one line when the copy the team pulls has gone
 stale. It reports and never blocks.
 
-**The skeleton still has no detector.** That is the open half of this rule, and it is the same engine
-away: a second manifest sourced from a real project. Until then, the table above is enforced by
-nothing but this page.
+**The skeleton still has no automated detector, and the enforcement-set row now carries a weaker
+mechanism that measurably works: a provenance header.** Each of the four guards under
+`.agents/scripts/git-hooks/` in the skeleton opens with the lobby path it came from, the source sha,
+and the two departures it is allowed (SCC-459). A reader can then diff it against that sha; nothing
+does so on its own.
+
+⭐ **That is not a preference, it is what the measurement said.** AviationChat's copies of the same
+four files have carried such a header since AVCH-54 and sit **10 lines** from the lobby. The
+skeleton's carried none and had drifted **197** — 104 executable lines, including a refusal banner
+still printing the `git reset --hard` remedy that SCC-180 removed after it destroyed three sessions'
+uncommitted work. Visibility on inspection is the difference between those two numbers.
+
+An automated gate is still the open half, and it is blocked on infrastructure rather than design:
+the lobby's `main-write-gate.yml` checks out **no submodules**, so `Projects/sudo-project-skeleton`
+is an empty directory on every runner, and the skeleton has **no test harness at all**
+(`.agents/scripts/tests/` does not exist there). Either would have to be built first. Until then,
+the table above is enforced by this page plus those four headers.
 
 ## The obligation
 
