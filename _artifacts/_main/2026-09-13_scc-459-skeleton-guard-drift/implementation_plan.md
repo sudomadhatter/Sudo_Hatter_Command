@@ -241,50 +241,71 @@ in both worlds. The full ceremony becomes available without becoming mandatory.
 |---|---|---|
 | `MERGE-TARGET-ENFORCE` | **armed, tracked** | zero Jira references; a bare `git clone` must be protected without running the door |
 | `MAIN-PUSH-ENFORCE` | **armed, tracked** | same; the approval token's `--key` is already optional |
-| `JIRA-ENFORCE` | **armed by SETUP, both answers** | it enforces a KEY, not a board — and after Part D there is always a key. Misnamed, not mis-scoped; renaming it is a cross-repo break and is NOT in this lane |
+| `JIRA-ENFORCE` | **only on a "yes"** | it reads `jira.conf`, and a "no" writes no `jira.conf`. Unchanged from today: absent conf, gate no-ops, commits pass untouched |
 
 ---
 
-## Part E — the setup interview, and the README as the agent's brief
+## Part E — the setup interview: ask once, then drop it
 
-> *"I do want the agent to query the user about this during the set up and clone of a new project …
-> We tell the project name, it edits this in the current places, we also tell it if we have a
-> [Jira] board for the project. All this should be in the readme for the agent that sets up the clone."*
+> *"the agent ask at the beginning; if they say no it tells them they can change this at any time and
+> drops it. there is no nag. it's back in the user … me who knows this."*
 
-**One interview, asked once, at clone time.** It has exactly two questions, and every answer is
-written down rather than left implied:
+**Two questions, asked once, at clone time. Nothing is written on a "no", and nothing ever asks
+again.**
 
-1. **What is the project called?** → `scripts/rename-project.py` substitutes it across the **24 files
-   that carry `{{PROJECT_NAME}}` / `{{USER}}` / `{{PLACEHOLDER}}`** (measured by `grep -rln`). ⭐ That
-   script **already exists in the skeleton and `new-project.ps1` never calls it** — the rename is
-   documented as manual step 2 of the README and nothing automates it. Part E wires it.
+1. **What is the project called?** → run `scripts/rename-project.py`, which substitutes it across the
+   **24 files** carrying `{{PROJECT_NAME}}` / `{{USER}}` / `{{PLACEHOLDER}}` (measured by `grep -rln`).
+   ⭐ That script **already exists in the skeleton and `new-project.ps1` has never called it** — the
+   rename is documented as manual README step 2 and nothing automates it. Part E wires it.
 2. **Does this project have a Jira board?**
-   - **No — the default.** Key issuer is LOCAL; `jira.conf` is written with the derived prefix and a
-     dated line recording the decision; `JIRA-ENFORCE` is armed against that prefix. Trunk mode, full
-     guards, full walkthrough, full close-out, no mirror.
-   - **Yes.** `JIRA_SITE` + `JIRA_KEYS` written, `acli jira auth status` run and its site **required
-     to match** (the existing check at `smh-new-project.md:55-58` — a key prefix alone is half an
-     address), `JIRA-ENFORCE` armed. Everything as today.
+   - **Yes** → the existing four steps, done now while the project has no history: `jira.conf`,
+     `JIRA_SITE`, `JIRA_KEYS`, `acli jira auth status` with the site **required to match**
+     (`smh-new-project.md:55-58` — a key prefix alone is half an address), then `JIRA-ENFORCE`.
+   - **No — the default** → **one sentence and stop:** *"No board. You can add one any time — copy
+     `.agents/jira.conf.example` and follow its four steps."* **Write nothing. Ask nothing again.**
 
-⛔ **The "no" is recorded, and that is the point.** Today an absent `jira.conf` means both *"this
-project does not use a board"* and *"nobody has set it up yet"*, and no reader can tell them apart —
-so every agent that meets one assumes the other. Same lesson as trunk mode, which is **read** from git
-rather than guessed.
+⛔ **NO RECORDED-DECISION FILE, AND THAT IS THE RULING.** An earlier draft of this plan wrote a
+`jira.conf` on the "no" so a later agent could tell *"declined"* from *"not set up yet"*. The operator
+struck it: the person who knows is the operator, the cost of the machinery is not worth the ambiguity
+it removes, and state written to stop agents nagging is the wrong fix for agents nagging. The right
+fix is that **nothing nags** — which is acceptance row L, and it is a negative row on purpose.
+
+An absent `jira.conf` therefore keeps exactly the meaning it has today, documented in
+`jira.conf.example`: *"no jira.conf means no keys to check, so commits pass untouched."* Unchanged
+behaviour, no new state, no new file.
+
+### Local keys are a CONVENTION, not configuration
+
+With nothing written, the boardless key needs no config to read: the prefix is derived from the
+project name the rename has already written into all 24 files, and the number is the date —
+**`<PREFIX>-<YYMMDDNN>`**, e.g. `NOVA-26091301`.
+
+Proven against the live regex, not from memory:
+
+```
+NOVA-26091301      -> ['NOVA-26091301']
+NOVA-7             -> ['NOVA-7']
+nova-26091301      -> []
+```
+
+So `chore/NOVA-26091301-nav-fix` clears `task_preflight`'s branch and intent checks with **no code
+change anywhere**, and the eight-digit date is what distinguishes a local key from a Jira one on
+sight. The convention is stated in the README; it is not a setting, so there is nothing to toggle,
+migrate, or get out of sync.
 
 ### The README is rewritten FOR THE AGENT
 
-The skeleton's `README.md` is currently eight manual steps written for a human (`### 1. Clone` …
-`### 8. Initial Commit & Push`, with `## Jira Integration (Optional)` at `:126`). The operator's
-instruction is explicit: it is the brief for **the agent that sets up the clone**. So it leads with
-the interview — the two questions, what each answer writes, and what the project gets either way —
-and the manual steps become the fallback beneath it. A clone set up by hand, by `/smh-new-project`, or
-by an agent that only ever read the README must land in the same place.
+The skeleton's `README.md` is eight manual steps written for a human (`### 1. Clone` … `### 8. Initial
+Commit & Push`, with `## Jira Integration (Optional)` at `:126`). It becomes the brief for **the agent
+that sets up the clone**: the two questions first, what each answer does, the local-key convention,
+and the one sentence the agent says on a "no". The manual steps stay beneath it as the fallback. A
+clone set up by hand, by `/smh-new-project`, or by an agent that only ever read the README must land
+in the same state.
 
 ⚠️ **Out of lane, named once with its remedy:** `epic_mode.py:110` still says *"the skeleton every new
-project clones ships no classifier either"*. SCC-441 landed the routed gate and both epic toggles in
-the skeleton, so that sentence is now false and the LIGHT cost-line caveat it justifies no longer
-applies to a fresh clone. One-line docstring correction; it rides Part E's commit since Part E is the
-change that makes a reader trust that paragraph.
+project clones ships no classifier either"*. SCC-441 landed the routed gate and both epic toggles
+there, so that sentence is now false. One-line docstring correction, riding Part E's commit because
+Part E is what makes a reader trust that paragraph.
 
 ---
 
@@ -303,9 +324,9 @@ change that makes a reader trust that paragraph.
 | I | Nothing else moved | `run_all.py` green; `workflow_lint --toolkit-only` 0 errors; `check_maps --depth3-only --strict` clean |
 | J | The skeleton ships the two non-Jira gates ARMED | `MERGE-TARGET-ENFORCE` and `MAIN-PUSH-ENFORCE` tracked, seen absent first; a fixture clone refuses a wrong-target merge with `exit 1`, not `exit 0` |
 | K | A local key passes every existing gate UNCHANGED | `NOVA-26091301` matches `task_preflight.KEY_RE`; a `chore/NOVA-26091301-slug` branch clears the preflight's branch + intent checks with no code change (test, seen against the real regex) |
-| L | The interview asks both questions and RECORDS both answers | after "no": `.agents/jira.conf` carries the derived prefix and the dated decision line, `JIRA-ENFORCE` armed; after "yes": `JIRA_SITE` + `JIRA_KEYS` written and the `acli` site verified to match |
+| L | ⭐ **Nothing nags, and a "no" writes nothing** | after "no": `git status` in the fresh project is clean of any `jira.conf`, and the setup says the one "you can add one any time" sentence; grep proves no door, guard or hook emits a board-absence warning anywhere. Negative row, asserted directly |
 | M | The rename actually runs | `scripts/rename-project.py` is invoked by the setup; zero `{{PROJECT_NAME}}` / `{{USER}}` / `{{PLACEHOLDER}}` tokens remain in the 24 files afterwards, seen non-zero first |
-| N | A boardless clone is fully functional | a fixture project with no board: hooks armed, a wrong-target merge refused, a chore lane cut and closed with a walkthrough — every step green with no `acli` call |
+| N | A boardless clone is fully functional | a fixture project with no board and no `jira.conf`: hooks armed, a wrong-target merge refused, a `chore/<PREFIX>-<YYMMDDNN>-slug` lane cut and closed with a walkthrough — every step green with no `acli` call |
 | O | The README briefs the AGENT | the interview is the README's first section, both answers' consequences stated; a setup done from the README alone lands in the same state as one done by `/smh-new-project` (test asserts the door and the README name the same two questions) |
 
 ## Declared Change Set
@@ -321,12 +342,11 @@ change that makes a reader trust that paragraph.
 - EDIT `.agents/rules/living-template-sync.md` — the skeleton is now detected; say how → I
 - NEW `Projects/sudo-project-skeleton/.agents/scripts/git-hooks/MERGE-TARGET-ENFORCE` — ships armed → J
 - NEW `Projects/sudo-project-skeleton/.agents/scripts/git-hooks/MAIN-PUSH-ENFORCE` — ships armed → J
-- EDIT `Projects/sudo-project-skeleton/README.md` — rewritten as the AGENT's brief: the two-question interview first, the manual steps beneath, all three markers named → J, L, M, O
+- EDIT `Projects/sudo-project-skeleton/README.md` — rewritten as the AGENT's brief: the two questions first, the local-key convention, the one sentence said on a "no", the manual steps beneath, all three markers named → J, L, M, O
 - EDIT `Projects/sudo-project-skeleton/.agents/scripts/INDEX.md` — `:7` says "ships disarmed" of Jira ONLY; correct it → J
-- EDIT `Projects/sudo-project-skeleton/.agents/jira.conf.example` — the local-issuer form and the recorded-decision line → K, L
-- EDIT `.agents/commands/smh-new-project.md` — the two-question interview, both branches, the local key form → K, L, M, O
+- EDIT `.agents/commands/smh-new-project.md` — the two-question interview, both branches, the local key convention, and the "ask once, then drop it" rule → K, L, M, O
 - EDIT `.opencode/commands/smh-new-project.md` — mirror → O
-- EDIT `.agents/scripts/new-project.ps1` — ask both questions; call `scripts/rename-project.py`; write the recorded `jira.conf`; the two non-Jira markers now arrive armed from the clone → K, L, M, N
+- EDIT `.agents/scripts/new-project.ps1` — ask both questions; call `scripts/rename-project.py`; on a "no" say the one sentence and write nothing; the two non-Jira markers arrive armed from the clone → K, L, M, N
 - EDIT `.agents/scripts/epic_mode.py` — `:110` claims the skeleton ships no classifier; SCC-441 landed one → O
 - EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` + `_changelog.md` — the new gate, and the two switches → I, K
 
