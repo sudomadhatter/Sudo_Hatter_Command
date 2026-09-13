@@ -492,3 +492,15 @@ None inside the lobby. **Cross-repo:** skeleton PR → lobby PR (carrying the se
 Part B pointer bump together).
 
 Audit verdict: GO
+
+---
+
+## Approval (2026-09-13)
+
+The operator's word, verbatim and unprompted:
+
+> Approved
+
+Recorded at `<pending>` on `chore/SCC-459-skeleton-guard-drift`. This authorises Parts A through E as
+written above, against the Declared Change Set as it stands at this commit — 18 EDIT rows, zero NEW
+files. Any row added after this stamp is outside the approval and needs its own word.
