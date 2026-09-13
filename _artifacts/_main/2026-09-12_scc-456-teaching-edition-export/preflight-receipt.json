@@ -9,7 +9,7 @@
   "schema_v": 1,
   "task_key": "SCC-456",
   "verdict": "clear to close out and merge",
-  "verdict_sha": null,
+  "verdict_sha": "e9d34b7aabbb0319be3e72714f472db627761b50",
   "warnings": 3,
-  "when": null
+  "when": "2026-09-12T22:45:34-04:00"
 }
