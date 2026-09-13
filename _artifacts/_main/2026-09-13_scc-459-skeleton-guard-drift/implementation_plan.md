@@ -76,36 +76,33 @@ was built for, in that file's own words: *"nothing in the repo compared the two 
 `workflow_lint --toolkit-only` exited 0 with 172 confirmed drift findings live in the tree. That
 zero was the bug."*
 
-### Two constraints that decide the design, both measured
+### Two constraints, measured - they are why a detector is NOT in this lane
 
-- ⛔ **The lobby's CI does not check out submodules.** `.github/workflows/main-write-gate.yml` uses a
-  plain `actions/checkout@v4` with `fetch-depth` and `ref` and **no `submodules:` key**, so
-  `Projects/sudo-project-skeleton` is an empty directory on every runner. A lobby-side CI gate on
-  skeleton *content* is therefore structurally impossible without changing CI config — which is an
-  Ask First item, and is not proposed here.
-- ⛔ **The skeleton has no test infrastructure at all.** `.agents/scripts/tests/` does not exist
-  there — `ls` returns *No such file or directory*. It cannot host a test today, and building it is
-  its own lane.
+- **The lobby's CI does not check out submodules.** `main-write-gate.yml` uses a plain
+  `actions/checkout@v4` with no `submodules:` key, so `Projects/sudo-project-skeleton` is an empty
+  directory on every runner.
+- **The skeleton has no test infrastructure at all.** `.agents/scripts/tests/` does not exist there -
+  `ls` returns *No such file or directory*.
 
-Together these force the same answer SCC-456 reached for `.env`: **the check runs where the evidence
-exists and reports a NAMED non-passing row where it does not.** That is the existing house pattern
-(SCC-456 Part A guarded `pwsh` the same way), not a new invention.
+An automated parity gate could run in neither place without new CI config (an Ask First item) or a new
+test harness in the skeleton. Both are real work with their own goal, and neither makes a fresh clone
+function. This lane ships the header instead and leaves the gate to its own ticket.
 
 ## Decisions taken
 
 1. **The source is the lobby, not AviationChat** — proven by AviationChat's own provenance headers.
    Both projects are consumers of the same lobby files.
-2. ⭐ **NOT the teaching-edition export engine.** I proposed that engine before this measurement and
-   it is the wrong tool: the export regenerates a whole repo into an empty target, and the skeleton
-   is a hand-built template of 704 files (586 of them its own `_bmad/`) that must never be
-   regenerated. The right precedent is `test_twin_parity.py` — a **parity check over a declared set**,
-   with an auditable divergence escape.
-3. **Byte-parity plus a substitution table, not fenced regions.** AviationChat already proves
-   whole-file parity works at Δ10. Fences would be heavier and the guards have no natural region
-   boundaries.
-4. **One lane, no subtasks.** Same repo pair, same lane class, strictly sequential: the detector
-   cannot be written until the files it declares are at parity. A ticket with no branch is a row
-   nothing writes to.
+2. **NO AUTOMATED DETECTOR IN THIS LANE - operator ruling, 2026-09-13:** *"keep this ticket direct
+   and fix what's needed, not create something new. A clear goal: a standing project we can close,
+   that is ready to go out of the box after set up."* An earlier draft added a port manifest, a
+   `template_parity.py` checker and its test. That is new machinery, it does not make a clone work,
+   and it serves a different goal. **Cut, and named as its own ticket in `## Your Actions`.**
+3. **The provenance header is the drift mechanism this lane ships, and it is evidence-backed.**
+   AviationChat's copies carry one and sit at 10 lines from the lobby; the skeleton's carry none and
+   sit at 197. Visibility on inspection is what the measurement says actually works, it costs four
+   comment blocks, and it creates nothing new to maintain.
+4. **One lane, no subtasks.** Same repo pair, same lane class, strictly sequential. A ticket with
+   no branch is a row nothing writes to.
 
 ---
 
@@ -139,43 +136,7 @@ message is the whole value of those guards, but neither changes what they allow 
 before the repair: `reset --hard` present, `refs/heads/epic` absent from `SCOPES`, the
 declined-to-judge block absent, `.agents/rules/` path count non-zero.
 
-## Part B — the detector
-
-**NEW `.agents/template-ports.json`** in the lobby — the declared set, mirroring the shape of
-`.agents/critical-surfaces.json` (which this repo already uses for exactly this "a line that can
-widen itself is not a line" problem):
-
-```json
-{ "ports": [
-  { "source": ".agents/scripts/git-hooks/merge-target-guard.sh",
-    "consumers": ["Projects/sudo-project-skeleton", "Projects/AGY_AVIATIONCHAT"],
-    "why": "…" }
-] }
-```
-
-**NEW `.agents/scripts/template_parity.py`** — for each declared port × consumer: strip the
-provenance header, apply the declared substitutions, compare to the lobby's copy. Exit 0 clean,
-2 on drift. Three properties, each pinned:
-
-- **A consumer whose checkout is absent is a NAMED non-passing row**, never silence and never green.
-  This is the CI case and it is the one that decides whether the check is worth anything.
-- **The manifest cannot shrink itself out of the gate** — a diff that touches
-  `.agents/template-ports.json` is always checked, the self-listing rule `scope_check.py` already
-  applies to `critical-surfaces.json`.
-- **The provenance sha is checked against the lobby's current sha for that file.** A port that is
-  byte-identical to a *stale* source is still stale, and only the sha can say so.
-
-**NEW `.agents/scripts/tests/test_template_parity.py`** — its arms, the absent-consumer row, the
-self-listing, and a mutant per guard proving each pin fails when the guard is removed.
-
-⚠ **AviationChat is declared as a consumer but its repairs are NOT in this lane.** Its 5 dead rule
-paths need an `AVCH`-keyed commit: AviationChat's armed `commit-msg` gate rejects an `SCC` key by
-design (port check 6), so an SCC lane physically cannot land there. The detector will report them;
-the fix is one line of work under its own key. **Named here for your word, not done silently.**
-
----
-
-## Part C — bump the lobby's skeleton pointer (AUDIT FINDING 3)
+## Part B — bump the lobby's skeleton pointer (AUDIT FINDING 3)
 
 The lobby's `origin/main` records `6c76fd97` for `Projects/sudo-project-skeleton`; the skeleton's own
 `origin/main` is `4510e05`. Between them: `15 files changed, 1260 insertions(+), 7 deletions(-)` —
@@ -189,123 +150,96 @@ holds a detector pointed at a pre-repair tree.
 
 ---
 
-## Part D — who issues the keys (operator ruling, 2026-09-13)
+## Part C — one question, two postures (operator ruling, 2026-09-13)
 
-> *"there will not be a Jira board set up yet when we make a new project. We may clone it first …
-> Some of the quick projects for just front end I do I never make a Jira board and I still want to
-> use the other features."*
-> *"have a default local key with just the date to track the tickets, and we should be default to the
-> light git checkout. Then when we add Jira if needed we can then have the full ceremony too."*
+> *"We want this simple. We add Jira, we have the full protections of an enterprise dev system. For
+> no Jira this is a quick dev project and we are not worried about prod or anything else — it's just
+> for fun and doing things quickly."*
+> *"no Jira no PRs I have no problem with that … so now we don't need a local ticket."*
+> *"the agent ask at the beginning; if they say no it tells them they can change this at any time and
+> drops it. there is no nag."*
 
-**Jira is a MIRROR, not the system — measured, not asserted.** `jira_feed.py:2417` writes
-`Source: <walkthrough> -> Your Actions` into every Dev Record: the record is the walkthrough in
-`_artifacts/`, and `devrecord` / `describe` / `attach` all push **artifact → board**, never the
-reverse. A boardless project loses the mirror, not the record.
+**One question at setup sets the whole posture. There is no third state and nothing to configure.**
 
-**The one thing Jira actually provides is the KEY**, and nothing downstream cares who issued it:
-
-- `task_preflight.py:765` — `KEY_RE = re.compile(r"\b([A-Z][A-Z0-9]+-\d+)\b")`. Any uppercase
-  prefix, a dash, digits. Nothing Jira-specific.
-- `jira_feed.py:1295` — `_CONF_RE` reads `JIRA_KEYS` as free-form whitespace/comma tokens and
-  validates it against no board.
-- All four guards: `grep -c 'jira.conf\|JIRA_KEYS'` returns **0, 0, 0, 0**.
-
-So the switch is not *Jira on/off*. It is **who issues the keys**, and every branch shape, gate,
-preflight and close-out stays byte-identical either way.
-
-### The local issuer — date-derived, as ruled
-
-Default key form: **`<PREFIX>-<YYMMDDNN>`**, e.g. `NOVA-26091301` — the project's prefix, then the
-date, then a two-digit sequence for that day.
-
-- It satisfies `KEY_RE` **unchanged**: `[A-Z][A-Z0-9]+-\d+` matches it exactly, so no gate, regex,
-  branch rule or preflight is touched to support it.
-- It is date-derived, as ruled — no counter file, so nothing to collide across machines or worktrees.
-- The **8-digit shape is what distinguishes a local key from a Jira key on sight**: Jira numbers are
-  small and sequential (`NOVA-7`), local ones carry a date (`NOVA-26091301`). No ambiguity if a board
-  arrives later.
-- The prefix comes from the project name the setup already asks for, so the keys read correctly from
-  day one and keep reading correctly after an upgrade.
-
-### The mode: TRUNK is already the default, mechanically
-
-`epic_mode.py:5` — `TRUNK  no origin/epic/* at all`. A fresh clone has no epic branches, so it IS
-trunk from the first commit, with no configuration: *"lands on main by a PR the operator merges"*.
-**Nothing needs building for the ruled default; what is missing is that nothing SAYS so.** Upgrading
-to `LIGHT` or `FULL` means cutting an `epic/<KEY>-…` branch — which needs a key, and a key now exists
-in both worlds. The full ceremony becomes available without becoming mandatory.
-
-### The three markers, restated
-
-| Marker | Ships | Why |
+| | **Jira = yes** | **Jira = no** (the default) |
 |---|---|---|
-| `MERGE-TARGET-ENFORCE` | **armed, tracked** | zero Jira references; a bare `git clone` must be protected without running the door |
-| `MAIN-PUSH-ENFORCE` | **armed, tracked** | same; the approval token's `--key` is already optional |
-| `JIRA-ENFORCE` | **only on a "yes"** | it reads `jira.conf`, and a "no" writes no `jira.conf`. Unchanged from today: absent conf, gate no-ops, commits pass untouched |
+| What it is | the full enterprise dev system | a quick project, for fun and speed |
+| `jira.conf` | written, `JIRA_SITE` + `JIRA_KEYS`, `acli` site verified to match | **nothing written** |
+| The three `*-ENFORCE` markers | **all armed by setup** | **none** |
+| Branches | `chore/<KEY>-<slug>`, the lane ceremony, the PR road | `chore/<slug>`, or just commit on `main` |
+| Reaching `main` | a PR, the full gate | **push it** |
+
+### Why the "no" side needs NO code — measured
+
+An unarmed gate is already frictionless, by construction:
+
+- `pre-push-main-approval.sh:38` — `[ -f .agents/scripts/git-hooks/MAIN-PUSH-ENFORCE ] || exit 0`.
+  No marker, instant exit 0. No token, no prompt, nothing.
+- `merge-target-guard.sh:10` and `pre-push-merge-backstop.sh:57` — same shape; without the marker
+  they warn at most and never block.
+- `jira.conf.example` — *"no jira.conf means no keys to check, so commits pass untouched."*
+
+⭐ **So the quick-dev posture is what the skeleton already does today.** This lane does not build it;
+it **names** it, so a reader knows it is the designed state rather than an unfinished one — and then
+stops, per the ruling: one sentence, *"No board. You can add one any time — copy
+`.agents/jira.conf.example` and follow its four steps"*, and drop it. No nag, no file, no key.
+
+⭐ **"We can turn this on at any time" is a property of the design, not a promise.** Switching
+postures later is: write `jira.conf`, verify the site, `touch` the three markers. Nothing has to
+be undone first, because the "no" posture wrote nothing — which is exactly why it writes nothing.
+
+### The "yes" side is the half that is actually broken
+
+**Nothing arms the markers — ever.** `new-project.ps1` arms `core.hooksPath` (via
+`Arm-HooksInclude.ps1`) so the hooks *run*, then creates no marker at all, and its closing text names
+only `JIRA-ENFORCE`, in an optional block, for the reader to `touch` by hand. All three markers are
+absent from the skeleton while present in the lobby and AviationChat. **So a project that answers
+"yes" and wants enterprise protection still gets warn-only gates, silently.** That is the fix Part C
+ships: on a "yes", setup arms all three.
+
+### No key is needed on the "no" side, and none is invented
+
+An earlier draft of this plan invented a local date-derived key so a boardless project had something
+to name branches after. Struck — the guards classify a branch by its PREFIX and nothing else
+(`merge-target-guard.sh:158-167`: `main` / `epic/*` / `chore/*` / `claude/incident-*` / `claude/*`),
+so `chore/nav-fix` behaves exactly as `chore/NOVA-7-nav-fix` does, and `mint-push-token.sh` already
+prints `${KEY:-<no key>}`. Nothing needs a key.
+
+### The mode: TRUNK is already automatic
+
+`epic_mode.py:5` — `TRUNK  no origin/epic/* at all`. A fresh clone has no epic branches, so it is
+trunk from the first commit with no configuration. Adding Jira later does not change that either;
+`LIGHT` and `FULL` arrive when someone cuts an `epic/<KEY>-…` branch, which is a choice, not a
+migration.
 
 ---
 
-## Part E — the setup interview: ask once, then drop it
+## Part D — the setup interview, and the README as the agent's brief
 
-> *"the agent ask at the beginning; if they say no it tells them they can change this at any time and
-> drops it. there is no nag. it's back in the user … me who knows this."*
-
-**Two questions, asked once, at clone time. Nothing is written on a "no", and nothing ever asks
-again.**
+**Two questions, asked once, at clone time.**
 
 1. **What is the project called?** → run `scripts/rename-project.py`, which substitutes it across the
-   **24 files** carrying `{{PROJECT_NAME}}` / `{{USER}}` / `{{PLACEHOLDER}}` (measured by `grep -rln`).
-   ⭐ That script **already exists in the skeleton and `new-project.ps1` has never called it** — the
-   rename is documented as manual README step 2 and nothing automates it. Part E wires it.
-2. **Does this project have a Jira board?**
-   - **Yes** → the existing four steps, done now while the project has no history: `jira.conf`,
-     `JIRA_SITE`, `JIRA_KEYS`, `acli jira auth status` with the site **required to match**
-     (`smh-new-project.md:55-58` — a key prefix alone is half an address), then `JIRA-ENFORCE`.
-   - **No — the default** → **one sentence and stop:** *"No board. You can add one any time — copy
-     `.agents/jira.conf.example` and follow its four steps."* **Write nothing. Ask nothing again.**
-
-⛔ **NO RECORDED-DECISION FILE, AND THAT IS THE RULING.** An earlier draft of this plan wrote a
-`jira.conf` on the "no" so a later agent could tell *"declined"* from *"not set up yet"*. The operator
-struck it: the person who knows is the operator, the cost of the machinery is not worth the ambiguity
-it removes, and state written to stop agents nagging is the wrong fix for agents nagging. The right
-fix is that **nothing nags** — which is acceptance row L, and it is a negative row on purpose.
-
-An absent `jira.conf` therefore keeps exactly the meaning it has today, documented in
-`jira.conf.example`: *"no jira.conf means no keys to check, so commits pass untouched."* Unchanged
-behaviour, no new state, no new file.
-
-### Local keys are a CONVENTION, not configuration
-
-With nothing written, the boardless key needs no config to read: the prefix is derived from the
-project name the rename has already written into all 24 files, and the number is the date —
-**`<PREFIX>-<YYMMDDNN>`**, e.g. `NOVA-26091301`.
-
-Proven against the live regex, not from memory:
-
-```
-NOVA-26091301      -> ['NOVA-26091301']
-NOVA-7             -> ['NOVA-7']
-nova-26091301      -> []
-```
-
-So `chore/NOVA-26091301-nav-fix` clears `task_preflight`'s branch and intent checks with **no code
-change anywhere**, and the eight-digit date is what distinguishes a local key from a Jira one on
-sight. The convention is stated in the README; it is not a setting, so there is nothing to toggle,
-migrate, or get out of sync.
+   **24 files** carrying `{{PROJECT_NAME}}` / `{{USER}}` / `{{PLACEHOLDER}}`. ⭐ That script
+   **already exists in the skeleton and `new-project.ps1` has never called it** — the rename is
+   documented as manual README step 2 and nothing automates it. Part D wires it.
+2. **Do you have a Jira board for this project?**
+   - **Yes** → write `jira.conf`, set `JIRA_SITE` + `JIRA_KEYS`, run `acli jira auth status` and
+     **require the site it prints to match** (`smh-new-project.md:55-58` — a key prefix alone is half
+     an address), then arm **all three** markers.
+   - **No — the default** → say the one sentence and stop. Write nothing, arm nothing, ask nothing
+     again.
 
 ### The README is rewritten FOR THE AGENT
 
 The skeleton's `README.md` is eight manual steps written for a human (`### 1. Clone` … `### 8. Initial
 Commit & Push`, with `## Jira Integration (Optional)` at `:126`). It becomes the brief for **the agent
-that sets up the clone**: the two questions first, what each answer does, the local-key convention,
-and the one sentence the agent says on a "no". The manual steps stay beneath it as the fallback. A
-clone set up by hand, by `/smh-new-project`, or by an agent that only ever read the README must land
-in the same state.
+that sets up the clone**: the two questions first, the two postures table, what each answer arms, and
+the one sentence said on a "no". The manual steps stay beneath as the fallback. A clone set up by
+hand, by `/smh-new-project`, or by an agent that only read the README must land in the same state.
 
 ⚠️ **Out of lane, named once with its remedy:** `epic_mode.py:110` still says *"the skeleton every new
 project clones ships no classifier either"*. SCC-441 landed the routed gate and both epic toggles
-there, so that sentence is now false. One-line docstring correction, riding Part E's commit because
-Part E is what makes a reader trust that paragraph.
+there, so that sentence is now false. One-line docstring correction, riding Part D's commit.
 
 ---
 
@@ -317,38 +251,29 @@ Part E is what makes a reader trust that paragraph.
 | B | The skeleton's backstop scans `epic/*` for a chore lane | `grep 'refs/heads/epic' …/pre-push-merge-backstop.sh` resolves, seen absent first |
 | C | An unclassifiable merge source is reported, not silent | the declined-to-judge block present; a fixture merge with an unnamed source prints a reason |
 | D | No guard names a rule path the target lacks | `grep -c '\.agents/rules/' <skeleton>/.agents/scripts/git-hooks/*.sh` → `0`, seen `2` first |
-| E | The four guards are at parity with the lobby | `template_parity.py --repo .` exit 0; code-only line counts 169/90/115/94 |
-| F | Drift goes RED | mutate one lobby guard → `template_parity.py` exit 2 naming the file; restore → exit 0 |
-| G | An absent consumer is a named non-passing row | run with the submodule path emptied → the row is printed and the run does not score green |
-| H | The manifest cannot widen itself | a diff containing `.agents/template-ports.json` is still checked (test) |
-| I | Nothing else moved | `run_all.py` green; `workflow_lint --toolkit-only` 0 errors; `check_maps --depth3-only --strict` clean |
-| J | The skeleton ships the two non-Jira gates ARMED | `MERGE-TARGET-ENFORCE` and `MAIN-PUSH-ENFORCE` tracked, seen absent first; a fixture clone refuses a wrong-target merge with `exit 1`, not `exit 0` |
-| K | A local key passes every existing gate UNCHANGED | `NOVA-26091301` matches `task_preflight.KEY_RE`; a `chore/NOVA-26091301-slug` branch clears the preflight's branch + intent checks with no code change (test, seen against the real regex) |
-| L | ⭐ **Nothing nags, and a "no" writes nothing** | after "no": `git status` in the fresh project is clean of any `jira.conf`, and the setup says the one "you can add one any time" sentence; grep proves no door, guard or hook emits a board-absence warning anywhere. Negative row, asserted directly |
-| M | The rename actually runs | `scripts/rename-project.py` is invoked by the setup; zero `{{PROJECT_NAME}}` / `{{USER}}` / `{{PLACEHOLDER}}` tokens remain in the 24 files afterwards, seen non-zero first |
-| N | A boardless clone is fully functional | a fixture project with no board and no `jira.conf`: hooks armed, a wrong-target merge refused, a `chore/<PREFIX>-<YYMMDDNN>-slug` lane cut and closed with a walkthrough — every step green with no `acli` call |
-| O | The README briefs the AGENT | the interview is the README's first section, both answers' consequences stated; a setup done from the README alone lands in the same state as one done by `/smh-new-project` (test asserts the door and the README name the same two questions) |
+| E | The four guards are at parity with the lobby | code-only counts (`grep -vE '^\s*(#\|$)' \| wc -l`) read **169 / 90 / 115 / 94**, matching the lobby exactly; seen 124/72/95/73 first |
+| F | Every guard says where it came from | each of the four carries a provenance header naming its lobby path and the source sha; `grep -c` → 4, seen `0` first |
+| G | ⭐ **"Yes" gets the enterprise system** | a fixture setup answering yes: all three `*-ENFORCE` markers exist, `jira.conf` written and the `acli` site verified; a wrong-target merge is refused with `exit 1` and a push to `main` without a token is refused. Seen warn-only first |
+| H | ⭐ **"No" gets a quick project, with zero friction** | a fixture setup answering no: no `jira.conf`, no markers, and a commit pushed straight to `main` succeeds with no token and no prompt. Plus: grep proves no door, guard or hook emits a board-absence warning anywhere |
+| I | The rename actually runs | `scripts/rename-project.py` is invoked by the setup; zero `{{PROJECT_NAME}}` / `{{USER}}` / `{{PLACEHOLDER}}` tokens remain in the 24 files afterwards, seen non-zero first |
+| J | The README briefs the AGENT | the two questions are its first section with both postures; a setup done from the README alone lands in the same state as one done by `/smh-new-project` (test asserts both name the same two questions and the same three markers) |
+| K | Nothing else moved | `run_all.py` green; `workflow_lint --toolkit-only` 0 errors; `check_maps --depth3-only --strict` clean |
 
 ## Declared Change Set
 
-- EDIT `Projects/sudo-project-skeleton/.agents/scripts/git-hooks/pre-push-merge-backstop.sh` — the `--keep` remedy, the `epic/*` scope, the declined-to-judge note, the provenance header → A, B, E
-- EDIT `Projects/sudo-project-skeleton/.agents/scripts/git-hooks/merge-target-guard.sh` — the declined-to-judge path, the SCC-97 banner, the reworded rule references, the provenance header → C, D, E
-- EDIT `Projects/sudo-project-skeleton/.agents/scripts/git-hooks/mint-push-token.sh` — refusal text to parity, the provenance header → E
-- EDIT `Projects/sudo-project-skeleton/.agents/scripts/git-hooks/pre-push-main-approval.sh` — refusal text to parity, the reworded rule reference, the provenance header → D, E
-- NEW `.agents/template-ports.json` — the declared port set → E, F, H
-- NEW `.agents/scripts/template_parity.py` — the checker → E, F, G, H
-- NEW `.agents/scripts/tests/test_template_parity.py` — its arms and mutants → F, G, H
-- EDIT `.agents/scripts/INDEX.md` — two rows for the new script and its test → I
-- EDIT `.agents/rules/living-template-sync.md` — the skeleton is now detected; say how → I
-- NEW `Projects/sudo-project-skeleton/.agents/scripts/git-hooks/MERGE-TARGET-ENFORCE` — ships armed → J
-- NEW `Projects/sudo-project-skeleton/.agents/scripts/git-hooks/MAIN-PUSH-ENFORCE` — ships armed → J
-- EDIT `Projects/sudo-project-skeleton/README.md` — rewritten as the AGENT's brief: the two questions first, the local-key convention, the one sentence said on a "no", the manual steps beneath, all three markers named → J, L, M, O
-- EDIT `Projects/sudo-project-skeleton/.agents/scripts/INDEX.md` — `:7` says "ships disarmed" of Jira ONLY; correct it → J
-- EDIT `.agents/commands/smh-new-project.md` — the two-question interview, both branches, the local key convention, and the "ask once, then drop it" rule → K, L, M, O
-- EDIT `.opencode/commands/smh-new-project.md` — mirror → O
-- EDIT `.agents/scripts/new-project.ps1` — ask both questions; call `scripts/rename-project.py`; on a "no" say the one sentence and write nothing; the two non-Jira markers arrive armed from the clone → K, L, M, N
-- EDIT `.agents/scripts/epic_mode.py` — `:110` claims the skeleton ships no classifier; SCC-441 landed one → O
-- EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` + `_changelog.md` — the new gate, and the two switches → I, K
+- EDIT `Projects/sudo-project-skeleton/.agents/scripts/git-hooks/pre-push-merge-backstop.sh` — the `--keep` remedy, the `epic/*` scope, the declined-to-judge note, the provenance header → A, B, E, F
+- EDIT `Projects/sudo-project-skeleton/.agents/scripts/git-hooks/merge-target-guard.sh` — the declined-to-judge path, the SCC-97 banner, the reworded rule references, the provenance header → C, D, E, F
+- EDIT `Projects/sudo-project-skeleton/.agents/scripts/git-hooks/mint-push-token.sh` — refusal text to parity, the provenance header → E, F
+- EDIT `Projects/sudo-project-skeleton/.agents/scripts/git-hooks/pre-push-main-approval.sh` — refusal text to parity, the reworded rule reference, the provenance header → D, E, F
+- EDIT `Projects/sudo-project-skeleton/README.md` — the AGENT's brief: the two questions, the two-posture table, what each answer arms, the sentence said on a "no" → G, H, I, J
+- EDIT `Projects/sudo-project-skeleton/.agents/scripts/INDEX.md` — `:7` says "ships disarmed" of Jira ONLY; say it of all three, and that this is the quick-dev posture → H, J
+- EDIT `.agents/commands/smh-new-project.md` — the two-question interview; on yes arm all three markers; on no, one sentence and stop → G, H, I, J
+- EDIT `.opencode/commands/smh-new-project.md` — mirror → J
+- EDIT `.agents/scripts/new-project.ps1` — ask both questions; call `scripts/rename-project.py`; on yes arm all three markers; on no write nothing → G, H, I
+- EDIT `.agents/scripts/epic_mode.py` — `:110` claims the skeleton ships no classifier; SCC-441 landed one → J
+- EDIT `.agents/rules/living-template-sync.md` — the provenance header is the skeleton's drift-visibility mechanism; no automated detector yet → F, K
+- EDIT `docs/_scc_sops_prds/workflows_testing_SOP.md` — the two postures and the setup interview → J, K
+- EDIT `docs/_scc_sops_prds/workflows_testing_SOP_changelog.md` — one row → K
 
 ## Port section — the six checks (port-checklist rule 5)
 
@@ -372,19 +297,22 @@ Part E is what makes a reader trust that paragraph.
 
 ## Verification
 
-1. RED first, all four pins, pasted: `reset --hard` present · `refs/heads/epic` absent · the
-   declined-to-judge block absent · `.agents/rules/` count `2`.
-2. Repair Part A; the same four commands, now green; code-only counts `169/90/115/94`.
-3. `template_parity.py --repo .` → exit 0; mutate one lobby guard → exit 2 naming it; restore and
-   verify the bytes and sha.
-4. Empty the consumer path → the named non-passing row prints and the run does not score green.
-5. `test_template_parity.py` under `run_all.py`; a mutant per pin, every restore verified.
+1. RED first, pasted: `reset --hard` present · `refs/heads/epic` absent · the declined-to-judge
+   block absent · `.agents/rules/` count `2` · both markers absent · code-only counts 124/72/95/73.
+2. Repair Part A; the same commands, now green; counts `169/90/115/94`; four provenance headers.
+3. Part B: the pointer bump, and `git ls-tree` on the lane showing `4510e05`.
+4. **Acceptance H end to end — the quick posture.** Clone the skeleton into a scratch dir, run the
+   setup answering **no**: zero placeholder tokens remain, no `jira.conf`, no markers, and a commit
+   pushed straight to `main` succeeds with no token and no prompt. Paste the transcript.
+5. **Acceptance G end to end — the enterprise posture.** Same clone, answering **yes** with a real
+   key: all three markers armed, the `acli` site verified, a wrong-target merge refused with
+   `exit 1`, and an untokened push to `main` refused. Paste both refusals.
 6. `run_all.py`, `workflow_lint --toolkit-only`, `check_maps --depth3-only --strict`,
    `check_links --base origin/main`.
 
-**Two repos land separately, in this order (AUDIT FINDING 4).** The skeleton's four files are its own
-repo and its own PR, and land FIRST. The lobby PR then carries the detector **and** the Part C pointer
-bump in one commit, so `main` never holds a detector aimed at a pre-repair tree.
+**Two repos land separately, in this order.** The skeleton's files are its own repo and its own PR,
+and land FIRST. The lobby PR then carries the setup changes and the Part B pointer bump together, so
+`main` never points at a pre-repair skeleton.
 
 ## Your Actions
 
@@ -393,13 +321,17 @@ bump in one commit, so `main` never holds a detector aimed at a pre-repair tree.
   1. ✅ **RULED 2026-09-13 — audit finding 2 is settled, and the scope grew with it.** The switch is
      *who issues the keys*, not Jira on/off: local date-derived keys by default, trunk mode (already
      automatic), both non-Jira gates armed from the clone, and a two-question setup interview that
-     records its answers. See Parts D and E. Nothing further is owed here.
+     records its answers. See Parts C and D. Nothing further is owed here.
   2. Whether AviationChat's 5 dead rule paths get an `AVCH` ticket now or wait. They cannot ride this
      lane — its commit gate rejects an `SCC` key by design (port check 6).
-  3. Whether the **close-out ceremony running boardless** gets its own ticket. Part D makes the
+  3. Whether the **close-out ceremony running boardless** gets its own ticket. Part C makes the
      GUARDS board-independent, which is what the ruling asked for; running `/smh-close-task-merge-tree`
-     on a project with no board is a separate job — nine lobby scripts take a key, and `jira_feed.py`
+     on a project with no board is a separate job - nine lobby scripts take a key, and `jira_feed.py`
      already has `ACLI_UNREACHABLE` and a `need_board=False` path to build on.
+  4. Whether the **automated parity detector** gets its own ticket, now that it is cut from here. The
+     remedy is named and sized: a declared port manifest plus a checker, blocked today by the two
+     measured constraints above, so one of those must be solved first. Until then the provenance
+     header is what makes drift visible - the same mechanism that kept AviationChat at 10 lines.
 
 ---
 
@@ -429,14 +361,15 @@ read:        declared_change_set.py parse <this plan> -> "present": true, 10 ent
 verdict:     findings below (1, 3, 5)
 ```
 
-Scope Ledger — every `NEW` x the acceptance row that requires it: `.agents/template-ports.json` ->
-E, F, H; `.agents/scripts/template_parity.py` -> E, F, G, H; `.agents/scripts/tests/test_template_parity.py`
--> F, G, H. **No empty acceptance cell.** Caller count for `template_parity.py` after the edit:
-its test, plus direct invocation from the SOP-documented gate line - the same shape as
-`teaching_edition_staleness.py`, which this repo already runs that way, so it is not a
-single-caller abstraction invented by its own plan. **Precondition:** the plan carries nine
-acceptance rows, each with a pasted observable; the TICKET carries an INTENDED OUTCOME rather than
-a formal ACCEPTANCE block -> finding 5, non-blocking (SCC-456 closed the same way).
+Scope Ledger — every `NEW` x the acceptance row that requires it, **after the 2026-09-13 cut**:
+`MERGE-TARGET-ENFORCE` -> G, K; `MAIN-PUSH-ENFORCE` -> G, K. **No empty acceptance cell.** Both are
+one-line marker files the guards already test for (`merge-target-guard.sh:10`), so neither is a new
+abstraction and neither has a caller this plan invents. ⭐ **The three NEW rows the first audit
+scored — the port manifest, `template_parity.py` and its test — are GONE**, struck by the operator's
+"fix what's needed, not create something new"; the ledger is smaller than the one audited, never
+larger. **Precondition:** the plan carries thirteen acceptance rows, each with a pasted observable;
+the TICKET carries an INTENDED OUTCOME rather than a formal ACCEPTANCE block -> finding 5,
+non-blocking (SCC-456 closed the same way).
 
 ```
 lens:        2 Parity + Blast
