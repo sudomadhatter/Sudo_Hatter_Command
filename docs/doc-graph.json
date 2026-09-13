@@ -7,11 +7,11 @@
     "files": 389,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 806,
-    "external": 27,
+    "edges": 805,
+    "external": 26,
     "ambiguous": 200,
-    "dangling": 263,
-    "broken_paths": 59,
+    "dangling": 262,
+    "broken_paths": 58,
     "unresolved_names": 204,
     "unresolvable": 9
   },
@@ -33,7 +33,7 @@
     },
     {
       "path": ".agents/INDEX.md",
-      "in": 9,
+      "in": 8,
       "out": 8
     },
     {
@@ -499,7 +499,7 @@
     {
       "path": ".agents/commands/smh-new-project.md",
       "in": 2,
-      "out": 3
+      "out": 2
     },
     {
       "path": ".agents/commands/smh-non-crit-pr-push.md",
@@ -3073,11 +3073,6 @@
     {
       "from": ".agents/commands/smh-merge-multiple-workingtrees.md",
       "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/commands/smh-new-project.md",
-      "to": ".agents/INDEX.md",
       "kind": "ref"
     },
     {
@@ -6295,10 +6290,6 @@
       "target": "walkthrough.md"
     },
     {
-      "from": ".agents/commands/smh-new-project.md",
-      "target": "_bmad-output/project-context.md"
-    },
-    {
       "from": ".agents/commands/smh-plan-task.md",
       "target": "/implementation_plan.md"
     },
@@ -7063,10 +7054,6 @@
     {
       "from": ".agents/commands/smh-merge-multiple-workingtrees.md",
       "target": "_artifacts/_main/2026/08/2026-08-13_scc-127-verify-wave/walkthrough.md"
-    },
-    {
-      "from": ".agents/commands/smh-new-project.md",
-      "target": "_my_resources/open_tasks/todo_list.md"
     },
     {
       "from": ".agents/commands/smh-update-maps-indexes.md",

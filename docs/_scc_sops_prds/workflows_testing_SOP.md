@@ -574,6 +574,42 @@ and `epic write gate — light (AVCH-152)` — and every project cloned from the
 recipes armed at nothing, which is what step 5 of
 [`/smh-new-project`](../../.agents/commands/smh-new-project.md) is for.
 
+### A new project has TWO postures, and one question picks it
+
+`/smh-new-project` asks you two things and then does not ask again: **what is the project called**,
+and **do you have a Jira board for it?** The second answer decides everything else. There is no
+third state and nothing further to configure.
+
+| | **Jira = yes** | **Jira = no** — the default |
+|---|---|---|
+| What you get | the full enterprise dev system | a quick project, for speed |
+| `.agents/jira.conf` | written for you, and the site is **verified** against `acli` before anything is cloned | nothing written |
+| The three `*-ENFORCE` markers | all three armed in the scaffold commit | none |
+| Branches | `chore/<KEY>-<slug>`, the lane ceremony | `chore/<slug>`, or just commit on `main` |
+| Reaching `main` | a pull request, the full gate | push it |
+
+**Answering "no" is a complete answer, not a deferral.** You are told once — *"No board. You can add
+one at any time"* — and never again. Nothing warns you, nothing nags, and no ticket key is invented
+for you: the guards classify a branch by its **prefix** alone, so `chore/nav-fix` behaves exactly as
+`chore/NOVA-7-nav-fix` would.
+
+**Answering "yes" is what ARMS the project.** That word is doing real work: the three markers are
+what turn the guards from warn-only into gates, and before this the scaffold created none of them —
+a project that wanted enterprise protection got warn-only gates and was told nothing. It is all
+three or none: `JIRA-ENFORCE` alone checks commit messages while the merge guard and the main-push
+gate stay silent.
+
+**Adding a board later costs nothing and undoes nothing**, because the "no" posture wrote nothing.
+Write `.agents/jira.conf`, confirm `acli jira auth status` names that same site, and `touch` the
+three markers — any time, in any project.
+
+> ⓘ **Why the "no" side needed no code to build.** Every gate in this system is one marker file
+> away from silent, by construction: `pre-push-main-approval.sh` exits 0 on its first working line
+> without `MAIN-PUSH-ENFORCE`, the two merge guards share one flag of the same shape, and the
+> commit gate no-ops without a `jira.conf`. So the quick-dev posture is what a fresh clone already
+> *is*. What was missing was anyone saying so — a reader could not tell a designed state from an
+> unfinished one, and the setup never armed the other posture at all.
+
 ### The published teaching edition is GENERATED — never hand-edited (SCC-456)
 
 `Projects/sudo-command-center` is the **published teaching edition**: a sanitized export of this
@@ -1709,6 +1745,14 @@ don't.
 > server — it lives in `.git/`, and restricting *who* may merge does not work here because the web
 > agent merges **as you**, on your own GitHub account. So the two halves guard different things and
 > neither replaces the other.
+>
+> ⓘ **A draft PR does not run this check, on purpose.** The PR road opens on a lane's *first*
+> push — a pushed branch with no open PR runs no CI at all — so a lane's PR is open for its whole
+> life, and for all of that time the close-out receipt legitimately does not exist yet. The check
+> was therefore red on every push of every lane, correctly, and emailed you each time. It now
+> skips while the PR is a draft and runs the moment you mark it **Ready for review**. Nothing is
+> weakened: `main-write-gate` is the required context, so a draft simply cannot be merged, which
+> is already what "draft" means.
 >
 > **When you ship:** `/smh-close-task-merge-tree` waits a couple of minutes
 > for that check before it pushes `main`. It handles this itself — it sends the merge commit to a
@@ -4595,7 +4639,7 @@ that repo after you commit: `code-review-graph update`.
 | `/smh-memory-audit` | Cleans up the shared memory store (`_artifacts/_memory/`) — the one document every model on every machine loads *before* doing any work, which is why letting it fill costs you on every session everywhere. It checks each memory's claim against the live repo, then shows you *retire · merge · compress · relocate · promote to rule* with the bytes each frees, and waits. **Nothing is deleted without your yes on that specific item**; git is the undo either way. See the box below. |
 | `/smh-sync-agents` | Publishes the toolkit to all five platforms (Claude, Codex, opencode, Antigravity, Zoo Code) — one door each, and **Codex and Antigravity share the same one**: both read `.agents/skills/` natively and invoke any `SKILL.md` there as `/<name>`. **It SHORTENS the description it writes into `.roo/commands/`:** Zoo builds its menu from those descriptions and full-length ones blow its context budget, so the generator cuts each one to **135 characters** on a word boundary. ⛔ **Do not shorten one by hand** — those files are generated, so the next sync overwrites you, *and* the door-parity check demands a door match its brain, so a hand-edit turns `main-write-gate` red (`chore/SCC-194-workflow-titles` is exactly that attempt, 34 files, unlandable). The COMMANDS keep their full descriptions; only a menu has a budget. It reaches **the lobby and this machine's caches only**; projects read from the center, so there is nothing to push. **Since SCC-378 it also RENDERS the three terminal-approval lists** — Zoo's, Claude's and Antigravity's — from the one source `.agents/permissions/families.json` (`python3 .agents/scripts/permission_render.py`), and `-Status` runs the renderer's `--check` so a hand-edited list shows as drift. **Since SCC-432 it also RENDERS universal tool & MCP configs** across Claude Code, OpenCode, Zoo Code, and Antigravity from `.agents/tools/connections.json` (`tool_sync.py`), and `-Status` runs `--check` to detect drift. It renders only: pushing a list into a live machine store stays the two explicit applies (`zoo_permissions_apply.py`, `antigravity_permissions_apply.py`). It *generates* the Claude/Codex skill door for every command instead of publishing a second command copy beside it, and purges the two retired doors. Hand-written skills are never overwritten. What a command *declares* decides where it publishes — nothing is inferred from its filename. Hooks are executed directly from `.agents/hooks/` via `run-hook.sh` (the duplicate `.claude/hooks/` mirror is retired under SCC-300), and in-session sandboxed runs catch `.claude/skills` write restrictions gracefully. |
 | `/smh-review` | Reviews the working diff outside the story loop — the quick read when there's no story to hang ③ on. |
-| `/smh-new-project` | Scaffold a new workspace. |
+| `/smh-new-project` | Scaffold a new workspace — and it **asks you two questions first**: what the project is called, and whether it has a Jira board. The second answer sets the whole posture (see the box below). It substitutes the project name across the skeleton's 24 placeholder files for you; you no longer grep for `{{`. |
 | `/smh-publish-teaching-edition` | Refreshes the command centre your team clones (`Projects/sudo-command-center`). That repo is a **generated** sanitized export of this lobby, never hand-edited — this door regenerates it. It refuses a dirty or unpushed tree, exports to scratch outside the lobby, runs the unskippable leak scan, and clears the **tracked** tree so retired files actually leave your team's clones (a copy-over can only add and overwrite, which is how 84 deleted files kept shipping). Then it stops and shows you the adds, modifies and **deletes** before anything is committed. It commits on top, never force-pushes, and you merge the PR. |
 | `webm-alpha-video` | **Skill only — not a slash command.** Green-screen video to transparent WebM; load it by intent. |
 

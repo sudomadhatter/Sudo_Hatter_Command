@@ -103,6 +103,28 @@ CHECKS: dict[str, object] = {
         lambda L: not has(L, "|| true"),
     "no if: always() on a gating step":
         lambda L: not has(L, "if: always()"),
+
+    # ⛔ SCC-459, operator 2026-09-13: "I do want to look at why I get failure emails from git
+    # every time you push to an SCC PR ... it's frustrating to receive 12 merge fail emails."
+    # The PR road opens on a lane's FIRST push (a pushed branch with no open PR runs zero CI),
+    # so the PR is open for the lane's whole life — and for all of it the close-out receipt
+    # legitimately does not exist yet, because `/smh-close-task-merge-tree` Step 1 writes it.
+    # The gate therefore reported `[FAIL] close-out receipts` on every single push, correctly,
+    # and emailed him each time: seven identical failures on one lane. A check that is red by
+    # design for most of a lane's life trains its reader to ignore it, and THAT is how a real
+    # red gets missed. The job now skips while the PR is a draft.
+    "skips a DRAFT pull request":
+        lambda L: has(L, "github.event.pull_request.draft == false"),
+
+    # ⛔⛔ AND THIS IS THE HALF THAT BITES, not the one above. GitHub's DEFAULT pull_request
+    # types are opened/synchronize/reopened — NONE of which fire when a draft is marked ready.
+    # So a draft filter shipped WITHOUT `ready_for_review` means the gate never runs on a PR
+    # that was opened as a draft, the required context never reports, and the PR is
+    # PERMANENTLY UNMERGEABLE — the exact shape of PR #105, green everywhere and blocked
+    # forever on one check nobody could make report. Written as an implication rather than two
+    # independent rows, because the hazard is the PAIRING: either both, or neither.
+    "a draft filter ALWAYS ships with ready_for_review in the types":
+        lambda L: (not has(L, "pull_request.draft")) or has(L, "ready_for_review"),
 }
 
 # ── the mutants ────────────────────────────────────────────────────────────────────────────
@@ -123,8 +145,17 @@ MUT_RENAMED_CHECK = ("renames the job away from the ruleset's check",
                      lambda t: t.replace(f"name: {CHECK_NAME}", "name: some-other-check"))
 MUT_SHALLOW = ("shallow checkout",
                lambda t: t.replace("fetch-depth: 0", "fetch-depth: 1"))
+MUT_NO_DRAFT_FILTER = ("drops the draft filter, so every push to an in-flight lane re-fails",
+                       lambda t: t.replace(
+                           "    if: github.event_name != 'pull_request' "
+                           "|| github.event.pull_request.draft == false\n", ""))
+# ⛔ THE ONE THAT MATTERS. Half the fix is worse than none of it: this mutant leaves a PR that
+# was opened as a draft permanently unmergeable, and every other check in this file stays green.
+MUT_DRAFT_NO_READY = ("keeps the draft filter but drops ready_for_review from the types",
+                      lambda t: t.replace(", ready_for_review]", "]"))
 
-MUTANTS = [MUT_SOFT_GATE, MUT_PARTIAL_SUITE, MUT_NO_GATE_TRIGGER, MUT_RENAMED_CHECK, MUT_SHALLOW]
+MUTANTS = [MUT_SOFT_GATE, MUT_PARTIAL_SUITE, MUT_NO_GATE_TRIGGER, MUT_RENAMED_CHECK, MUT_SHALLOW,
+           MUT_NO_DRAFT_FILTER, MUT_DRAFT_NO_READY]
 
 
 def mut_reorder(text: str) -> str:

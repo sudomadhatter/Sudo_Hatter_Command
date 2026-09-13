@@ -4,7 +4,31 @@
 
 .DESCRIPTION
   Clones sudomadhatter/sudo-project-skeleton into Projects/<Name>, strips its git history, re-inits
-  the project's own repo, arms the git hooks, and prints the two manual wiring steps.
+  the project's own repo, arms the git hooks, substitutes the project name into the skeleton's
+  placeholders, and sets the project's POSTURE from one question (SCC-459).
+
+  TWO POSTURES, ONE QUESTION - "does this project have a Jira board?" There is no third state:
+
+    Jira = NO   (the default, and what you get by passing no -JiraSite/-JiraKeys)
+        A quick project, for speed. Nothing is written and nothing is armed. That is not an
+        unfinished setup, it is the finished one: every gate in this system is a marker file
+        away from silent, by construction - pre-push-main-approval.sh exits 0 on its first
+        line without MAIN-PUSH-ENFORCE, and commit-msg-jira.sh no-ops without a jira.conf.
+        Branches are `chore/<slug>` or none at all; main is reached by pushing to it.
+        It is said ONCE at the end and never again. There is no nag.
+
+    Jira = YES  (-JiraSite and -JiraKeys, both or neither)
+        The full enterprise dev system. jira.conf is written, the acli site is verified to
+        MATCH the one declared, and all three *-ENFORCE markers are armed in the scaffold
+        commit. Branches are `chore/<KEY>-<slug>`; main is reached by a pull request.
+
+  ⛔ BEFORE SCC-459 THE "YES" HALF DID NOT EXIST. This script armed core.hooksPath so the hooks
+  RAN, then created no marker at all, and named only JIRA-ENFORCE in closing prose for the reader
+  to touch by hand. A project that wanted enterprise protection got warn-only gates and was told
+  nothing. Arming is now what answering "yes" MEANS.
+
+  Upgrading later costs nothing and needs no undo, because the "no" posture wrote nothing: write
+  jira.conf, verify the site, touch the three markers.
 
   THIN MODEL (2026-08-07, SCC-31 — .agents/rules/project-law.md): the new project carries NO shared
   toolkit. No commands, no shared rules, no skills, no sync. Sessions run from this command center, so
@@ -16,11 +40,21 @@
 .PARAMETER Name
   The new project's folder name.
 
+.PARAMETER JiraSite
+  This project's Jira site, e.g. https://your-site.atlassian.net. Supply it WITH -JiraKeys to take
+  the "yes" posture. Omit both for the default.
+
+.PARAMETER JiraKeys
+  This project's Jira project key(s), e.g. NOVA. Space-separate only if the repo legitimately
+  answers to more than one board. Supply it WITH -JiraSite.
+
 .PARAMETER SkeletonUrl
   Override the clone source (defaults to the canonical skeleton repo).
 #>
 param(
   [Parameter(Mandatory = $true)][string]$Name,
+  [string]$JiraSite = "",
+  [string]$JiraKeys = "",
   [string]$SkeletonUrl = "https://github.com/sudomadhatter/sudo-project-skeleton.git"
 )
 
@@ -34,6 +68,39 @@ $HomeRoot = Split-Path $Master -Parent            # ...\Sudo_Hatter_Command
 if ($Name -notmatch '^[A-Za-z0-9](?:[A-Za-z0-9._-]{0,78}[A-Za-z0-9_-])?$' -or
     $Name -match '^(?i:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)') {
   throw "Project name must be one portable folder name (letters, digits, dot, underscore, or hyphen; no paths or trailing dot): $Name"
+}
+
+# ── The posture, resolved and VERIFIED BEFORE anything is created ────────────────────────────
+# Same reasoning as the name check above: a half-made project is worse than none. If the "yes"
+# answer cannot be verified, nothing is cloned and the operator still has an empty Projects/ to
+# retry into, rather than a scaffold whose gates may or may not be armed.
+$WantJira = $JiraSite -or $JiraKeys
+if ($WantJira -and -not ($JiraSite -and $JiraKeys)) {
+  throw ("-JiraSite and -JiraKeys go together: a key prefix alone is half an address. " +
+         "Pass both, or neither for a project with no board.")
+}
+if ($WantJira) {
+  if ($JiraKeys -notmatch '^[A-Z][A-Z0-9]+( [A-Z][A-Z0-9]+)*$') {
+    throw "JiraKeys must be one or more space-separated uppercase project keys (e.g. 'NOVA'): $JiraKeys"
+  }
+  # ⛔ THE SITE IS VERIFIED, NOT TAKEN ON TRUST. acli validates against whatever board this
+  # machine happens to be logged into, so a correct-looking key can bind a project to someone
+  # else's site and nothing downstream would notice.
+  $JiraHostName = ($JiraSite -replace '^https?://', '') -replace '/.*$', ''
+  if (-not $JiraHostName) { throw "JiraSite does not contain a host: $JiraSite" }
+  if (-not (Get-Command acli -ErrorAction SilentlyContinue)) {
+    throw ("acli is not on PATH, so the Jira site cannot be verified. Install it and re-run, or " +
+           "run with no -JiraSite/-JiraKeys and add the board later (the upgrade needs no undo).")
+  }
+  $AuthOut = (& acli jira auth status 2>&1) -join "`n"
+  if ($LASTEXITCODE -ne 0) {
+    throw "acli jira auth status failed (rc=$LASTEXITCODE). Log in, then re-run.`n$AuthOut"
+  }
+  if ($AuthOut -notmatch [regex]::Escape($JiraHostName)) {
+    throw ("acli is authenticated against a DIFFERENT site than -JiraSite ($JiraHostName). " +
+           "Binding this project to it would point its tickets at the wrong board.`n$AuthOut")
+  }
+  Write-Host "new-project: Jira site verified — acli is authenticated against $JiraHostName"
 }
 
 $Dest = Join-Path $HomeRoot "Projects/$Name"
@@ -75,6 +142,45 @@ try {
       Write-Host "  .claude/settings.local.json initialized from $(Split-Path $exampleTemplate -Leaf)"
   }
 
+  # ── Question 1: what is this project called? ──────────────────────────────────────────────
+  # The skeleton ships {{PROJECT_NAME}} / <PROJECT_NAME> / sudo-project-skeleton placeholders
+  # across 24 files, and `scripts/rename-project.py` has always existed to substitute them —
+  # this script simply never called it, so every clone began with a README telling a human to
+  # run it by hand (SCC-459). Its own history is dropped above, so the substitution lands in
+  # the scaffold commit and the project has never been called anything else.
+  $Py = if (Get-Command python3 -ErrorAction SilentlyContinue) { "python3" } else { "python" }
+  & $Py "scripts/rename-project.py" --name $Name --root "." | Out-Null
+  if ($LASTEXITCODE -ne 0) { throw "placeholder substitution failed (rc=$LASTEXITCODE)" }
+  Write-Host "  placeholders substituted -> $Name"
+
+  # ── Question 2: does this project have a Jira board? ──────────────────────────────────────
+  # Verified above, before the clone. Answering "yes" is what ARMS the project; there is no
+  # separate arming step and no marker left for the reader to touch by hand.
+  if ($WantJira) {
+    $Conf = Join-Path $Dest ".agents/jira.conf"
+    $ConfBody = @(
+      "# Jira binding for THIS repo. Written by new-project.ps1 at scaffold time (SCC-459).",
+      "# Sourced as shell — keep it to plain KEY=`"value`" assignments.",
+      "# The authenticated ``acli jira auth status`` site must match JIRA_SITE; it was verified",
+      "# against this value before this project was created.",
+      "JIRA_SITE=`"$JiraSite`"",
+      "JIRA_KEYS=`"$JiraKeys`""
+    ) -join "`n"
+    [System.IO.File]::WriteAllText($Conf, $ConfBody + "`n", (New-Object System.Text.UTF8Encoding($false)))
+
+    # ⛔ ALL THREE, NOT JUST THE JIRA ONE. They are tracked files, so they ride the scaffold
+    # commit and are armed for every later clone of this project — that is why arming is a
+    # `touch` and not a git config. One flag per gate:
+    #   JIRA-ENFORCE          commit-msg-jira.sh   — a commit message must carry this board's key
+    #   MERGE-TARGET-ENFORCE  merge-target-guard   + pre-push-merge-backstop (ONE flag, both halves)
+    #   MAIN-PUSH-ENFORCE     pre-push-main-approval — main needs a minted, unspent token
+    foreach ($m in @("JIRA-ENFORCE", "MERGE-TARGET-ENFORCE", "MAIN-PUSH-ENFORCE")) {
+      $Marker = Join-Path $Dest ".agents/scripts/git-hooks/$m"
+      [System.IO.File]::WriteAllText($Marker, "", (New-Object System.Text.UTF8Encoding($false)))
+    }
+    Write-Host "  Jira armed: jira.conf written, all three *-ENFORCE markers created."
+  }
+
   # ⛔ EVERY ONE OF THESE THREE IS CHECKED, because `| Out-Null` swallows git's output and
   # PowerShell does not stop on a non-zero native exit code. Without the checks this script
   # printed "created Projects/<name>" over a repo with NO HEAD - the scaffold staged, the
@@ -96,21 +202,24 @@ Write-Host ""
 Write-Host "new-project: created Projects/$Name — own git repo, hooks armed, NO vendored toolkit."
 Write-Host "  Its .agents/ holds only its own law; the shared toolkit stays here at the command center."
 Write-Host ""
-Write-Host "NEXT (manual, three steps):"
+if ($WantJira) {
+  Write-Host "POSTURE: Jira — the full enterprise dev system."
+  Write-Host "  jira.conf binds $JiraKeys to $JiraSite (site verified against acli before the clone)."
+  Write-Host "  Armed: JIRA-ENFORCE, MERGE-TARGET-ENFORCE, MAIN-PUSH-ENFORCE."
+  Write-Host "  Branches are chore/<KEY>-<slug>; main is reached by a pull request, never a push."
+} else {
+  Write-Host "POSTURE: no Jira — a quick project, for speed."
+  Write-Host "  Nothing was written and nothing is armed. Branch as chore/<slug> or just commit on"
+  Write-Host "  main, and push it. You can add a board at ANY time — nothing has to be undone first:"
+  Write-Host "    cd Projects/$Name && cp .agents/jira.conf.example .agents/jira.conf"
+  Write-Host "  set JIRA_SITE and JIRA_KEYS, confirm 'acli jira auth status' names that same site,"
+  Write-Host "  then touch .agents/scripts/git-hooks/{JIRA,MERGE-TARGET,MAIN-PUSH}-ENFORCE."
+}
+Write-Host ""
+Write-Host "NEXT (manual, two steps):"
 Write-Host "  1. router.md — add a row mapping 'work about <X>' -> Projects/$Name/"
 Write-Host "  2. .gitmodules + gitlink — add it as a submodule if it should travel with the lobby:"
 Write-Host "       git submodule add <remote-url> Projects/$Name"
-Write-Host "  3. Fill the placeholders: grep for '{{' and for '<PROJECT_NAME>' (AGENTS.md,"
-Write-Host "     .agents/INDEX.md, _bmad-output/project-context.md, _my_resources/open_tasks/todo_list.md)."
-Write-Host ""
-Write-Host "  Optional, only after this project gets a Jira board — run these IN THE PROJECT,"
-Write-Host "  not here; the lobby's own jira.conf is a different board:"
-Write-Host "       cd Projects/$Name"
-Write-Host "       cp .agents/jira.conf.example .agents/jira.conf"
-Write-Host "  Set JIRA_SITE and JIRA_KEYS, run 'acli jira auth status', and require the site it"
-Write-Host "  prints to match JIRA_SITE — a key prefix alone is half an address, and the CLI will"
-Write-Host "  happily validate against whatever board this machine happens to be logged into."
-Write-Host "  Only then touch .agents/scripts/git-hooks/JIRA-ENFORCE to arm REJECT mode."
 Write-Host ""
 Write-Host "  Add it to .agents/maintained-projects.txt only if you want the lint to cover it."
 exit 0
