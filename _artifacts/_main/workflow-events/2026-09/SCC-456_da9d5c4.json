@@ -1,10 +1,10 @@
 {
   "v": 1,
   "task": "SCC-456",
-  "sha": "e9d34b7aabbb0319be3e72714f472db627761b50",
-  "tip": "e9d34b7aabbb0319be3e72714f472db627761b50",
+  "sha": "da9d5c4b467148453e718cff990cae641a454f93",
+  "tip": "da9d5c4b467148453e718cff990cae641a454f93",
   "trigger": "close-out",
-  "when": "2026-09-12T22:45:34-04:00",
+  "when": "2026-09-12T23:03:11-04:00",
   "changes": [
     ".agents/.sync-manifest.json",
     ".agents/commands/INDEX.md",
@@ -53,10 +53,13 @@
     ".roo/commands/smh-publish-teaching-edition.md",
     "_artifacts/_main/2026-09-12_scc-456-teaching-edition-export/gates/suite.json",
     "_artifacts/_main/2026-09-12_scc-456-teaching-edition-export/implementation_plan.md",
+    "_artifacts/_main/2026-09-12_scc-456-teaching-edition-export/preflight-receipt.json",
+    "_artifacts/_main/2026-09-12_scc-456-teaching-edition-export/review/diff.patch",
     "_artifacts/_main/2026-09-12_scc-456-teaching-edition-export/task.yaml",
     "_artifacts/_main/2026-09-12_scc-456-teaching-edition-export/tickets/SCC-456.md",
     "_artifacts/_main/2026-09-12_scc-456-teaching-edition-export/walkthrough.md",
     "_artifacts/_main/INDEX.md",
+    "_artifacts/_main/workflow-events/2026-09/SCC-456_e9d34b7.json",
     "docs/_scc_sops_prds/workflows_testing_SOP.md",
     "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
     "docs/doc-graph.json",
@@ -65,9 +68,9 @@
   ],
   "evidence": {
     "walkthrough": "_artifacts/_main/2026-09-12_scc-456-teaching-edition-export/walkthrough.md",
-    "verdict": "PASS @ e9d34b7",
+    "verdict": "PASS @ da9d5c4",
     "gates": {
-      "suite": "pass@e9d34b7"
+      "suite": "pass@da9d5c4"
     }
   },
   "expected": {

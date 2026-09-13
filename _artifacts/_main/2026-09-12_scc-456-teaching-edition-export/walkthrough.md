@@ -126,8 +126,8 @@ outside a `c.block`, which breaks the `--case` filter contract.
 
 | Gate | Result |
 |---|---|
-| `run_all.py` | **95/95 files** @ `e9d34b7a`, receipt at [gates/suite.json](gates/suite.json) (94 before; this lane adds one file) |
-| `test_teaching_edition.py` | 72/72 (47 at the start of Part C; block G and F9-F13 came from the review) |
+| `run_all.py` | **95/95 files** @ `da9d5c4b`, receipt at [gates/suite.json](gates/suite.json) (94 before; this lane adds one file) |
+| `test_teaching_edition.py` | 74/74 (47 at the start of Part C; block G and F9-F13 came from the review) |
 | `test_teaching_edition_staleness.py` | 19/19, arming rows seen RED before the hook was armed |
 | `test_command_surfaces.py` | 345/345 |
 | `test_twin_parity.py` | 76/76 |
@@ -294,4 +294,4 @@ died — and once re-aimed it **survived**, exposing that `F9` counted `LOBBY=` 
 whole door, which has three, so deleting the one that mattered left the count at two. `F9`–`F12` now
 locate the fenced block containing `git ls-files -z` and assert on that block alone.
 
-Verdict: PASS @ e9d34b7aabbb0319be3e72714f472db627761b50
+Verdict: PASS @ da9d5c4b467148453e718cff990cae641a454f93
