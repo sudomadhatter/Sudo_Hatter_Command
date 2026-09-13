@@ -186,15 +186,26 @@ def main() -> int:
         # satisfied by the comment explaining the guard and stays green with the arming line
         # deleted. That is comment-literals-invert-source-grep-tests, and it was live in this
         # very case until the mutation sweep aimed at it.
-        code = "\n".join(ln for ln in body.splitlines() if not ln.lstrip().startswith("#"))
+        code = [ln for ln in body.splitlines() if not ln.lstrip().startswith("#")]
+
+        # ⛔ THE ASSERTION IS THE INVOKING LINE, NOT THE FILE. Stripping comments was not enough:
+        # the script's name also appears in the `TE=` PATH ASSIGNMENT, so a file-wide search is
+        # satisfied by an assignment when what it means to assert is a CALL. Measured - repointing
+        # the hook's invocation at a different script left both rows green while the reporter
+        # never ran, which is the precise failure this block exists to prevent.
+        call = next((ln for ln in code if "TE_OUT=$(" in ln), "")
 
         c.check("F1 · session-start-context.sh exists", bool(body), str(hook))
-        c.check("F2 · an EXECUTABLE line calls teaching_edition_staleness.py",
-                "teaching_edition_staleness.py" in code,
-                "the reporter is not armed by the hook - it would ship inert")
+        c.check("F2 · the INVOKING line runs teaching_edition_staleness.py",
+                "teaching_edition_staleness.py" in call or '"$TE"' in call,
+                f"the reporter is not armed by the hook - it would ship inert. call={call!r}")
+        c.check("F2b · ...and $TE resolves to that script, not another one",
+                any("teaching_edition_staleness.py" in ln and ln.lstrip().startswith("TE=")
+                    for ln in code),
+                "the invocation is there but points somewhere else")
         c.check("F3 · the call cannot block the hook",
-                "|| TE_OUT=\"\"" in code or "|| true" in code,
-                "the hook must survive a failing reporter; it opens every session")
+                '|| TE_OUT=""' in call or "|| true" in call,
+                f"the hook must survive a failing reporter; it opens every session. call={call!r}")
 
     return c.finish()
 

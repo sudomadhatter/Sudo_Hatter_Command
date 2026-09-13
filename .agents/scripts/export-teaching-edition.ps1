@@ -425,6 +425,22 @@ foreach ($o in $overlayList) {
     if (-not (Test-Path -LiteralPath $src -PathType Leaf)) {
         throw "Overlay source missing: $($o.from) (for $($o.path))"
     }
+
+    # ⛔ FOURTH REFUSAL: the SOURCE must live under the manifest folder.
+    # `from` was joined to $manifestDir with no containment test, so `"from": "../../../.env"`
+    # pulled any file on this disk straight into a PUBLIC export - and the leak scan does not
+    # save you, because it matches a fixed needle list, not "content that should not be here".
+    # The copy pass has enforced exactly this since it was written ("Required include resolves
+    # outside the source tree"); the overlay is a second door into the same tree and was missing
+    # the same lock. The undeclared-file sweep below cannot cover it either: by design that sweep
+    # only walks overlay/, so a source from outside it was never swept.
+    $srcReal = Resolve-PhysicalPath $src
+    $manifestReal = Resolve-PhysicalPath $manifestDir
+    if (-not (Test-IsWithinDirectory $srcReal $manifestReal)) {
+        throw ("Overlay source resolves outside the manifest folder: $($o.from) (for " +
+               "$($o.path)). An overlay may only ship files that live beside the manifest - " +
+               "anything else is an unreviewed file entering a public repo.")
+    }
     $overlayApplied.Add("$($o.path)  <-  $($o.from)") | Out-Null
 
     # Record every declared source that lives under overlay/, for the undeclared-file sweep.
@@ -682,7 +698,30 @@ $wholeWordNeedles = @(Get-ManifestList $m.leakScan "wholeWordLiterals")
 
 # Every VALUE from the live .env, so a key that was pasted into a doc is caught even
 # though the .env itself was excluded.
+#
+# ⛔ AN ABSENT .env SILENTLY SHRINKS THE NEEDLE SET, AND THE SCAN STILL PRINTS "clean".
+# Measured on the real manifest: 13 declared literals, 42 needles at scan time - so roughly
+# two thirds of the guard comes from this file. A fresh clone, a CI runner, or a `git worktree
+# add` that never got the symlink has no `.env`, and the export then reports a clean scan that
+# checked a third of what it checks here. That is the worst possible failure for this guard:
+# not an error, a quieter pass.
+#
+# So the manifest DECLARES whether it expects one (`leakScan.requireEnv`), the count is printed
+# either way, and a manifest that expects one and does not find it STOPS. Fixture manifests
+# leave the flag off and keep working.
 $envPath = Join-Path $sourceRoot '.env'
+$requireEnv = $false
+if ($m.leakScan.PSObject.Properties.Name -contains 'requireEnv') {
+    $requireEnv = [bool]$m.leakScan.requireEnv
+}
+$declaredNeedleCount = $needles.Count
+if ($requireEnv -and -not (Test-Path -LiteralPath $envPath)) {
+    throw ("Leak scan requires the source .env and it is missing. The manifest declares " +
+           "leakScan.requireEnv, because most of this scan's needles are the live .env's " +
+           "VALUES - without it the scan still reports 'clean' having checked a fraction of " +
+           "what it normally checks, which is worse than an error. Restore the .env (in a " +
+           "worktree it is a symlink to the real one) or clear requireEnv deliberately.")
+}
 if (Test-Path -LiteralPath $envPath) {
     foreach ($line in Get-Content -LiteralPath $envPath) {
         if ($line -match '^\s*[#;]') { continue }
@@ -788,7 +827,9 @@ if ($WhatIf) {
     Write-Host "Do NOT push this export. Fix the manifest (exclude or transform the file) and re-run." -ForegroundColor Red
     exit 1
 } else {
-    Write-Host "   clean - $($needles.Count) needles, 0 hits (contents AND paths)" -ForegroundColor Green
+    $envNeedleCount = $needles.Count - $declaredNeedleCount
+    Write-Host ("   clean - $($needles.Count) needles ($declaredNeedleCount declared + " +
+                "$envNeedleCount from .env), 0 hits (contents AND paths)") -ForegroundColor Green
 }
 
 # --- product contract (never optional) ----------------------------------------------------

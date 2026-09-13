@@ -184,7 +184,12 @@ def main() -> int:
             # unconditional it would re-base that to the real SOP and resolve.
             # (First aimed at `.agents/commands/smh-tour.md`, which was a bad control: from there
             # `../../` IS the repo root, so convention 2 resolves it and the case proved nothing.)
-            sibling = ".agents/scripts/teaching-edition/replacements/router.md"
+            # ⛔ THE CONTROL'S PREFIX MUST BE THE SAME LENGTH AS THE REAL ROOT, or it proves
+            # nothing. `replacements/router.md` is 41 characters shorter, so with the conditional
+            # replaced by `if True` the re-based path escapes above the root and is discarded for
+            # an UNRELATED reason - measured: the whole 53-case file stayed green with the guard
+            # deleted. A sibling at the same depth makes the mutant actually resolve.
+            sibling = ".agents/scripts/teaching-edition/notroot/.agents/commands/x.md"
             _ok = r.resolve("../../docs/_scc_sops_prds/workflows_testing_SOP.md", sibling) is None
             c.check("K3 a file OUTSIDE a staging root gets no retry", _ok,
                     "" if _ok else "the convention is widening: every `../../x` would resolve")

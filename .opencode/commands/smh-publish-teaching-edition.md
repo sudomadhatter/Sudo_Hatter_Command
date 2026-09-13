@@ -54,10 +54,15 @@ intend to publish. The stamp records whatever `HEAD` you run against.
 ## Step 1 — Export to a scratch directory OUTSIDE the lobby
 
 ```bash
+set -euo pipefail
+LOBBY=$(git rev-parse --show-toplevel)
+LOG=$(mktemp)
 SCRATCH=$(mktemp -d)/teaching-edition
-pwsh -File .agents/scripts/export-teaching-edition.ps1 \
-  -Manifest .agents/scripts/teaching-edition/lobby.manifest.json \
-  -Target "$SCRATCH" > /tmp/te-export.txt 2>&1
+pwsh -File "$LOBBY/.agents/scripts/export-teaching-edition.ps1" \
+  -Manifest "$LOBBY/.agents/scripts/teaching-edition/lobby.manifest.json" \
+  -Target "$SCRATCH" > "$LOG" 2>&1 || { tail -20 "$LOG"; echo "EXPORT REFUSED - nothing published"; exit 1; }
+grep -q 'TEACHING EDITION VALID' "$LOG" || { tail -20 "$LOG"; echo "NO VALID LINE - nothing published"; exit 1; }
+echo "export ok -> $SCRATCH"
 ```
 
 ⛔ **The scratch directory must be outside the lobby, and this is forced by the engine, not chosen.**
@@ -67,9 +72,10 @@ source tree to prevent recursive self-copy"* — and the published repo lives at
 export can never be written straight to its destination, and a repo-local `scratch/` is refused too.
 Temp-then-publish is the only shape available.
 
-Read the tail of the export log you just redirected. It must end with **`TEACHING EDITION VALID`**. Anything else
-— a leak hit, a missing overlay source, a missing line-transform anchor, a failed validator — is a
-**stop**. Report what it said and fix the cause; never re-run with a guard removed.
+**Both refusals above are machine checks, not advice.** The export's exit code and its `TEACHING EDITION VALID` line are each a hard stop before Step 2 can
+run — a leak hit, a missing overlay source, a missing line-transform anchor or a failed validator all end the run here. Until this was written the only thing
+between a FAILED leak scan and the copy was a sentence telling you to read the log, and a failed export's bytes would still have been copied into the public repo.
+Report what it said and fix the cause; never re-run with a guard removed.
 
 ## Step 2 — Clear the TRACKED tree, then copy the export in
 
@@ -79,11 +85,29 @@ never removes**. That is how 84 files `main` had deleted were still in every tea
 whole retired command surface a reader could still invoke.
 
 ```bash
+set -euo pipefail
+LOBBY=$(git rev-parse --show-toplevel)
 PUB="$LOBBY/Projects/sudo-command-center"
+
+# Refuse unless BOTH ends are what they claim to be, before anything is deleted.
+[ -n "${SCRATCH:-}" ] && [ -d "$SCRATCH/.agents" ] || { echo "no export to publish"; exit 1; }
+[ -d "$PUB/.git" ] || { echo "$PUB is not the published repo"; exit 1; }
+case "$PUB" in */Projects/sudo-command-center) ;; *) echo "refusing: wrong target"; exit 1 ;; esac
+
 cd "$PUB"
 git ls-files -z | xargs -0 rm -f
 cp -a "$SCRATCH/." "$PUB/"
 ```
+
+⛔ **THE FIRST FOUR LINES ARE THE GUARD, AND THEY ARE NOT CEREMONY.** This block deletes tracked
+files. Without `set -euo pipefail` and the re-derivation, a shell where `$LOBBY` and `$SCRATCH` are
+unset — which is every fresh shell, every copy-paste into a new terminal, and every tool call that
+does not inherit the earlier block — computes `PUB=/Projects/sudo-command-center`, fails the `cd`,
+and then runs `git ls-files -z | xargs -0 rm -f` **in whatever directory the shell is standing in**.
+That is usually the private lobby. Measured: it deletes the lobby's tracked tree. With `$SCRATCH`
+empty the copy source also becomes `/.` — the filesystem root — aimed into a public repo. Each of
+the four checks refuses one half of that.
+
 
 ⛔ **`git ls-files -z | xargs -0 rm -f` — enumerated by git, never by the shell.** This removes
 exactly what git knows about and nothing else. A `rm -rf *` in that directory would also destroy the

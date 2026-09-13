@@ -1211,6 +1211,62 @@ def main() -> int:
                     and "LEAK SCAN FAILED" in scanned_transcript,
                     scanned_transcript)
 
+    if c.block("G · the overlay's four refusals, each one run"):
+        # ⛔ THESE WERE UNPINNED WHILE TWO RECORDS CLAIMED THEY WERE PINNED - the manifest's own
+        # comment said "Four properties, each pinned by a case in test_teaching_edition.py" and
+        # the plan baked the same claim. Nothing asserted any of them. Every refusal below is a
+        # way an unreviewed byte reaches a PUBLIC repo, so each is run, not read.
+        def overlay_probe(temp: Path, label: str, entries: list, extra_files: dict) -> str:
+            root = temp / label
+            (root / "docs").mkdir(parents=True)
+            (root / "docs" / "a.md").write_text("hi\n", encoding="utf-8")
+            mdir = root / "tm"
+            (mdir / "overlay").mkdir(parents=True)
+            for rel, body in extra_files.items():
+                f = mdir / rel
+                f.parent.mkdir(parents=True, exist_ok=True)
+                f.write_text(body, encoding="utf-8")
+            git_seed(root)
+            (mdir / "m.json").write_text(json.dumps({
+                "name": label, "source": "..", "include": ["docs"],
+                "excludeAnywhere": [".git"], "overlay": entries,
+                "leakScan": {"literals": ["ZZZNOMATCH"], "wordLiterals": []},
+            }), encoding="utf-8")
+            proc = subprocess.run(
+                ["pwsh", "-NoProfile", "-File", str(exporter),
+                 "-Manifest", str(mdir / "m.json"), "-Target", str(temp / (label + "-out"))],
+                cwd=REPO, capture_output=True, text=True, errors="replace",
+            )
+            return f"rc={proc.returncode}\n" + (proc.stdout or "") + (proc.stderr or "")
+
+        with TempDir() as temp:
+            out = overlay_probe(temp, "g1",
+                                [{"from": "overlay/gone.md", "path": "docs/x.md"}], {})
+            c.check("G1 · a missing overlay source FAILS the export",
+                    "rc=0" not in out and "Overlay source missing" in out, out[:600])
+
+            out = overlay_probe(temp, "g2",
+                                [{"from": "overlay/a.md", "path": "docs/a.md"}],
+                                {"overlay/a.md": "tutor\n"})
+            c.check("G2 · a collision with the copy pass FAILS the export",
+                    "rc=0" not in out and "Overlay collision" in out, out[:600])
+
+            out = overlay_probe(temp, "g3", [],
+                                {"overlay/stray.md": "nobody declared me\n"})
+            c.check("G3 · an UNDECLARED file under overlay/ FAILS the export",
+                    "rc=0" not in out and "Undeclared" in out, out[:600])
+
+            # ⛔ G4 is the one a review found live: `from` was joined to the manifest folder with
+            # no containment test, so `../../../.env` pulled any file on disk into a PUBLIC
+            # export - and the leak scan does not save you, because it matches a fixed needle
+            # list, not "content that should not be here".
+            (temp / "outside.txt").write_text("OUT-OF-TREE-PRIVATE\n", encoding="utf-8")
+            out = overlay_probe(temp, "g4",
+                                [{"from": "../../outside.txt", "path": "docs/pulled.md"}], {})
+            c.check("G4 · a source OUTSIDE the manifest folder FAILS the export",
+                    "rc=0" not in out and "resolves outside the manifest folder" in out,
+                    out[:600])
+
     if c.block("F · the publish recipe DELETES, and only what git tracks"):
         door = REPO / ".agents" / "commands" / "smh-publish-teaching-edition.md"
         door_body = door.read_text(encoding="utf-8") if door.is_file() else ""
@@ -1267,12 +1323,47 @@ def main() -> int:
         # `gh pr create --head main` cannot open one either, so the door could not complete.
         # A branch has to be cut before anything is committed.
         instructions = _uncommented_instructions(door_body)
-        c.check("F7 · the door cuts a branch before it commits",
-                "git switch -c" in instructions,
-                "without it the push lands on `main` of a public repo, unreviewed")
+
+        # ⛔ ORDER, NOT PRESENCE. This row said "before it commits" and asserted only that the
+        # string existed somewhere - a source-contains assert, which cannot see ORDER, which is
+        # the trap `tests-must-gate-for-real` names by name. Measured: reordering the door to
+        # commit first left this row green. Compare positions.
+        _sw = instructions.find("git switch -c")
+        _ci = instructions.find("git commit -m")
+        c.check("F7 · the door cuts a branch BEFORE it commits",
+                _sw != -1 and _ci != -1 and _sw < _ci,
+                f"switch@{_sw} commit@{_ci} - without the branch the push lands on `main` of a "
+                "public repo, unreviewed")
         c.check("F8 · ...and never pushes a bare HEAD from the checked-out branch",
-                "git push origin HEAD" not in instructions,
+                not any(s in instructions for s in
+                        ("git push origin HEAD", "git push -u origin HEAD", "HEAD:main")),
                 "on this repo HEAD is `main`; the push must name the publish branch")
+
+        # ⛔ THE DESTRUCTIVE BLOCK MUST BE SAFE IN A FRESH SHELL. `$LOBBY` and `$SCRATCH` are set
+        # in an earlier block; a shell that does not inherit them computes
+        # `PUB=/Projects/sudo-command-center`, fails the `cd`, and runs the tracked-file delete in
+        # whatever directory it is standing in - measured, it deletes the LOBBY. Every fresh
+        # terminal and most tool calls are that shell.
+        c.check("F9 · the destructive block re-derives its own paths",
+                instructions.count("LOBBY=$(git rev-parse --show-toplevel)") >= 2,
+                "Step 2 must not depend on a variable an earlier block set")
+        c.check("F10 · ...and aborts on the first failure",
+                instructions.count("set -euo pipefail") >= 2,
+                "without it a failed `cd` is followed by the delete running where it landed")
+        c.check("F11 · ...and refuses a target that is not the published repo",
+                "*/Projects/sudo-command-center)" in instructions
+                and '[ -d "$PUB/.git" ]' in instructions,
+                "the wrong directory must be refused before anything is deleted")
+        c.check("F12 · ...and refuses an empty or absent export",
+                '[ -d "$SCRATCH/.agents" ]' in instructions,
+                "an unset SCRATCH makes the copy source `/.` - the filesystem root")
+
+        # ⛔ A FAILED EXPORT MUST NOT REACH THE COPY. The only thing between a FAILED leak scan
+        # and the wipe-and-copy was a sentence telling the reader to check the log.
+        c.check("F13 · a failed export stops the run before Step 2",
+                "EXPORT REFUSED" in instructions
+                and "grep -q 'TEACHING EDITION VALID'" in instructions,
+                "a leak hit must end the run mechanically, not by prose")
 
         # The three shapes that would each be irreversible on a PUBLIC repo with live clones.
         for banned, why in (

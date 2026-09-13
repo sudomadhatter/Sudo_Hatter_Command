@@ -142,6 +142,14 @@
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "contains": "**The export stamps where it came from, and a session tells you"
+    },
+    {
+      "path": ".agents/scripts/INDEX.md",
+      "contains": "| `teaching_edition_staleness.py` |"
+    },
+    {
+      "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "contains": "**The leak scan tells you where its needles came from"
     }
   ],
   "_comment_substitutions": "Case-sensitive content substitutions run before whole-file transforms. The final leak scan is case-insensitive and checks both content and paths.",
@@ -435,6 +443,7 @@
     ],
     "wholeWordLiterals": [
       "SCC"
-    ]
+    ],
+    "requireEnv": true
   }
 }
