@@ -84,9 +84,11 @@ Nothing was rewritten to silence it.
    environmental one. `git submodule update --init Projects/sudo-project-skeleton` cleared it. This
    is the check SCC-459 built, working exactly as designed one day later.
 
-**No `Verdict:` stamp.** `Review: none - quick lane; walkthrough approved by the operator.` No
-`/smh-code-review` ran, so there is no review record to cite and none is invented — a stamp would
-pull in the roster gate for lenses that never launched.
+**No `Verdict:` stamp**, and none is invented. No `/smh-code-review` ran on this lane, so there is
+no review record to cite; a stamp would pull in the roster gate for lenses that never launched. The
+quick lane's record line instead:
+
+Review: none - quick lane; walkthrough approved by the operator @ e7faa2215b4167f924380efbd4377d3ab393e7e5
 
 ## Decisions
 
