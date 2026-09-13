@@ -58,6 +58,10 @@ set -euo pipefail
 LOBBY=$(git rev-parse --show-toplevel)
 LOG=$(mktemp)
 SCRATCH=$(mktemp -d)/teaching-edition
+# Most of the leak scan's needles are the live .env's VALUES - 29 of 42 on this manifest. Without
+# it the scan still prints "clean" having checked a third of what it checks here, which is the
+# worst shape this guard can fail in: not an error, a quieter pass. Publishing needs the full set.
+[ -f "$LOBBY/.env" ] || { echo "no .env at the lobby root - the leak scan would run on a third of its needles. Refusing to publish."; exit 1; }
 pwsh -File "$LOBBY/.agents/scripts/export-teaching-edition.ps1" \
   -Manifest "$LOBBY/.agents/scripts/teaching-edition/lobby.manifest.json" \
   -Target "$SCRATCH" > "$LOG" 2>&1 || { tail -20 "$LOG"; echo "EXPORT REFUSED - nothing published"; exit 1; }

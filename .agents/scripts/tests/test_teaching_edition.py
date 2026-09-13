@@ -1390,6 +1390,15 @@ def main() -> int:
 
         # ⛔ A FAILED EXPORT MUST NOT REACH THE COPY. The only thing between a FAILED leak scan
         # and the wipe-and-copy was a sentence telling the reader to check the log.
+        # ⛔ THE .env REFUSAL LIVES HERE, NOT IN THE ENGINE. CI has no .env and never will - there
+        # are no secrets on a runner - so throwing in the exporter reddened the suite for a
+        # condition that only matters at PUBLICATION. The engine warns; the door, which is the
+        # only path to a public repo, refuses.
+        c.check("F14 · the door refuses to publish without the source .env",
+                'LOBBY/.env' in instructions and 'Refusing to publish' in instructions,
+                '29 of 42 needles come from the .env; without it the scan checks a third and '
+                'still prints clean')
+
         c.check("F13 · a failed export stops the run before Step 2",
                 "EXPORT REFUSED" in instructions
                 and "grep -q 'TEACHING EDITION VALID'" in instructions,

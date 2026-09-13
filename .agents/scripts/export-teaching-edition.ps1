@@ -716,11 +716,19 @@ if ($m.leakScan.PSObject.Properties.Name -contains 'requireEnv') {
 }
 $declaredNeedleCount = $needles.Count
 if ($requireEnv -and -not (Test-Path -LiteralPath $envPath)) {
-    throw ("Leak scan requires the source .env and it is missing. The manifest declares " +
-           "leakScan.requireEnv, because most of this scan's needles are the live .env's " +
-           "VALUES - without it the scan still reports 'clean' having checked a fraction of " +
-           "what it normally checks, which is worse than an error. Restore the .env (in a " +
-           "worktree it is a symlink to the real one) or clear requireEnv deliberately.")
+    # ⛔ THIS WARNS. IT DOES NOT THROW, AND THE SPLIT IS DELIBERATE.
+    # The first cut threw here and immediately reddened CI, which has no `.env` and never will -
+    # there are no secrets on a runner to leak. Throwing in the ENGINE punishes every caller for
+    # a condition that only matters at one moment: PUBLICATION. So the engine says loudly that
+    # its needle set is reduced, and `/smh-publish-teaching-edition` REFUSES to export at all
+    # without the .env - the door is the only path to a public repo, which makes it the only
+    # place the refusal belongs. test_teaching_edition.py pins both halves.
+    Write-Host ""
+    Write-Host "   ⚠ REDUCED NEEDLE SET - no .env at the source root." -ForegroundColor Yellow
+    Write-Host ("   The manifest declares leakScan.requireEnv, so most of this scan's needles " +
+                "are normally the live .env's VALUES.") -ForegroundColor Yellow
+    Write-Host ("   This export is fine to TEST with and MUST NOT BE PUBLISHED. The publish " +
+                "door refuses this state.") -ForegroundColor Yellow
 }
 if (Test-Path -LiteralPath $envPath) {
     foreach ($line in Get-Content -LiteralPath $envPath) {
