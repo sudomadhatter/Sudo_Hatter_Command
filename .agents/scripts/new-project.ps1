@@ -148,10 +148,30 @@ try {
   # this script simply never called it, so every clone began with a README telling a human to
   # run it by hand (SCC-459). Its own history is dropped above, so the substitution lands in
   # the scaffold commit and the project has never been called anything else.
-  $Py = if (Get-Command python3 -ErrorAction SilentlyContinue) { "python3" } else { "python" }
-  & $Py "scripts/rename-project.py" --name $Name --root "." | Out-Null
-  if ($LASTEXITCODE -ne 0) { throw "placeholder substitution failed (rc=$LASTEXITCODE)" }
-  Write-Host "  placeholders substituted -> $Name"
+  # ⛔ ABSENT AND FAILED ARE DIFFERENT, and conflating them made this step able to destroy the
+  # thing it was added to improve. `-SkeletonUrl` is overridable, so the clone source is not
+  # guaranteed to ship this helper — and the first cut threw on a missing file, AFTER the clone,
+  # leaving exactly the half-made project the pre-clone checks above exist to prevent. Measured:
+  # it took down three cases in test_teaching_edition.py, whose fixture skeleton carries no
+  # `scripts/`. Same rule the fixture builder states for itself — copied IF PRESENT, never
+  # demanded.
+  #
+  # ⛔ But absent is reported LOUDLY, never silently skipped: unsubstituted placeholders in a
+  # project's first commit is the defect this whole step was added to close (SCC-459), and a
+  # quiet skip would restore it while looking like success.
+  $Renamer = Join-Path $Dest "scripts/rename-project.py"
+  if (Test-Path $Renamer) {
+    $Py = if (Get-Command python3 -ErrorAction SilentlyContinue) { "python3" } else { "python" }
+    & $Py "scripts/rename-project.py" --name $Name --root "." | Out-Null
+    # Present but non-zero IS a real failure — the helper ran and could not do its job.
+    if ($LASTEXITCODE -ne 0) { throw "placeholder substitution failed (rc=$LASTEXITCODE)" }
+    Write-Host "  placeholders substituted -> $Name"
+    $Renamed = $true
+  } else {
+    Write-Host "  ⚠ this clone source ships no scripts/rename-project.py — placeholders NOT"
+    Write-Host "    substituted. Fill them by hand: grep for '{{' and for '<PROJECT_NAME>'."
+    $Renamed = $false
+  }
 
   # ── Question 2: does this project have a Jira board? ──────────────────────────────────────
   # Verified above, before the clone. Answering "yes" is what ARMS the project; there is no
@@ -217,6 +237,10 @@ if ($WantJira) {
 }
 Write-Host ""
 Write-Host "NEXT (manual, two steps):"
+if (-not $Renamed) {
+  Write-Host "  0. ⚠ PLACEHOLDERS — this clone source shipped no scripts/rename-project.py, so"
+  Write-Host "     they are still in the tree. grep for '{{' and for '<PROJECT_NAME>'."
+}
 Write-Host "  1. router.md — add a row mapping 'work about <X>' -> Projects/$Name/"
 Write-Host "  2. .gitmodules + gitlink — add it as a submodule if it should travel with the lobby:"
 Write-Host "       git submodule add <remote-url> Projects/$Name"

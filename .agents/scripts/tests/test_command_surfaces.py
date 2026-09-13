@@ -4544,15 +4544,30 @@ def main() -> int:
         SKEL = ROOT / "Projects/sudo-project-skeleton"
         readme = SKEL / "README.md"
         if not readme.is_file():
-            # ⛔ NAMED AND NON-PASSING, NEVER A SKIP — the same rule test_teaching_edition.py
-            # applies to a missing `pwsh`. A row that skips and scores green would claim the two
-            # setup paths were compared on a checkout where the skeleton is not even present,
-            # which is precisely the vacuous green this ticket exists to remove.
+            # ⛔ STRICT WHERE THE REMEDY IS ACTIONABLE, INCONCLUSIVE ONLY ON A RUNNER — SCC-118's
+            # ruling, reached here from the same direction `t9_inconclusive` reached it.
+            #
+            # The first cut of this row failed outright, on the `pwsh` reasoning: absence must be
+            # NAMED and NON-PASSING, never a silent skip. That is right on a workstation, where
+            # `git submodule update --init` complies and a red is a real red. **A CI runner is the
+            # case that reasoning never met.** `actions/checkout@v4` clones no submodules, and
+            # several of the declared ones are PRIVATE — the runner holds no credential for them,
+            # and parking one in a public repo's Actions to satisfy a doc-parity check is not a
+            # trade anyone should make. So the remedy there is not merely unrun; it is
+            # UNAVAILABLE, and a gate that is permanently red on a correct state blocks every
+            # merge forever. Measured: this row turned `main-write-gate` red on the very lane that
+            # introduced it.
+            #
+            # Keyed on the environment the platform DECLARES, never inferred from the symptom —
+            # "the file is missing" cannot distinguish "not cloned" from "deleted", and inventing
+            # a classifier for that is how a check ships that nothing can falsify.
+            on_runner = bool(os.environ.get("GITHUB_ACTIONS") or os.environ.get("CI"))
             c.check("CS-26 J the skeleton README briefs the same setup as the door",
-                    False,
-                    "Projects/sudo-project-skeleton is UNINITIALISED in this checkout, so the "
-                    "README/door parity is UNVERIFIED here — reported as a failure, not a skip. "
-                    "Run: git submodule update --init Projects/sudo-project-skeleton")
+                    on_runner,
+                    "Projects/sudo-project-skeleton is UNINITIALISED here, so the README/door "
+                    "parity is UNVERIFIED — and on this machine the remedy IS actionable, so "
+                    "this is a real red. Run: git submodule update --init "
+                    "Projects/sudo-project-skeleton")
         else:
             RD = readme.read_text(encoding="utf-8")
             c.check("CS-26 J the skeleton README asks the door's two questions",

@@ -94,6 +94,26 @@ Also wired: `scripts/rename-project.py`, which shipped in the skeleton from the 
 only difference. `test_command_surfaces.py` **CS-26** adds 10 rows over the door, the script and the
 skeleton README.
 
+⛔ **CORRECTION, made at close-out against evidence.** The plan's audit finding 2 said *nothing
+anywhere tested `new-project.ps1`*, derived from `ls .agents/scripts/tests/test_new_project*.py`
+returning *No such file or directory*. **That was wrong.** `test_teaching_edition.py` drives the real
+script end to end through three cases — *named local skeleton becomes an independent project with
+hooks and HEAD* · *successful scaffold prints project-local optional Jira setup* · *failed scaffold
+commit cannot be reported as a created project*. All three went **red** on this lane's Part D and are
+green now. A filename search is not a coverage measurement; the gate is. Part E still earns its
+place — nothing covered the two postures or the door's interview — but the premise was overstated.
+
+⛔ **CS-26's absent-submodule arm had to be rebuilt at close-out, and it was the very shape this
+lane warns about.** The first cut failed outright when the skeleton was not checked out, on the
+`pwsh` rule — *named and non-passing, never a skip*. That is right on a workstation, where
+`git submodule update --init` complies. **A CI runner is the case that reasoning never met:**
+`actions/checkout@v4` clones no submodules and several declared ones are private, so the remedy
+there is not merely unrun but **unavailable** — and the row turned `main-write-gate` red on the lane
+that introduced it, which is a check that can never be satisfied. It now follows SCC-118's existing
+ruling (`t9_inconclusive`): **strict everywhere the remedy is actionable, inconclusive only on a
+runner, keyed on the env var the platform declares rather than inferred from the symptom.** Both
+arms proven by control, README restored byte-for-byte afterwards.
+
 ### Outside the plan, on the operator's word mid-build
 
 `main-write-gate.yml` no longer runs on a draft PR, and fires on `ready_for_review`.
@@ -144,6 +164,21 @@ skeleton README.
 - **Half the draft fix is worse than none of it.** A `draft == false` job filter without
   `ready_for_review` in the trigger types leaves a PR opened as a draft permanently unmergeable —
   PR #105's shape. The predicate is written as an implication so the *pairing* is what is pinned.
+- **ABSENT and FAILED are different, and conflating them let Part D destroy what it improved.**
+  The first cut of the rename call threw when `scripts/rename-project.py` was missing — *after* the
+  clone, leaving exactly the half-made project the pre-clone checks exist to prevent. `-SkeletonUrl`
+  is overridable, so the clone source is not guaranteed to ship it. Caught by three
+  `test_teaching_edition.py` cases going red. Absent is now loud and non-fatal (and the closing
+  report says the placeholders were not substituted); present-but-non-zero still throws.
+- **A doc edit can break a generator anchored on its literal text.** The teaching-edition manifest
+  carries a `lineTransforms` rule pinned to the SOP's `/smh-new-project` row, which this lane
+  rewrote — so the export threw *"Line-transform anchor missing"* and four teaching-edition rows
+  went red in CI. The anchor is now read **off the SOP itself** rather than retyped, since a
+  retyped anchor is how an anchor drifts in the first place.
+- **`json.dumps` escapes non-ASCII by default, and that silently half-applied the repair.** The
+  manifest stores literal em-dashes; the escaped form matched nothing, so the `contains` key moved
+  and the `replacement` did not — which would have shipped a stale door description to the public
+  teaching edition. Caught by asserting both halves moved after re-parsing.
 - **A test earned its keep on its first run.** `CS-26 J` caught the skeleton README and the door
   asking the two setup questions in different words — two paths meant to be indistinguishable. It
   also forced skeleton PR #3, because #2 had merged one commit earlier.
@@ -153,6 +188,58 @@ skeleton README.
 - **AviationChat carries 5 dead `.agents/rules/` paths** of the same class this lane fixed in the
   skeleton. Its armed commit-msg gate rejects an `SCC` key by design, so the repair needs an `AVCH`
   ticket. Named in the plan's `## Your Actions`.
+- **An automated parity detector remains unbuilt, and is blocked on infrastructure rather than
+  design:** the lobby's `main-write-gate.yml` checks out no submodules, so the skeleton is an empty
+  directory on every runner, and the skeleton has no test harness at all. Either would have to be
+  built first. Recorded in `living-template-sync.md`.
+
+---
+
+## Gates
+
+```
+run_all.py                            94/95   (workstation)
+run_all.py  GITHUB_ACTIONS=true       95/95   (the runner's view — what CI sees)
+workflow_lint.py --toolkit-only       0 errors, 0 warnings, 8 info
+check_maps.py --depth3-only --strict  clean (no output)
+declared_change_set.py parse          26 entries, 0 incomplete, ZERO NEW files
+task_preflight.py                     0 errors, LANE: LOCAL, "clear to close out and merge"
+test_command_surfaces.py              355/355
+test_repo_template.py                 60/60
+test_main_write_gate_ci.py            64/64
+test_teaching_edition.py              74/74
+```
+
+⭐ **The one workstation red is `test_sops_prds_folder.py` T9, and it is not this lane's.** Its
+failure message is **byte-identical** in the clean shared lobby at `a2642da2`. Two prose references
+to `.agents/workflows/` — a surface SCC-394 retired — sit in accurate *historical* narration, and the
+path resolver cannot tell a deliberately-dead citation from a broken one. It is inconclusive on a
+runner by `t9_inconclusive`'s own ruling, which is why the runner column is 95/95 and why CI has
+been green on it all along. Nothing was rewritten to silence it: the history is correct as written.
+
+**Mutation evidence, every restore verified byte-for-byte:**
+
+| mutant | rows it took down |
+|---|---|
+| revert one launcher's `description:` | `CS-02`, `CS-18 Q` — named the file |
+| disarm the "yes" fixture | `T6` YES ×2 |
+| leave the "no" fixture armed | `T6` NO ×2 |
+| drop the workflow's draft filter | `skips a DRAFT pull request` |
+| drop `ready_for_review` from the types | `a draft filter ALWAYS ships with ready_for_review` |
+| remove the skeleton README, off a runner | `CS-26 J` — red, remedy named |
+| remove the skeleton README, on a runner | `CS-26 J` — inconclusive, correctly green |
+
+**No `Verdict:` stamp.** No `/smh-code-review` ran on this lane, so there is no review record to
+cite and none is invented.
+
+⭐ **The close-out found four defects the build had not.** Three were mine and are fixed above (the
+rename guard, the manifest anchor, the `json.dumps` escaping); the fourth was CS-26's own
+absent-submodule arm. All four were caught by gates going red, none by inspection — which is the
+property this ticket exists to establish, applied to the ticket itself.
+
+---
+
+## Your Actions`.
 - **An automated parity detector remains unbuilt, and is blocked on infrastructure rather than
   design:** the lobby's `main-write-gate.yml` checks out no submodules, so the skeleton is an empty
   directory on every runner, and the skeleton has no test harness at all. Either would have to be
