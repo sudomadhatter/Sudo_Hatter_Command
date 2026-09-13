@@ -1,0 +1,15 @@
+{
+  "id": "f2",
+  "result": "reproduced",
+  "command": [
+    "python3",
+    "-c",
+    "import re, pathlib; txt = pathlib.Path(\".agents/scripts/tests/test_memory_long_term_rule.py\").read_text(); b3 = re.search(r\"if c\\.block\\(\\\"3 \u00b7 Counter-examples\\\"\\):.*?(?=if c\\.block|\\Z)\", txt, re.S).group(0); assert any(k in b3 for k in [\"read_text\", \"RULES\", \"rule_text\", \"const_text\", \"Path\"])"
+  ],
+  "cwd": "/home/dlohn/Sudo_Hatter_Command/.claude/worktrees/scc-448-memory-is-disposable",
+  "exit_code": 1,
+  "sha": "f8d171584a3ba5697b750343091b1b3ea07c53d5",
+  "dirty_tree": true,
+  "recorded_at": "2026-09-12T22:14:19+00:00",
+  "output_tail": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nAssertionError\n"
+}

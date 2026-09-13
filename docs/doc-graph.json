@@ -10,9 +10,9 @@
     "edges": 806,
     "external": 27,
     "ambiguous": 200,
-    "dangling": 264,
+    "dangling": 263,
     "broken_paths": 59,
-    "unresolved_names": 205,
+    "unresolved_names": 204,
     "unresolvable": 9
   },
   "nodes": [
@@ -717,11 +717,6 @@
       "out": 32
     },
     {
-      "path": ".agents/rules/agent-memory-is-long-term-only.md",
-      "in": 3,
-      "out": 0
-    },
-    {
       "path": ".agents/rules/approval-cost-is-a-threat.md",
       "in": 3,
       "out": 3
@@ -789,6 +784,11 @@
     {
       "path": ".agents/rules/lobby-search.md",
       "in": 2,
+      "out": 0
+    },
+    {
+      "path": ".agents/rules/memory-is-disposable.md",
+      "in": 3,
       "out": 0
     },
     {
@@ -3642,11 +3642,6 @@
     },
     {
       "from": ".agents/rules/INDEX.md",
-      "to": ".agents/rules/agent-memory-is-long-term-only.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/rules/INDEX.md",
       "to": ".agents/rules/approval-cost-is-a-threat.md",
       "kind": "ref"
     },
@@ -3718,6 +3713,11 @@
     {
       "from": ".agents/rules/INDEX.md",
       "to": ".agents/rules/lobby-search.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/INDEX.md",
+      "to": ".agents/rules/memory-is-disposable.md",
       "kind": "ref"
     },
     {
@@ -5312,17 +5312,17 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
-      "to": ".agents/rules/agent-memory-is-long-term-only.md",
-      "kind": "link"
-    },
-    {
-      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "to": ".agents/rules/command-shape.md",
       "kind": "link"
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
       "to": ".agents/rules/jira.md",
+      "kind": "link"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "to": ".agents/rules/memory-is-disposable.md",
       "kind": "link"
     },
     {
@@ -5552,11 +5552,6 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
-      "to": ".agents/rules/agent-memory-is-long-term-only.md",
-      "kind": "ref"
-    },
-    {
-      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "to": ".agents/rules/approval-cost-is-a-threat.md",
       "kind": "ref"
     },
@@ -5593,6 +5588,11 @@
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "to": "docs/repo-map.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "to": ".agents/rules/memory-is-disposable.md",
       "kind": "ref"
     },
     {
@@ -6447,22 +6447,6 @@
       "target": "prose-formatting.md"
     },
     {
-      "from": ".agents/rules/agent-memory-is-long-term-only.md",
-      "target": "MEMORY.md"
-    },
-    {
-      "from": ".agents/rules/agent-memory-is-long-term-only.md",
-      "target": "file.md"
-    },
-    {
-      "from": ".agents/rules/agent-memory-is-long-term-only.md",
-      "target": "two-machines-mac-and-pc.md"
-    },
-    {
-      "from": ".agents/rules/agent-memory-is-long-term-only.md",
-      "target": "walkthrough.md"
-    },
-    {
       "from": ".agents/rules/artifacts-always-first.md",
       "target": "/implementation_plan.md"
     },
@@ -6593,6 +6577,14 @@
     {
       "from": ".agents/rules/jira.md",
       "target": "tickets/SCC-291.md"
+    },
+    {
+      "from": ".agents/rules/memory-is-disposable.md",
+      "target": "MEMORY.md"
+    },
+    {
+      "from": ".agents/rules/memory-is-disposable.md",
+      "target": "agent-memory-is-long-term-only.md"
     },
     {
       "from": ".agents/rules/mobile-mode.md",
@@ -6937,6 +6929,10 @@
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "target": "MEMORY.md"
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "target": "agent-memory-is-long-term-only.md"
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
@@ -8343,15 +8339,6 @@
       ]
     },
     {
-      "from": ".agents/rules/agent-memory-is-long-term-only.md",
-      "target": "AGENTS.md",
-      "candidates": [
-        ".agents/AGENTS.md",
-        ".agents/skills/react-best-practices/AGENTS.md",
-        "docs/AGENTS.md"
-      ]
-    },
-    {
       "from": ".agents/rules/artifacts-always-first.md",
       "target": "/_artifacts/AGENTS.md",
       "candidates": [
@@ -8556,6 +8543,15 @@
     },
     {
       "from": ".agents/rules/lobby-search.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
+      ]
+    },
+    {
+      "from": ".agents/rules/memory-is-disposable.md",
       "target": "AGENTS.md",
       "candidates": [
         ".agents/AGENTS.md",

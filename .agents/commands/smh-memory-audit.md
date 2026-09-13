@@ -1,5 +1,5 @@
 ---
-description: Audit the shared memory store (`_artifacts/_memory/`) and compact it — ground-truth every candidate memory against the live repo (does the rule/script/flag it names still exist? is the thing it calls CLOSED actually gone?), then propose retire / merge / compress / relocate with bytes freed and apply ONLY what the operator approves per item. Relocation is the fourth disposition and the first lever (SCC-73) — the store is two-tier, so a fact true only inside one project moves to that project's own store, which is a separate repo needing its own ticket key. Triggered by `tests/test_memory_store.py` at 90% of the 25 KB index cap; also runnable any time recall feels noisy. Never auto-deletes.
+description: Audit the shared memory store (`_artifacts/_memory/`) and compact it — ground-truth every candidate memory against the live repo (does the rule/script/flag it names still exist? is the thing it calls CLOSED actually gone?), then propose retire / merge / compress / relocate / promote to rule with bytes freed and apply ONLY what the operator approves per item. Relocation is the fourth disposition and the first lever (SCC-73) — the store is two-tier, so a fact true only inside one project moves to that project's own store, which is a separate repo needing its own ticket key. Triggered by `tests/test_memory_store.py` at 90% of the 25 KB index cap; also runnable any time recall feels noisy. Never auto-deletes.
 ---
 
 # /smh-memory-audit — Ground-truth the memory store, then compact it
@@ -96,6 +96,13 @@ system*, and claims outlive their subjects in silence. For each candidate, verif
 A candidate that **fails** its check is a retirement or a correction. A candidate that **passes** is
 kept, no matter how old — age is not the criterion, truth is.
 
+**Apply the deletion test (SCC-448).** Run the deletion test on every surviving memory: *delete it in
+your head, then look at the damage: slower means memory; wrong means a rule and a ticket.* If loss of
+this note causes an agent to make wrong architectural decisions, violate hard stops, or break
+contracts, it is **load-bearing** and does not belong solely in disposable memory — classify it as a
+candidate to **Promote to rule**. If loss only makes an agent slower (e.g. searching extra paths or
+testing an interface again), it remains legitimately memory.
+
 ## Step 4 — Propose (STOP)
 
 One scannable block, **before touching anything outside `_artifacts/`**. Every line carries what it
@@ -116,6 +123,9 @@ Index: <before> / 25600 bytes (<pct>%)  →  projected <after> (<pct>%)
 
 ### 🗜️ Compress (index line only, body untouched)
 - `<a>` + `<b>` + `<c>` → one grouped row                           [frees ~<N> B]
+
+### 📜 Promote to rule (load-bearing — fails deletion test; needs a rule/code home)
+- `<file>.md` — loss makes agent wrong: <consequence>; needs rule/code + ticket
 
 ### 📦 Relocate to a project store
 - `<file>.md` → `Projects/<name>/_artifacts/_memory/`                [frees ~<N> B from the index]
@@ -142,6 +152,13 @@ referenced a retired memory (a retirement that leaves danglers just moves the me
 **Compression is a rewrite of the index line, never of a memory body.** If a lesson genuinely needs
 shortening, that is a per-file approval of its own — the body is where the content is supposed to
 live.
+
+### 📜 Promote to rule (apply approved promotions)
+
+For each approved promotion:
+1. **Do NOT delete the memory file yet** — invariant: *a memory is never the only copy of anything*.
+2. Draft the backing rule in `.agents/rules/<name>.md` (or hook, command, or code) and mint the backing ticket.
+3. Once the rule/ticket exists on disk or git, update the memory note to point to the new rule or remove the memory file (`git rm _artifacts/_memory/<file>.md` and drop its line from `MEMORY.md`).
 
 ### 📦 Relocation — the fourth disposition, and the first lever to reach for (SCC-73)
 
