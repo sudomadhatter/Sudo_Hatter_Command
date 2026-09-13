@@ -1,4 +1,8 @@
 {
+  "env": {
+    "CLAUDE_CODE_SUBAGENT_MODEL": "opus",
+    "CLAUDE_CODE_SUBAGENT_MODEL_FORCE": "1"
+  },
   "permissions": {
     "ask": [
       "mcp__github__merge_pull_request",
