@@ -1261,6 +1261,19 @@ def main() -> int:
                         (pub / ".git").is_dir(),
                         "aimed one level wrong this eats .git and the history every clone depends on")
 
+        # ⛔ F7 IS A REAL DEFECT THIS DOOR SHIPPED WITH, caught on its FIRST live run. The
+        # published repo is checked out on `main`, so `git push origin HEAD` landed the entire
+        # refresh directly on `main` of a PUBLIC repo with no PR and no review - and
+        # `gh pr create --head main` cannot open one either, so the door could not complete.
+        # A branch has to be cut before anything is committed.
+        instructions = _uncommented_instructions(door_body)
+        c.check("F7 · the door cuts a branch before it commits",
+                "git switch -c" in instructions,
+                "without it the push lands on `main` of a public repo, unreviewed")
+        c.check("F8 · ...and never pushes a bare HEAD from the checked-out branch",
+                "git push origin HEAD" not in instructions,
+                "on this repo HEAD is `main`; the push must name the publish branch")
+
         # The three shapes that would each be irreversible on a PUBLIC repo with live clones.
         for banned, why in (
             ("rm -rf", "a glob delete takes the reader's untracked files and can reach .git"),

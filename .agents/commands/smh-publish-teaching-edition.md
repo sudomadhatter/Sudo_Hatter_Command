@@ -123,18 +123,25 @@ Then **STOP and hand it to Mr. Hatter** with:
 ⛔ **Publishing to a public repo stays a deliberate human act.** Do not commit, do not push, do not
 open the PR until he has read the deletions and said the word.
 
-## Step 4 — Commit on top and open the PR
+## Step 4 — Commit on a BRANCH and open the PR
 
 Only after his word:
 
 ```bash
 cd "$PUB"
+git switch -c "chore/publish-<short-sha>"
 git commit -m "chore: refresh teaching edition from lobby <short-sha>"
-git push origin HEAD
-gh pr create --base main --head "$(git rev-parse --abbrev-ref HEAD)" \
+git push -u origin "chore/publish-<short-sha>"
+gh pr create --base main --head "chore/publish-<short-sha>" \
   --title "chore: refresh teaching edition from lobby <short-sha>" \
   --body "<the three counts from Step 3, the deleted paths, and the source sha>"
 ```
+
+⛔ **CUT THE BRANCH FIRST — the published repo is checked out on `main`.** Without the `switch`,
+`git push origin HEAD` lands the whole refresh **directly on `main` of a PUBLIC repo**, with no
+review and no PR, and `gh pr create --head main` cannot open one. Earlier refreshes did commit
+straight to `main`; house law is that every landing on `main` goes through a pull request the
+operator merges, and a public repo is the last place to make an exception.
 
 ⛔ **No `--force`. No `--force-with-lease`. No `git init`. No orphan branch.** If the push is
 rejected, the remedy is to fetch and rebase-or-merge like any other repo — never to overwrite. A
