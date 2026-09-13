@@ -91,7 +91,7 @@ PUB="$LOBBY/Projects/sudo-command-center"
 
 # Refuse unless BOTH ends are what they claim to be, before anything is deleted.
 [ -n "${SCRATCH:-}" ] && [ -d "$SCRATCH/.agents" ] || { echo "no export to publish"; exit 1; }
-[ -d "$PUB/.git" ] || { echo "$PUB is not the published repo"; exit 1; }
+[ -e "$PUB/.git" ] || { echo "$PUB is not the published repo"; exit 1; }   # -e: a submodule .git is a FILE
 case "$PUB" in */Projects/sudo-command-center) ;; *) echo "refusing: wrong target"; exit 1 ;; esac
 
 cd "$PUB"

@@ -1382,7 +1382,7 @@ def main() -> int:
                 "without it a failed `cd` is followed by the delete running where it landed")
         c.check("F11 · ...and refuses a target that is not the published repo",
                 "*/Projects/sudo-command-center)" in destructive
-                and '[ -d "$PUB/.git" ]' in destructive,
+                and '[ -e "$PUB/.git" ]' in destructive,
                 "the wrong directory must be refused before anything is deleted")
         c.check("F12 · ...and refuses an empty or absent export",
                 '[ -d "$SCRATCH/.agents" ]' in destructive,
