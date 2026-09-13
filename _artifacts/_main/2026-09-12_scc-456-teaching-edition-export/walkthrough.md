@@ -126,13 +126,13 @@ outside a `c.block`, which breaks the `--case` filter contract.
 
 | Gate | Result |
 |---|---|
-| `run_all.py` | **95/95 files** @ `a74f3d9c` (94 before; this lane adds one file) |
-| `test_teaching_edition.py` | 63/63 (47 at the start of Part C) |
-| `test_teaching_edition_staleness.py` | 18/18, arming rows seen RED before the hook was armed |
+| `run_all.py` | **95/95 files** @ `9ff10d2b`, receipt at [gates/suite.json](gates/suite.json) (94 before; this lane adds one file) |
+| `test_teaching_edition.py` | 72/72 (47 at the start of Part C; block G and F9-F13 came from the review) |
+| `test_teaching_edition_staleness.py` | 19/19, arming rows seen RED before the hook was armed |
 | `test_command_surfaces.py` | 345/345 |
 | `test_twin_parity.py` | 76/76 |
 | Export | `TEACHING EDITION VALID` |
-| Leak scan | clean — 42 needles, 0 hits (contents AND paths) |
+| Leak scan | clean — 42 needles (13 declared + 29 from `.env`), 0 hits (contents AND paths) |
 | Independent needle grep over the published tree | 0 for every needle; `sudomadhatter` appears only in GitHub clone URLs readers need |
 | `workflow_lint --toolkit-only` | 0 errors, 0 warnings |
 | `check_maps --depth3-only --strict` | clean |
@@ -178,6 +178,120 @@ which of the two is detected and which is not. Its own ticket, after this one.
 
 ---
 
-## Code Review
+review-runtime: fan-out
 
-Pending — `/smh-code-review` runs next in this lane.
+## Code Review (2026-09-12)
+
+### Step 0.7 — blast radius re-derived against current `main`
+
+`main` was absorbed into this lane at `21922b71` (merge of `origin/main` `c53ee511`), so the
+re-derivation runs against the tree that will actually exist.
+
+1. **Did anything this diff references move on `main`?** No. `git diff --name-only <base>..origin/main`
+   ∩ this lane's changed set is **empty** after the absorb. Every repo path the diff names was
+   re-resolved by `check_links.py --base origin/main`: 2 unresolved, both inside the approved plan
+   text, which names `.agents/workflows/INDEX.md` and `.agents/project-own.txt` as files that **no
+   longer exist** — that is the sentence's point, and the plan cannot be edited after its approval
+   stamp without breaking the approval gate.
+2. **True overlap and merge state.** Six files overlapped before the absorb — `.sync-manifest.json`,
+   `_artifacts/_main/INDEX.md`, the SOP, its changelog, and both doc-graph files. Five conflicted.
+   The three **generated** ones were resolved by regenerating (`sync-agents.ps1`, `refresh_maps.py
+   --repair`), never hand-merged; the two **row lists** kept both sides' rows, because SCC-456's
+   rows and SCC-448's row are both true and there is no winner to pick. `git merge-tree` against
+   `origin/main` now returns a clean tree with no conflict messages.
+3. **Sibling lanes.** One live worktree, `chore/SCC-186-standing-push`; its remote branch has already
+   landed (0 files vs `origin/main`), so there is no landing-order dependency in either direction.
+
+`risk_seam.py classify` returns `unclassified` with empty tiers — the permanent, correct answer for
+the command centre, which carries no code graph (SCC-289). Every judgement below comes from reading
+the diff.
+
+### The roster
+
+review-runtime:  fan-out
+lens_isolation:  shared — three lenses in their own clean contexts over one committed diff
+lenses_run:
+- correctness · ok
+- gate-integrity · ok
+- acceptance-auditor · ok
+lenses_counted:  3/3
+lenses_na:       none
+findings:        11 fix (0 dropped — no reproduction · 4 recorded)
+dispositions:    per-lens: correctness=4/0/0 · gate-integrity=3/0/4 · acceptance=4/0/0
+drift:           3 undeclared groups, all judged legitimate — check_links.py + its test (the overlay's published-root links), test_twin_parity.py NOT_PAIRED (the new lobby-only door), and the generated mirrors (skills INDEX, .claude rules, doc-graph); plus new-project.ps1 and its door, which are real drift the operator authorised by name
+severity_floor:  none
+notes:           every critical and important reproduced; both test lenses proved their claims with mutants and restored byte-for-byte. No finding was dropped for want of a reproduction.
+
+### What the review found — 1 critical, 10 important, every one mine
+
+**The publish door's own destructive step could have deleted this workspace.** `critical`. Step 2
+re-used `$LOBBY` and `$SCRATCH` from an earlier fenced block, with no `set -e` and no chaining. In a
+fresh shell — every new terminal, every copy-paste, most tool calls — `PUB` computes to
+`/Projects/sudo-command-center`, the `cd` fails, and `git ls-files -z | xargs -0 rm -f` then runs in
+whatever directory the shell is standing in. The lens measured it deleting the lobby's tracked tree.
+With `$SCRATCH` unset the copy source also becomes `/.`, the filesystem root, aimed into a public
+repo. Both destructive blocks now re-derive their own paths, run under `set -euo pipefail`, and
+refuse unless the scratch holds a real export, the target is a git repo, and its path ends in
+`Projects/sudo-command-center`.
+
+**A failed export's bytes were still copied into the public repo.** `important`. Nothing mechanical
+sat between the exporter's exit code and the wipe-and-copy — the guard was a sentence telling the
+reader to check the log. The lens planted a needle, watched the export exit non-zero on the leak
+hit, and watched the needle land in the published tree anyway.
+
+**An overlay could pull any file on the disk into a public export.** `important`. `from` was joined
+to the manifest folder with no containment test, so `"from": "../../../.env"` shipped — and the leak
+scan does not save you there, because it matches a fixed needle list, not "content that should not
+be here". The copy pass has enforced exactly this containment since it was written; the overlay was a
+second door into the same tree missing the same lock.
+
+**An absent `.env` silently removed two thirds of the leak scan.** `important`. 13 declared literals,
+42 needles at scan time — the other 29 are the live `.env`'s values, loaded behind a bare
+`Test-Path`. A fresh clone, a CI runner or a worktree without the symlink has no `.env`, and the scan
+then prints `clean` having checked a third of what it normally checks. Not an error: a quieter pass.
+The manifest declares `leakScan.requireEnv`, the export stops without it, and the count now prints
+its provenance.
+
+**Three of my own new cases were vacuous, each proven with a mutant.** `important` ×3. `F7` said
+"cuts a branch BEFORE it commits" and asserted only that the string existed somewhere — a
+source-contains assert, which cannot see order. `F2`/`F3`, the rows proving the staleness reporter is
+armed, grepped the whole hook file, and the script's name also appears in the `TE=` path assignment,
+so repointing the hook's call at a different script left both green while the reporter never ran.
+`K3`, the control proving the link-checker convention narrows, proved nothing: its citing path was 41
+characters shorter than the real staging root, so the re-based path escaped above it and was
+discarded for an unrelated reason.
+
+**The overlay's refusals were unpinned while two records claimed they were pinned.** `important`. The
+manifest's own comment said "Four properties, each pinned by a case in `test_teaching_edition.py`";
+the plan baked the same claim. There were zero overlay assertions anywhere.
+
+**A declared edit was 3/4 kept.** `important`. `teaching_edition_staleness.py` was in no index.
+
+**Undeclared change to `/smh-new-project`.** `important` → `ruled`. Real drift against the Declared
+Change Set, and authorised: the operator's *"yes just fix it"* covered the validator findings, which
+included this file and its door by name. Recorded here rather than silently absorbed.
+
+### Recorded, not fixed (4)
+
+`F6`'s ban can be evaded by writing a destructive instruction as prose with an inline code span — no
+cheap fix exists, because the door's own warnings use the same spellings. `E4` is not a genuinely
+separate arm from `E3`. `E3` checks key names, so a leak appended to an existing line would pass it
+(mitigated by `E5` and the scan). `F8`'s ban is spelled literally. Two more observations: the
+`.agents/scripts/INDEX.md` explainer ships while naming the two pruned scripts, and the tracked-only
+clear leaves empty directories in a local checkout — harmless, since `git clone` creates none.
+
+### Mutation sweeps — three tables, 12 of 13 killed, every restore verified
+
+| Sweep | Result |
+|---|---|
+| Part C guards (M1, M2r, M3, M5) | 4/4 killed |
+| Review fixes (R1–R5) | 5/5 killed |
+| Earlier Part C pass | M2 survived → re-aimed; M4 **defective**, dropped |
+
+Three mutants had to be re-aimed before they meant anything, and each re-aim taught something. `M2`
+disabled one of two guards and the second caught it. `R4` first removed two lines, so the wrong case
+died — and once re-aimed it **survived**, exposing that `F9` counted `LOBBY=` occurrences across the
+whole door, which has three, so deleting the one that mattered left the count at two. `F9`–`F12` now
+locate the fenced block containing `git ls-files -z` and assert on that block alone.
+
+**Verdict: PASS @ `9ff10d2b`**
