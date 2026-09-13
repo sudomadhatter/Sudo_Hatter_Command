@@ -10,4 +10,7 @@ close_command: smh-close-task-merge-tree
 # `sudo-command-center` is a SUBMODULE and its tree is REGENERATED, never edited: it lands by
 # its own PR in that repo (no Jira key, separate history) and this lane carries only the
 # pointer bump. That is what the secondary_repos row below declares.
-secondary_repos: [sudo-command-center]
+secondary_repos:
+  - repo: Projects/sudo-command-center
+    landing: independent-task
+    ticket: SCC-456
