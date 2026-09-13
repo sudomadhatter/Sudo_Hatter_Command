@@ -1,0 +1,449 @@
+{
+  "name": "command-center teaching edition",
+  "source": "../../..",
+  "generateDocGraph": true,
+  "_comment_include": "The command-center shell: shared toolkit, platform doors, gates, BMAD module, operator docs, and root routing/config. Projects and session history are deliberately empty. The paired project skeleton remains its own maintained repository and is cloned later by smh-new-project.",
+  "include": [
+    ".agents",
+    ".claude",
+    ".opencode",
+    ".agent",
+    ".roo",
+    ".roomodes",
+    ".githooks",
+    ".vscode",
+    "_bmad",
+    "docs",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "GEMINI.md",
+    "router.md",
+    "opencode.json",
+    ".mcp.json",
+    ".env.example",
+    ".gitattributes",
+    ".gitignore",
+    "requirements.txt",
+    "requirements-tdad.txt"
+  ],
+  "_comment_exclude": "Active bindings, machine-local state, source-only export machinery, and domain-specific incident doors do not belong in a fresh shell. An exclude naming a path that does not exist is harmless, so these are pruned only when the thing is RETIRED, never merely absent: `.claude/worktrees` is absent from a worktree checkout and present in the lobby the export actually runs from, and `.claude/scratchpad-root` is a machine-local pointer that would leak a real path if it came back unguarded. Both stay.",
+  "exclude": [
+    ".agents/active-project.txt",
+    ".agents/jira.conf",
+    ".agents/scripts/git-hooks/JIRA-ENFORCE",
+    ".agents/scripts/export-teaching-edition.ps1",
+    ".agents/scripts/teaching-edition",
+    ".agents/scripts/tests/test_teaching_edition.py",
+    ".agents/scripts/tests/fixtures/avch58_your_actions.md",
+    "docs/_scc_sops_prds/sentry_error_response_team.md",
+    "docs/doc-graph.json",
+    "docs/doc-graph.md",
+    "docs/.maps-journal.jsonl",
+    "docs/.maps-state.json",
+    ".agents/commands/sentry-security-team-avch.md",
+    ".agents/skills/sentry-security-team-avch",
+    ".opencode/commands/sentry-security-team-avch.md",
+    ".claude/worktrees",
+    ".claude/settings.local.json",
+    ".claude/scratchpad-root",
+    ".agents/commands/smh-publish-teaching-edition.md",
+    ".opencode/commands/smh-publish-teaching-edition.md",
+    ".agents/skills/smh-publish-teaching-edition",
+    ".claude/skills/smh-publish-teaching-edition",
+    ".roo/commands/smh-publish-teaching-edition.md",
+    ".agents/scripts/teaching_edition_staleness.py",
+    ".agents/scripts/tests/test_teaching_edition_staleness.py"
+  ],
+  "_comment_emptyDirs": "Top-level shape only; no project names, personal notes, BMAD output, or session history cross the export boundary.",
+  "emptyDirs": [
+    "_artifacts",
+    "_bmad-output",
+    "Projects",
+    "_my_resources"
+  ],
+  "excludeAnywhere": [
+    ".git",
+    ".venv",
+    ".venv_stale",
+    "node_modules",
+    "__pycache__",
+    ".pytest_cache",
+    ".gitnexus",
+    ".code-review-graph",
+    "_artifacts",
+    "_bmad-output",
+    "_my_resources",
+    "Projects",
+    "scratch",
+    "_routing-canary"
+  ],
+  "_comment_lineTransforms": "Path-scoped catalog pruning for assets deliberately absent from a fresh shell. Every anchor is required so source drift fails the export instead of reviving a ghost.",
+  "lineTransforms": [
+    {
+      "path": ".agents/commands/INDEX.md",
+      "contains": "`sentry-security-team-avch` →"
+    },
+    {
+      "path": ".agents/commands/INDEX.md",
+      "contains": "| **Security / error team**",
+      "replacement": "| **Security / error team** | `cicd-mobile-error-team` | Live incident response is project-owned and becomes available only after a project installs its own runbook. |"
+    },
+    {
+      "path": ".agents/commands/INDEX.md",
+      "contains": "`sudo-incident-response` → `sentry-security-team-avch`"
+    },
+    {
+      "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "contains": "| `/sentry-security-team-avch` |"
+    },
+    {
+      "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "contains": "[sentry_error_response_team.md](sentry_error_response_team.md)"
+    },
+    {
+      "path": ".agents/.sync-manifest.json",
+      "contains": "\"sentry-security-team-avch.md\""
+    },
+    {
+      "path": ".agents/scripts/INDEX.md",
+      "contains": "- `export-teaching-edition.ps1`"
+    },
+    {
+      "path": ".agents/scripts/INDEX.md",
+      "contains": "- `teaching-edition/`"
+    },
+    {
+      "path": ".gitignore",
+      "contains": ".claude/worktrees/",
+      "replacement": ".claude/worktrees/\n\n# Tutor mode, teaching edition only. `.training-mode` is TRACKED - it is what the tutor reads.\n# `.training-mode-off` is how a reader turns the tutor off on their own machine without editing\n# the tracked file, so it must never show up as a dirty working tree in their clone.\n.training-mode-off"
+    },
+    {
+      "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "contains": "| `/smh-new-project` | Scaffold a new workspace. |",
+      "replacement": "| `/smh-new-project` | Scaffold a new workspace. |\n| `/smh-tour` | **Teaching edition only.** Walks a new owner through this command centre from the live SOP — the branch model, the Jira flow, the gates, the artifacts, the worktrees and the close-out — stopping at each step so you drive. Start here. |\n| `/smh-training` | **Teaching edition only.** Turns tutor mode on and off. The `.training-mode` sentinel at the repo root is what the tutor reads; this door is how you set it, and `.training-mode-off` disables it locally without editing the tracked file. |"
+    },
+    {
+      "path": ".agents/commands/INDEX.md",
+      "contains": "`smh-publish-teaching-edition` | scaffold a workspace",
+      "replacement": "| **System builder** (lobby) | `smh-new-project` · `smh-sync-agents` · `smh-sync-vscode` | scaffold a workspace, publish the master toolkit to every local door and machine-global cache, or synchronize VS Code environment between this PC's two sides. `/smh-sync-agents` also owns the globals-only pass (its `-GlobalsOnly` section). |"
+    },
+    {
+      "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "contains": "| `/smh-publish-teaching-edition` | Refreshes the command centre"
+    },
+    {
+      "path": ".agents/.sync-manifest.json",
+      "contains": "smh-publish-teaching-edition"
+    },
+    {
+      "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "contains": "**The door that does all of this is `/smh-publish-teaching-edition`"
+    },
+    {
+      "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "contains": "**The export stamps where it came from, and a session tells you"
+    },
+    {
+      "path": ".agents/scripts/INDEX.md",
+      "contains": "| `teaching_edition_staleness.py` |"
+    },
+    {
+      "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "contains": "**The leak scan tells you where its needles came from"
+    }
+  ],
+  "_comment_substitutions": "Case-sensitive content substitutions run before whole-file transforms. The final leak scan is case-insensitive and checks both content and paths.",
+  "substitutions": [
+    {
+      "from": "AGY_AVIATIONCHAT · NEXgen-VR-Director",
+      "to": "none in a fresh shell; add named projects after creation"
+    },
+    {
+      "from": "AGY_AVIATIONCHAT keeps a copy of this page (its `_my_resources/_quick_reference/` folder, file\n`sudo_workflows_testing.md`). That copy is **stale** — a fifth of this page's size — and it sits in\nthat project's `_my_resources/`, which agents do not scan. **This page is canonical**; re-syncing\nthe twin is an AVCH ticket of its own, not something a lobby lane may do.",
+      "to": "A fresh teaching shell has no project-specific SOP copies. This page is canonical; each named\nproject may add its own references after creation without replacing this command-center source."
+    },
+    {
+      "from": "AGY_AVIATIONCHAT",
+      "to": "YOUR_PROJECT"
+    },
+    {
+      "from": "AVIATIONCHAT",
+      "to": "YOUR_PROJECT"
+    },
+    {
+      "from": "Aviation Chat",
+      "to": "your project"
+    },
+    {
+      "from": "AviationChat",
+      "to": "your project"
+    },
+    {
+      "from": "aviationChat",
+      "to": "your-project"
+    },
+    {
+      "from": "aviationchat",
+      "to": "your-project"
+    },
+    {
+      "from": "AVCH-",
+      "to": "PROJECT-"
+    },
+    {
+      "from": "AVCH",
+      "to": "PROJECT"
+    },
+    {
+      "from": "AvCh",
+      "to": "Project"
+    },
+    {
+      "from": "avch",
+      "to": "project"
+    },
+    {
+      "from": "SCC-",
+      "to": "HISTORY-"
+    },
+    {
+      "from": "SCC",
+      "to": "YOUR_KEY",
+      "word": true
+    },
+    {
+      "from": "NEXGen",
+      "to": "YOUR_PROJECT"
+    },
+    {
+      "from": "NEXgen",
+      "to": "YOUR_PROJECT"
+    },
+    {
+      "from": "DANIEL",
+      "to": "THE OPERATOR"
+    },
+    {
+      "from": "Daniel",
+      "to": "the operator"
+    },
+    {
+      "from": "daniel",
+      "to": "operator"
+    },
+    {
+      "from": "dlohneiss@gmail.com",
+      "to": "you@example.com"
+    },
+    {
+      "from": "dlohneiss",
+      "to": "your-user"
+    },
+    {
+      "from": "Dlohn",
+      "to": "YourUser"
+    },
+    {
+      "from": "dlohn",
+      "to": "your-local-user"
+    },
+    {
+      "from": "Sudos-MacBook-Pro.local",
+      "to": "your-machine.local"
+    },
+    {
+      "from": "sudomadhatter@gmail.com",
+      "to": "you@example.com"
+    },
+    {
+      "from": "856831340418",
+      "to": "YOUR_PROJECT_NUMBER"
+    },
+    {
+      "from": "/Users/sudohatter/Sudo_Hatter_Command",
+      "to": "."
+    },
+    {
+      "from": "sudohatter",
+      "to": "your-local-user"
+    },
+    {
+      "from": "Sudo_Hatter_Command",
+      "to": "command-center"
+    },
+    {
+      "from": "sudo_hatter_command",
+      "to": "command-center"
+    },
+    {
+      "from": "Fresh_Workspace_BMAD",
+      "to": "sudo-project-skeleton"
+    },
+    {
+      "from": "clean-bmad",
+      "to": "sudo-project-skeleton"
+    },
+    {
+      "from": "https://sudo-command.atlassian.net/jira/software/projects/SCC/boards/2",
+      "to": "https://YOUR-SITE.atlassian.net/jira/software/projects/YOUR_KEY/boards/YOUR_BOARD"
+    },
+    {
+      "from": "https://sudo-command.atlassian.net",
+      "to": "https://YOUR-SITE.atlassian.net"
+    },
+    {
+      "from": "sudo-command.atlassian.net",
+      "to": "YOUR-SITE.atlassian.net"
+    },
+    {
+      "from": "SCC Jira board",
+      "to": "Jira board"
+    },
+    {
+      "from": "SCC and AVCH both have it today.",
+      "to": "Add it when you configure a Jira board."
+    },
+    {
+      "from": "Sully",
+      "to": "Ada",
+      "word": true
+    },
+    {
+      "from": "sully",
+      "to": "ada",
+      "word": true
+    },
+    {
+      "from": "SULLY",
+      "to": "ADA",
+      "word": true
+    },
+    {
+      "from": "Igor",
+      "to": "Bruno",
+      "word": true
+    },
+    {
+      "from": "igor",
+      "to": "bruno",
+      "word": true
+    },
+    {
+      "from": "IGOR",
+      "to": "BRUNO",
+      "word": true
+    }
+  ],
+  "_comment_overlay": "Teaching-only surfaces that do not exist in the source tree, ADDED at the export path named by `path` from the file named by `from` (relative to this manifest's folder). Four properties, each pinned by a case in test_teaching_edition.py: (1) a declared overlay whose `from` is missing FAILS the export - a tutor that silently stops shipping is the defect this mechanism exists to end; (2) a file under overlay/ that no entry declares FAILS the export - an undeclared file must never reach a public repo; (3) an overlay may not land on a path the copy pass already wrote - that is a collision and the export refuses rather than guessing which wins; (4) overlays are written BEFORE `substitutions` and BEFORE the leak scan, never after. Property 4 is the load-bearing one: copy-last is the natural implementation and it is a hole straight through the only guard this export has. Property 3 is what replaces copy-last as the protection against being overwritten. `.agents/workflows/*` is deliberately absent - SCC-394 retired that surface and the export must not revive it.",
+  "overlay": [
+    {
+      "path": ".agents/commands/smh-tour.md",
+      "from": "overlay/.agents/commands/smh-tour.md"
+    },
+    {
+      "path": ".agents/commands/smh-training.md",
+      "from": "overlay/.agents/commands/smh-training.md"
+    },
+    {
+      "path": ".agents/rules/training-mode.md",
+      "from": "overlay/.agents/rules/training-mode.md"
+    },
+    {
+      "path": ".agents/skills/smh-tour/SKILL.md",
+      "from": "overlay/.agents/skills/smh-tour/SKILL.md"
+    },
+    {
+      "path": ".agents/skills/smh-training/SKILL.md",
+      "from": "overlay/.agents/skills/smh-training/SKILL.md"
+    },
+    {
+      "path": ".claude/skills/smh-tour/SKILL.md",
+      "from": "overlay/.claude/skills/smh-tour/SKILL.md"
+    },
+    {
+      "path": ".claude/skills/smh-training/SKILL.md",
+      "from": "overlay/.claude/skills/smh-training/SKILL.md"
+    },
+    {
+      "path": ".opencode/commands/smh-tour.md",
+      "from": "overlay/.opencode/commands/smh-tour.md"
+    },
+    {
+      "path": ".opencode/commands/smh-training.md",
+      "from": "overlay/.opencode/commands/smh-training.md"
+    },
+    {
+      "path": ".roo/commands/smh-tour.md",
+      "from": "overlay/.roo/commands/smh-tour.md"
+    },
+    {
+      "path": ".roo/commands/smh-training.md",
+      "from": "overlay/.roo/commands/smh-training.md"
+    },
+    {
+      "path": ".training-mode",
+      "from": "replacements/training-mode-sentinel"
+    },
+    {
+      "path": ".agents/jira.conf.example",
+      "from": "replacements/jira-conf.example"
+    }
+  ],
+  "_comment_transforms": "Whole-file replacements for files that DO exist in the source tree. A target that does not exist belongs in `overlay` instead - `.training-mode` and `.agents/jira.conf.example` moved there when they left the lobby.",
+  "transforms": [
+    {
+      "path": ".agents/rules/operator-profile.md",
+      "replaceWith": "replacements/operator-profile.md"
+    },
+    {
+      "path": ".agents/rules/jira.md",
+      "replaceWith": "replacements/jira.md"
+    },
+    {
+      "path": ".agents/maintained-projects.txt",
+      "replaceWith": "replacements/maintained-projects.txt"
+    },
+    {
+      "path": "_artifacts/_memory/MEMORY.md",
+      "replaceWith": "replacements/memory-MEMORY.md"
+    },
+    {
+      "path": "_artifacts/_memory/README.md",
+      "replaceWith": "replacements/memory-README.md"
+    },
+    {
+      "path": "router.md",
+      "replaceWith": "replacements/router.md"
+    },
+    {
+      "path": "README.md",
+      "replaceWith": "replacements/lobby-README.md"
+    }
+  ],
+  "leakScan": {
+    "literals": [
+      "Daniel",
+      "dlohneiss",
+      "dlohn",
+      "Sudos-MacBook-Pro.local",
+      "sudohatter",
+      "sudomadhatter@gmail.com",
+      "AviationChat",
+      "Aviation Chat",
+      "NEXgen",
+      "Sudo_Hatter_Command",
+      "Fresh_Workspace_BMAD",
+      "clean-bmad",
+      "sudo-command.atlassian.net"
+    ],
+    "wordLiterals": [
+      "Sully",
+      "Igor",
+      "AVCH"
+    ],
+    "wholeWordLiterals": [
+      "SCC"
+    ],
+    "requireEnv": true
+  }
+}

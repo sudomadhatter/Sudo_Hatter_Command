@@ -27,6 +27,15 @@ param(
 $ErrorActionPreference = "Stop"
 $Master = Split-Path $PSScriptRoot -Parent      # ...\.agents
 $HomeRoot = Split-Path $Master -Parent            # ...\Sudo_Hatter_Command
+# A project name becomes a folder, a repository identity, and a command argument on both Mac and
+# Windows. Keep it to one portable segment so `../name`, drive paths, and Windows device names can
+# never escape Projects/ or create a clone another machine cannot check out. Checked BEFORE the
+# clone, because the damage of a traversing name is done the moment a path is built from it.
+if ($Name -notmatch '^[A-Za-z0-9](?:[A-Za-z0-9._-]{0,78}[A-Za-z0-9_-])?$' -or
+    $Name -match '^(?i:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)') {
+  throw "Project name must be one portable folder name (letters, digits, dot, underscore, or hyphen; no paths or trailing dot): $Name"
+}
+
 $Dest = Join-Path $HomeRoot "Projects/$Name"
 
 if (Test-Path $Dest) { throw "Project already exists: $Dest" }
@@ -41,6 +50,7 @@ Remove-Item -Recurse -Force (Join-Path $Dest ".git")
 Push-Location $Dest
 try {
   git init  | Out-Null
+  if ($LASTEXITCODE -ne 0) { throw "project git init failed (rc=$LASTEXITCODE)" }
   # Hooks are per-clone AND per-machine: git never carries core.hooksPath. Arm it now so the encoding
   # guard and the commit-msg Jira gate are live from the first commit. (The Jira gate stays SILENT
   # until .agents/jira.conf exists — see .agents/jira.conf.example for the 4-step arming procedure.)
@@ -65,8 +75,20 @@ try {
       Write-Host "  .claude/settings.local.json initialized from $(Split-Path $exampleTemplate -Leaf)"
   }
 
+  # ⛔ EVERY ONE OF THESE THREE IS CHECKED, because `| Out-Null` swallows git's output and
+  # PowerShell does not stop on a non-zero native exit code. Without the checks this script
+  # printed "created Projects/<name>" over a repo with NO HEAD - the scaffold staged, the
+  # commit refused (an unconfigured user.name is enough), and nothing said so. A new project
+  # that reports success with no first commit is the worst shape available: the operator moves
+  # on, and the failure surfaces days later as an empty history.
   git add -A                            | Out-Null
+  if ($LASTEXITCODE -ne 0) { throw "could not stage the scaffold (rc=$LASTEXITCODE)" }
   git commit -q -m "chore: scaffold $Name from the thin project skeleton" | Out-Null
+  if ($LASTEXITCODE -ne 0) {
+    throw ("scaffold commit failed (rc=$LASTEXITCODE). Configure git user.name/user.email, " +
+           "then commit the staged scaffold in Projects/$Name; the tour must not report " +
+           "success until HEAD exists.")
+  }
 }
 finally { Pop-Location }
 
@@ -81,8 +103,14 @@ Write-Host "       git submodule add <remote-url> Projects/$Name"
 Write-Host "  3. Fill the placeholders: grep for '{{' and for '<PROJECT_NAME>' (AGENTS.md,"
 Write-Host "     .agents/INDEX.md, _bmad-output/project-context.md, _my_resources/open_tasks/todo_list.md)."
 Write-Host ""
-Write-Host "  Optional, when it gets a Jira board: cp .agents/jira.conf.example .agents/jira.conf,"
-Write-Host "  set JIRA_KEYS, then touch .agents/scripts/git-hooks/JIRA-ENFORCE to arm REJECT mode."
+Write-Host "  Optional, only after this project gets a Jira board — run these IN THE PROJECT,"
+Write-Host "  not here; the lobby's own jira.conf is a different board:"
+Write-Host "       cd Projects/$Name"
+Write-Host "       cp .agents/jira.conf.example .agents/jira.conf"
+Write-Host "  Set JIRA_SITE and JIRA_KEYS, run 'acli jira auth status', and require the site it"
+Write-Host "  prints to match JIRA_SITE — a key prefix alone is half an address, and the CLI will"
+Write-Host "  happily validate against whatever board this machine happens to be logged into."
+Write-Host "  Only then touch .agents/scripts/git-hooks/JIRA-ENFORCE to arm REJECT mode."
 Write-Host ""
 Write-Host "  Add it to .agents/maintained-projects.txt only if you want the lint to cover it."
 exit 0

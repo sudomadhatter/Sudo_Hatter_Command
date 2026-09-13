@@ -1,0 +1,15 @@
+{
+  "accept_unpushed_main": false,
+  "branch": "chore/SCC-456-teaching-edition-export",
+  "errors": 0,
+  "exit": 1,
+  "fetch": true,
+  "fresh": true,
+  "lane": "LOCAL",
+  "schema_v": 1,
+  "task_key": "SCC-456",
+  "verdict": "clear to close out and merge",
+  "verdict_sha": "da9d5c4b467148453e718cff990cae641a454f93",
+  "warnings": 3,
+  "when": "2026-09-12T23:03:11-04:00"
+}

@@ -574,6 +574,53 @@ and `epic write gate — light (AVCH-152)` — and every project cloned from the
 recipes armed at nothing, which is what step 5 of
 [`/smh-new-project`](../../.agents/commands/smh-new-project.md) is for.
 
+### The published teaching edition is GENERATED — never hand-edited (SCC-456)
+
+`Projects/sudo-command-center` is the **published teaching edition**: a sanitized export of this
+lobby that other people clone and keep current with `git pull`. It is produced by
+`.agents/scripts/export-teaching-edition.ps1` from
+`.agents/scripts/teaching-edition/lobby.manifest.json`, and **nothing
+ever flows back**. Editing a file in that repo is work the next export deletes.
+
+Three things about it are worth knowing before you touch anything near it.
+
+**The leak scan cannot be skipped, and it is the only thing standing between this workspace and a
+public repo.** It checks every exported byte — contents *and* paths — for the operator's name,
+email, machine name, the real Jira site and every client name. Any hand-edit to the published repo
+bypasses it completely. That is the single strongest reason the repo is generated rather than
+maintained.
+
+**A door that ships only to the teaching edition lives in `teaching-edition/overlay/`, not in the
+lobby.** the tutor doors `smh-tour` and `smh-training` are real in the published edition and do not exist
+here — putting them in `.agents/commands/` would give this workspace two doors nobody uses and force
+every door-parity test to carry an exception. The overlay is written **before** the substitution and
+leak passes, never after: copy-last is the natural way to write it and it is a hole straight through
+the guard. Being overwritten is prevented by a collision check instead, which reports the clash
+rather than silently winning it.
+
+**Publishing must DELETE, and until SCC-456 it could not.** The exporter refuses a non-empty target
+so stale files cannot survive invisibly, which meant publishing was "export to a folder and copy it
+over the repo" — and a copy adds and overwrites but never removes. Every retired command stayed in
+every reader's clone: 84 files `main` had deleted were still shipping, including the whole
+`.agents/workflows/` set, the v2 autopilot lane and `/smh-quick-fix`. A reader invoked a door no
+rule, SOP or test still matched. The publish step therefore clears the **tracked** tree
+(`git ls-files -z | xargs -0 rm -f`) before copying the export in — tracked-only, enumerated by git
+and never by the shell, so a reader's untracked files and the repo's history both survive.
+
+**When you change a door or a rule here, you do not have to do anything.** The export picks it up on
+its next run; that is the whole point of generating it. What you must not do is edit the published
+repo to make a change appear sooner.
+
+**The door that does all of this is `/smh-publish-teaching-edition`, and it stops for you before it publishes.** It refuses to run against a dirty tree or an unpushed `HEAD` — a snapshot of uncommitted work names a commit nobody can resolve. It exports to a scratch folder outside the lobby (the exporter refuses a target inside its own source tree, so there is no other shape), runs the leak scan, clears the tracked tree, and then **prints the adds, the modifies and the deletes separately and hands them to you**. Nothing is committed, pushed or opened as a pull request until you have read the deletion list and said so. The deletions are the half you actually need to see: they are what leaves your team's clones. **Five refusals sit before anything is deleted, and all five are machine checks rather than advice:** the export must exit zero, its log must carry `TEACHING EDITION VALID`, the scratch folder must actually hold an export, the target must be a git repository, and its path must end in `Projects/sudo-command-center`. Each destructive block also re-derives its own paths and runs under `set -euo pipefail` — a block that inherits a path variable from an earlier block deletes tracked files in whatever directory the shell happens to be standing in when that variable is unset, which is the lobby.
+
+**The leak scan tells you where its needles came from, and stops if it cannot get them.** Most of that guard is not the declared list — on the real manifest it is 13 declared literals plus 29 values read from the live `.env`. An absent `.env` (a fresh clone, a CI runner, a worktree that never got the symlink) used to shrink the scan to a third of itself and still print `clean`. The manifest declares `leakScan.requireEnv`, so the export says loudly that its needle set is reduced and the publish door refuses to run at all without it — the door is the only path to a public repo, which is the one place the refusal belongs, and CI has no `.env` and never will. The count prints its own provenance either way: `clean - 42 needles (13 declared + 29 from .env), 0 hits`.
+
+**The export stamps where it came from, and a session tells you when that has gone stale.** Every export writes `.teaching-edition-source` into the published tree — a source sha and two dates, and nothing else, because that file ships to a public repo like any other byte. `teaching_edition_staleness.py` reads it at SessionStart and prints one line when the published copy is more than **fourteen days** behind `main`, or when it carries no stamp at all. It reports; it never blocks. The budget is in days rather than commits on purpose: `main` here takes around fifty commits a day, so a commit budget calibrated to "about a week" would be nagging by lunchtime and switched off by dinner.
+
+⛔ **Never force-push the published repo and never re-initialise it.** Every clone your team has is
+pinned to that history. The door only ever commits on top, and a rejected push means someone else
+published — find out what before doing anything else.
+
 **TRUNK is the third answer, and it means this step cuts nothing** (SCC-423; AviationChat moved to it
 on 2026-09-06). There is no epic branch and no integration branch: every story lane is cut straight
 from `origin/main`, and it lands on `main` through a pull request you merge, under whatever checks
@@ -4549,6 +4596,7 @@ that repo after you commit: `code-review-graph update`.
 | `/smh-sync-agents` | Publishes the toolkit to all five platforms (Claude, Codex, opencode, Antigravity, Zoo Code) — one door each, and **Codex and Antigravity share the same one**: both read `.agents/skills/` natively and invoke any `SKILL.md` there as `/<name>`. **It SHORTENS the description it writes into `.roo/commands/`:** Zoo builds its menu from those descriptions and full-length ones blow its context budget, so the generator cuts each one to **135 characters** on a word boundary. ⛔ **Do not shorten one by hand** — those files are generated, so the next sync overwrites you, *and* the door-parity check demands a door match its brain, so a hand-edit turns `main-write-gate` red (`chore/SCC-194-workflow-titles` is exactly that attempt, 34 files, unlandable). The COMMANDS keep their full descriptions; only a menu has a budget. It reaches **the lobby and this machine's caches only**; projects read from the center, so there is nothing to push. **Since SCC-378 it also RENDERS the three terminal-approval lists** — Zoo's, Claude's and Antigravity's — from the one source `.agents/permissions/families.json` (`python3 .agents/scripts/permission_render.py`), and `-Status` runs the renderer's `--check` so a hand-edited list shows as drift. **Since SCC-432 it also RENDERS universal tool & MCP configs** across Claude Code, OpenCode, Zoo Code, and Antigravity from `.agents/tools/connections.json` (`tool_sync.py`), and `-Status` runs `--check` to detect drift. It renders only: pushing a list into a live machine store stays the two explicit applies (`zoo_permissions_apply.py`, `antigravity_permissions_apply.py`). It *generates* the Claude/Codex skill door for every command instead of publishing a second command copy beside it, and purges the two retired doors. Hand-written skills are never overwritten. What a command *declares* decides where it publishes — nothing is inferred from its filename. Hooks are executed directly from `.agents/hooks/` via `run-hook.sh` (the duplicate `.claude/hooks/` mirror is retired under SCC-300), and in-session sandboxed runs catch `.claude/skills` write restrictions gracefully. |
 | `/smh-review` | Reviews the working diff outside the story loop — the quick read when there's no story to hang ③ on. |
 | `/smh-new-project` | Scaffold a new workspace. |
+| `/smh-publish-teaching-edition` | Refreshes the command centre your team clones (`Projects/sudo-command-center`). That repo is a **generated** sanitized export of this lobby, never hand-edited — this door regenerates it. It refuses a dirty or unpushed tree, exports to scratch outside the lobby, runs the unskippable leak scan, and clears the **tracked** tree so retired files actually leave your team's clones (a copy-over can only add and overwrite, which is how 84 deleted files kept shipping). Then it stops and shows you the adds, modifies and **deletes** before anything is committed. It commits on top, never force-pushes, and you merge the PR. |
 | `webm-alpha-video` | **Skill only — not a slash command.** Green-screen video to transparent WebM; load it by intent. |
 
 > ⓘ **The memory store is two-tier, and `/smh-memory-audit` is what moves things between tiers

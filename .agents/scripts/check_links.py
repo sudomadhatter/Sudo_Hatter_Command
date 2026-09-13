@@ -75,6 +75,17 @@ PLACEHOLDER = re.compile(
 # over a lane that had merely EDITED two long-standing files, pulling them into scope for the
 # first time - the hits were prose, not rot.
 CAPS_VAR_DIR = re.compile(r"(?:^|/)[A-Z][A-Z0-9]*_[A-Z0-9_]*/")
+# Convention 7 (SCC-456). An EXPORT-STAGING root holds files that will be written somewhere else.
+# `.agents/scripts/teaching-edition/overlay/` mirrors the ROOT of the generated teaching edition:
+# `overlay/.agents/commands/smh-tour.md` is published as `.agents/commands/smh-tour.md`, so its
+# `../../docs/…` link is correct in the tree a reader gets and resolves to nothing where the file
+# is staged. Without this the gate reports two dead links that are not dead and can never be fixed
+# in place - and a gate with permanent false positives is one people learn to skip.
+#
+# It NARROWS, never widens: a token is retried only from the citing file's PUBLISHED location, so
+# every link is still resolved against the real tree. A link broken in both places stays broken.
+STAGING_ROOTS = (".agents/scripts/teaching-edition/overlay/",)
+
 URL = re.compile(r"^(https?|mailto|ftp|file):", re.I)
 FENCE = re.compile(r"^\s*(```|~~~)")
 
@@ -229,6 +240,19 @@ class Resolver:
         hits = self.by_suffix.get(_strip_dot_slash(tok))
         if hits:
             return hits[0]
+        # Convention 7: retry from where the citing file will be PUBLISHED, not where it is staged.
+        for root in STAGING_ROOTS:
+            if citing.startswith(root):
+                published = citing[len(root):]
+                staged = posixpath.normpath(
+                    posixpath.join(posixpath.dirname(published), tok)
+                )
+                staged = _strip_dot_slash(staged)
+                if staged and not staged.startswith(".."):
+                    if staged in self.tracked or staged in self.dirs:
+                        return staged
+                    if (self.worktree / staged).exists():
+                        return staged
         return None
 
 

@@ -4,22 +4,22 @@
     "docs"
   ],
   "counts": {
-    "files": 381,
+    "files": 389,
     "packs": 1,
     "pack_docs": 2,
-    "edges": 798,
-    "external": 35,
-    "ambiguous": 182,
-    "dangling": 262,
+    "edges": 806,
+    "external": 27,
+    "ambiguous": 200,
+    "dangling": 263,
     "broken_paths": 59,
-    "unresolved_names": 203,
+    "unresolved_names": 204,
     "unresolvable": 9
   },
   "nodes": [
     {
       "path": ".agents/AGENTS.md",
       "in": 3,
-      "out": 8
+      "out": 9
     },
     {
       "path": ".agents/CLAUDE.md",
@@ -319,7 +319,7 @@
     {
       "path": ".agents/commands/cicd-boot-sprint-memory.md",
       "in": 1,
-      "out": 3
+      "out": 4
     },
     {
       "path": ".agents/commands/cicd-clean-code-audit.md",
@@ -344,7 +344,7 @@
     {
       "path": ".agents/commands/cicd-dev-story-tests.md",
       "in": 1,
-      "out": 13
+      "out": 12
     },
     {
       "path": ".agents/commands/cicd-e2e.md",
@@ -354,7 +354,7 @@
     {
       "path": ".agents/commands/cicd-label-tasks.md",
       "in": 2,
-      "out": 5
+      "out": 4
     },
     {
       "path": ".agents/commands/cicd-live-testing-team.md",
@@ -399,7 +399,7 @@
     {
       "path": ".agents/commands/cicd-quick-dev.md",
       "in": 1,
-      "out": 18
+      "out": 17
     },
     {
       "path": ".agents/commands/cicd-resume.md",
@@ -419,7 +419,7 @@
     {
       "path": ".agents/commands/cicd-write-story-tests.md",
       "in": 1,
-      "out": 6
+      "out": 5
     },
     {
       "path": ".agents/commands/dev.md",
@@ -474,12 +474,12 @@
     {
       "path": ".agents/commands/smh-dev-task-tests.md",
       "in": 1,
-      "out": 11
+      "out": 10
     },
     {
       "path": ".agents/commands/smh-label-tasks.md",
       "in": 1,
-      "out": 5
+      "out": 4
     },
     {
       "path": ".agents/commands/smh-llm-approvals.md",
@@ -499,7 +499,7 @@
     {
       "path": ".agents/commands/smh-new-project.md",
       "in": 2,
-      "out": 2
+      "out": 3
     },
     {
       "path": ".agents/commands/smh-non-crit-pr-push.md",
@@ -509,12 +509,17 @@
     {
       "path": ".agents/commands/smh-plan-task.md",
       "in": 3,
-      "out": 9
+      "out": 8
+    },
+    {
+      "path": ".agents/commands/smh-publish-teaching-edition.md",
+      "in": 1,
+      "out": 3
     },
     {
       "path": ".agents/commands/smh-quick-dev.md",
       "in": 1,
-      "out": 16
+      "out": 15
     },
     {
       "path": ".agents/commands/smh-review.md",
@@ -719,7 +724,7 @@
     {
       "path": ".agents/rules/artifacts-always-first.md",
       "in": 38,
-      "out": 9
+      "out": 10
     },
     {
       "path": ".agents/rules/code-standards.md",
@@ -743,7 +748,7 @@
     },
     {
       "path": ".agents/rules/constitution.md",
-      "in": 33,
+      "in": 34,
       "out": 1
     },
     {
@@ -758,12 +763,12 @@
     },
     {
       "path": ".agents/rules/git-policy.md",
-      "in": 60,
+      "in": 61,
       "out": 5
     },
     {
       "path": ".agents/rules/jira.md",
-      "in": 40,
+      "in": 28,
       "out": 3
     },
     {
@@ -773,7 +778,7 @@
     },
     {
       "path": ".agents/rules/living-template-sync.md",
-      "in": 2,
+      "in": 3,
       "out": 2
     },
     {
@@ -798,7 +803,7 @@
     },
     {
       "path": ".agents/rules/operator-profile.md",
-      "in": 8,
+      "in": 5,
       "out": 0
     },
     {
@@ -860,6 +865,36 @@
       "path": ".agents/scripts/INDEX.md",
       "in": 3,
       "out": 7
+    },
+    {
+      "path": ".agents/scripts/teaching-edition/replacements/jira.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/scripts/teaching-edition/replacements/lobby-README.md",
+      "in": 0,
+      "out": 2
+    },
+    {
+      "path": ".agents/scripts/teaching-edition/replacements/memory-MEMORY.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/scripts/teaching-edition/replacements/memory-README.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/scripts/teaching-edition/replacements/operator-profile.md",
+      "in": 0,
+      "out": 0
+    },
+    {
+      "path": ".agents/scripts/teaching-edition/replacements/router.md",
+      "in": 10,
+      "out": 1
     },
     {
       "path": ".agents/scripts/tests/fixtures/avch58_your_actions.md",
@@ -1074,7 +1109,7 @@
     {
       "path": ".agents/skills/code-review-engine/steps/step-01-review.md",
       "in": 3,
-      "out": 3
+      "out": 2
     },
     {
       "path": ".agents/skills/code-review-engine/steps/step-02-verify.md",
@@ -1084,7 +1119,7 @@
     {
       "path": ".agents/skills/code-review-engine/steps/step-03-triage.md",
       "in": 3,
-      "out": 3
+      "out": 2
     },
     {
       "path": ".agents/skills/code-review-engine/steps/step-04-record.md",
@@ -1592,6 +1627,11 @@
       "out": 1
     },
     {
+      "path": ".agents/skills/smh-publish-teaching-edition/SKILL.md",
+      "in": 0,
+      "out": 1
+    },
+    {
       "path": ".agents/skills/smh-quick-dev/SKILL.md",
       "in": 0,
       "out": 1
@@ -1764,7 +1804,7 @@
     {
       "path": "docs/_scc_sops_prds/file_folder_structure+maintaining.md",
       "in": 2,
-      "out": 13
+      "out": 14
     },
     {
       "path": "docs/_scc_sops_prds/frontend_UI_design_guide.md",
@@ -1823,13 +1863,13 @@
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP.md",
-      "in": 31,
-      "out": 68
+      "in": 32,
+      "out": 65
     },
     {
       "path": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "in": 4,
-      "out": 24
+      "out": 22
     },
     {
       "path": "docs/code-review-graph.md",
@@ -1909,17 +1949,17 @@
     {
       "path": "docs/repo-map.md",
       "in": 12,
-      "out": 9
+      "out": 10
     },
     {
       "path": "docs/system-builder.md",
       "in": 4,
-      "out": 6
+      "out": 8
     },
     {
       "path": "docs/workspace-standard.md",
-      "in": 13,
-      "out": 26
+      "in": 14,
+      "out": 27
     },
     {
       "path": ".agents/bmad",
@@ -1930,6 +1970,11 @@
     }
   ],
   "edges": [
+    {
+      "from": ".agents/AGENTS.md",
+      "to": ".agents/scripts/teaching-edition/replacements/router.md",
+      "kind": "ref"
+    },
     {
       "from": ".agents/AGENTS.md",
       "to": ".agents/CLAUDE.md",
@@ -2181,6 +2226,11 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/commands/cicd-boot-sprint-memory.md",
+      "to": ".agents/scripts/teaching-edition/replacements/router.md",
+      "kind": "ref"
+    },
+    {
       "from": ".agents/commands/cicd-clean-code-audit.md",
       "to": ".agents/rules/code-standards.md",
       "kind": "ref"
@@ -2368,11 +2418,6 @@
     {
       "from": ".agents/commands/cicd-dev-story-tests.md",
       "to": ".agents/rules/command-shape.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/commands/cicd-dev-story-tests.md",
-      "to": ".agents/rules/jira.md",
       "kind": "ref"
     },
     {
@@ -2942,11 +2987,6 @@
     },
     {
       "from": ".agents/commands/smh-dev-task-tests.md",
-      "to": ".agents/rules/jira.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/commands/smh-dev-task-tests.md",
       "to": ".agents/rules/work-consolidation.md",
       "kind": "ref"
     },
@@ -3046,6 +3086,11 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/commands/smh-new-project.md",
+      "to": ".agents/scripts/teaching-edition/replacements/router.md",
+      "kind": "ref"
+    },
+    {
       "from": ".agents/commands/smh-non-crit-pr-push.md",
       "to": ".agents/rules/000-PLAN-FIRST-GATE.md",
       "kind": "ref"
@@ -3101,6 +3146,21 @@
       "kind": "ref"
     },
     {
+      "from": ".agents/commands/smh-publish-teaching-edition.md",
+      "to": ".agents/rules/constitution.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-publish-teaching-edition.md",
+      "to": ".agents/rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/commands/smh-publish-teaching-edition.md",
+      "to": ".agents/rules/living-template-sync.md",
+      "kind": "ref"
+    },
+    {
       "from": ".agents/commands/smh-quick-dev.md",
       "to": ".agents/rules/000-PLAN-FIRST-GATE.md",
       "kind": "ref"
@@ -3153,11 +3213,6 @@
     {
       "from": ".agents/commands/smh-quick-dev.md",
       "to": ".agents/rules/command-shape.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/commands/smh-quick-dev.md",
-      "to": ".agents/rules/jira.md",
       "kind": "ref"
     },
     {
@@ -3792,6 +3847,11 @@
     },
     {
       "from": ".agents/rules/artifacts-always-first.md",
+      "to": ".agents/scripts/teaching-edition/replacements/router.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/rules/artifacts-always-first.md",
       "to": "docs/migrations/terminal-permissions-guide.md",
       "kind": "ref"
     },
@@ -4073,6 +4133,21 @@
     {
       "from": ".agents/scripts/INDEX.md",
       "to": ".agents/rules/git-policy.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/scripts/teaching-edition/replacements/lobby-README.md",
+      "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/scripts/teaching-edition/replacements/lobby-README.md",
+      "to": ".agents/scripts/teaching-edition/replacements/router.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/scripts/teaching-edition/replacements/router.md",
+      "to": "docs/workspace-standard.md",
       "kind": "ref"
     },
     {
@@ -4382,11 +4457,6 @@
     },
     {
       "from": ".agents/skills/code-review-engine/steps/step-01-review.md",
-      "to": ".agents/rules/jira.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/skills/code-review-engine/steps/step-01-review.md",
       "to": ".agents/skills/code-review-engine/steps/step-02-verify.md",
       "kind": "ref"
     },
@@ -4403,11 +4473,6 @@
     {
       "from": ".agents/skills/code-review-engine/steps/step-03-triage.md",
       "to": ".agents/rules/code-standards.md",
-      "kind": "ref"
-    },
-    {
-      "from": ".agents/skills/code-review-engine/steps/step-03-triage.md",
-      "to": ".agents/rules/jira.md",
       "kind": "ref"
     },
     {
@@ -4663,6 +4728,11 @@
     {
       "from": ".agents/skills/smh-plan-task/SKILL.md",
       "to": ".agents/commands/smh-plan-task.md",
+      "kind": "ref"
+    },
+    {
+      "from": ".agents/skills/smh-publish-teaching-edition/SKILL.md",
+      "to": ".agents/commands/smh-publish-teaching-edition.md",
       "kind": "ref"
     },
     {
@@ -4973,6 +5043,11 @@
     {
       "from": "docs/_scc_sops_prds/file_folder_structure+maintaining.md",
       "to": ".agents/rules/mobile-mode.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/_scc_sops_prds/file_folder_structure+maintaining.md",
+      "to": ".agents/scripts/teaching-edition/replacements/router.md",
       "kind": "ref"
     },
     {
@@ -5517,17 +5592,7 @@
     },
     {
       "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
-      "to": ".agents/rules/jira.md",
-      "kind": "ref"
-    },
-    {
-      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
       "to": ".agents/rules/memory-is-disposable.md",
-      "kind": "ref"
-    },
-    {
-      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
-      "to": ".agents/rules/operator-profile.md",
       "kind": "ref"
     },
     {
@@ -5797,7 +5862,17 @@
     },
     {
       "from": "docs/repo-map.md",
+      "to": ".agents/scripts/teaching-edition/replacements/router.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/repo-map.md",
       "to": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/system-builder.md",
+      "to": ".agents/scripts/teaching-edition/replacements/router.md",
       "kind": "ref"
     },
     {
@@ -5913,6 +5988,11 @@
     {
       "from": "docs/workspace-standard.md",
       "to": ".agents/rules/karpathy-guidelines.md",
+      "kind": "ref"
+    },
+    {
+      "from": "docs/workspace-standard.md",
+      "to": ".agents/scripts/teaching-edition/replacements/router.md",
       "kind": "ref"
     },
     {
@@ -6555,6 +6635,10 @@
       "target": "walkthrough.md"
     },
     {
+      "from": ".agents/scripts/teaching-edition/replacements/memory-README.md",
+      "target": "MEMORY.md"
+    },
+    {
       "from": ".agents/scripts/tests/fixtures/avch58_your_actions.md",
       "target": "_artifacts/_main/2026-08-15_avch-58-migrations-refs/walkthrough.md"
     },
@@ -6973,14 +7057,6 @@
   ],
   "external": [
     {
-      "from": ".agents/AGENTS.md",
-      "target": "../router.md"
-    },
-    {
-      "from": ".agents/commands/cicd-boot-sprint-memory.md",
-      "target": "router.md"
-    },
-    {
       "from": ".agents/commands/smh-memory-audit.md",
       "target": "_artifacts/_memory/MEMORY.md"
     },
@@ -6993,10 +7069,6 @@
       "target": "_my_resources/open_tasks/todo_list.md"
     },
     {
-      "from": ".agents/commands/smh-new-project.md",
-      "target": "router.md"
-    },
-    {
       "from": ".agents/commands/smh-update-maps-indexes.md",
       "target": "_artifacts/INDEX-archive.md"
     },
@@ -7007,10 +7079,6 @@
     {
       "from": ".agents/commands/smh-update-maps-indexes.md",
       "target": "docs/doc-graph.md"
-    },
-    {
-      "from": ".agents/rules/artifacts-always-first.md",
-      "target": "router.md"
     },
     {
       "from": ".agents/rules/git-policy.md",
@@ -7029,6 +7097,10 @@
       "target": "_my_resources/open_tasks/todo_list.md"
     },
     {
+      "from": ".agents/scripts/teaching-edition/replacements/jira.md",
+      "target": "_my_resources/open_tasks/todo_list.md"
+    },
+    {
       "from": "docs/AGENTS.md",
       "target": "doc-graph.md"
     },
@@ -7043,10 +7115,6 @@
     {
       "from": "docs/_scc_sops_prds/file_folder_structure+maintaining.md",
       "target": "docs/doc-graph.md"
-    },
-    {
-      "from": "docs/_scc_sops_prds/file_folder_structure+maintaining.md",
-      "target": "router.md"
     },
     {
       "from": "docs/_scc_sops_prds/smh-adviser-board-REFERENCE.md",
@@ -7085,18 +7153,6 @@
       "target": "docs/doc-graph.md"
     },
     {
-      "from": "docs/repo-map.md",
-      "target": "router.md"
-    },
-    {
-      "from": "docs/system-builder.md",
-      "target": "../router.md"
-    },
-    {
-      "from": "docs/system-builder.md",
-      "target": "router.md"
-    },
-    {
       "from": "docs/workspace-standard.md",
       "target": "_artifacts/_main/active-context.md"
     },
@@ -7107,10 +7163,6 @@
     {
       "from": "docs/workspace-standard.md",
       "target": "_my_resources/research_docs/implementation-plan_folder-as-workspace-routing-system.md"
-    },
-    {
-      "from": "docs/workspace-standard.md",
-      "target": "router.md"
     }
   ],
   "ambiguous": [
@@ -7180,6 +7232,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -7274,6 +7327,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -7327,6 +7381,22 @@
         ".agents/AGENTS.md",
         ".agents/skills/react-best-practices/AGENTS.md",
         "docs/AGENTS.md"
+      ]
+    },
+    {
+      "from": ".agents/commands/cicd-dev-story-tests.md",
+      "target": "jira.md",
+      "candidates": [
+        ".agents/rules/jira.md",
+        ".agents/scripts/teaching-edition/replacements/jira.md"
+      ]
+    },
+    {
+      "from": ".agents/commands/cicd-label-tasks.md",
+      "target": "jira.md",
+      "candidates": [
+        ".agents/rules/jira.md",
+        ".agents/scripts/teaching-edition/replacements/jira.md"
       ]
     },
     {
@@ -7434,6 +7504,22 @@
       ]
     },
     {
+      "from": ".agents/commands/cicd-quick-dev.md",
+      "target": "jira.md",
+      "candidates": [
+        ".agents/rules/jira.md",
+        ".agents/scripts/teaching-edition/replacements/jira.md"
+      ]
+    },
+    {
+      "from": ".agents/commands/cicd-write-story-tests.md",
+      "target": "jira.md",
+      "candidates": [
+        ".agents/rules/jira.md",
+        ".agents/scripts/teaching-edition/replacements/jira.md"
+      ]
+    },
+    {
       "from": ".agents/commands/smh-clean-code-audit.md",
       "target": "AGENTS.md",
       "candidates": [
@@ -7467,6 +7553,22 @@
         ".agents/AGENTS.md",
         ".agents/skills/react-best-practices/AGENTS.md",
         "docs/AGENTS.md"
+      ]
+    },
+    {
+      "from": ".agents/commands/smh-dev-task-tests.md",
+      "target": "jira.md",
+      "candidates": [
+        ".agents/rules/jira.md",
+        ".agents/scripts/teaching-edition/replacements/jira.md"
+      ]
+    },
+    {
+      "from": ".agents/commands/smh-label-tasks.md",
+      "target": "jira.md",
+      "candidates": [
+        ".agents/rules/jira.md",
+        ".agents/scripts/teaching-edition/replacements/jira.md"
       ]
     },
     {
@@ -7529,6 +7631,22 @@
       "candidates": [
         ".agents/GEMINI.md",
         "docs/GEMINI.md"
+      ]
+    },
+    {
+      "from": ".agents/commands/smh-plan-task.md",
+      "target": "jira.md",
+      "candidates": [
+        ".agents/rules/jira.md",
+        ".agents/scripts/teaching-edition/replacements/jira.md"
+      ]
+    },
+    {
+      "from": ".agents/commands/smh-quick-dev.md",
+      "target": "jira.md",
+      "candidates": [
+        ".agents/rules/jira.md",
+        ".agents/scripts/teaching-edition/replacements/jira.md"
       ]
     },
     {
@@ -7635,6 +7753,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -7719,6 +7838,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -8133,6 +8253,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -8636,6 +8757,33 @@
       ]
     },
     {
+      "from": ".agents/scripts/teaching-edition/replacements/lobby-README.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
+      ]
+    },
+    {
+      "from": ".agents/scripts/teaching-edition/replacements/router.md",
+      "target": "/AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
+      ]
+    },
+    {
+      "from": ".agents/scripts/teaching-edition/replacements/router.md",
+      "target": "AGENTS.md",
+      "candidates": [
+        ".agents/AGENTS.md",
+        ".agents/skills/react-best-practices/AGENTS.md",
+        "docs/AGENTS.md"
+      ]
+    },
+    {
       "from": ".agents/scripts/tests/fixtures/nc_review_engine/README.md",
       "target": "SKILL.md",
       "candidates": [
@@ -8692,6 +8840,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -8767,6 +8916,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -8842,6 +8992,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -8917,6 +9068,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -8992,6 +9144,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -9067,6 +9220,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -9142,6 +9296,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -9217,6 +9372,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -9292,6 +9448,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -9367,6 +9524,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -9442,6 +9600,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -9517,6 +9676,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -9592,6 +9752,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -9667,6 +9828,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -9683,6 +9845,14 @@
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
         ".agents/skills/write-swift/SKILL.md"
+      ]
+    },
+    {
+      "from": ".agents/skills/code-review-engine/steps/step-01-review.md",
+      "target": "jira.md",
+      "candidates": [
+        ".agents/rules/jira.md",
+        ".agents/scripts/teaching-edition/replacements/jira.md"
       ]
     },
     {
@@ -9742,6 +9912,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -9758,6 +9929,14 @@
         ".agents/skills/webm-alpha-video/SKILL.md",
         ".agents/skills/workspace-structure/SKILL.md",
         ".agents/skills/write-swift/SKILL.md"
+      ]
+    },
+    {
+      "from": ".agents/skills/code-review-engine/steps/step-03-triage.md",
+      "target": "jira.md",
+      "candidates": [
+        ".agents/rules/jira.md",
+        ".agents/scripts/teaching-edition/replacements/jira.md"
       ]
     },
     {
@@ -9817,6 +9996,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -9945,6 +10125,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -10211,6 +10392,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -10414,6 +10596,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -10459,6 +10642,30 @@
         ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
+      ]
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "target": "jira.md",
+      "candidates": [
+        ".agents/rules/jira.md",
+        ".agents/scripts/teaching-edition/replacements/jira.md"
+      ]
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "target": "operator-profile.md",
+      "candidates": [
+        ".agents/rules/operator-profile.md",
+        ".agents/scripts/teaching-edition/replacements/operator-profile.md"
+      ]
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP.md",
+      "target": "rules/operator-profile.md",
+      "candidates": [
+        ".agents/rules/operator-profile.md",
+        ".agents/scripts/teaching-edition/replacements/operator-profile.md"
       ]
     },
     {
@@ -10551,6 +10758,22 @@
         ".agents/tools/INDEX.md",
         "docs/_scc_sops_prds/INDEX.md",
         "docs/migrations/INDEX.md"
+      ]
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "target": "jira.md",
+      "candidates": [
+        ".agents/rules/jira.md",
+        ".agents/scripts/teaching-edition/replacements/jira.md"
+      ]
+    },
+    {
+      "from": "docs/_scc_sops_prds/workflows_testing_SOP_changelog.md",
+      "target": "operator-profile.md",
+      "candidates": [
+        ".agents/rules/operator-profile.md",
+        ".agents/scripts/teaching-edition/replacements/operator-profile.md"
       ]
     },
     {
@@ -10751,6 +10974,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",
@@ -10855,6 +11079,7 @@
         ".agents/skills/smh-new-project/SKILL.md",
         ".agents/skills/smh-non-crit-pr-push/SKILL.md",
         ".agents/skills/smh-plan-task/SKILL.md",
+        ".agents/skills/smh-publish-teaching-edition/SKILL.md",
         ".agents/skills/smh-quick-dev/SKILL.md",
         ".agents/skills/smh-review/SKILL.md",
         ".agents/skills/smh-self-audit/SKILL.md",

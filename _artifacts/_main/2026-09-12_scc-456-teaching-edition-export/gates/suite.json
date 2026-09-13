@@ -1,0 +1,17 @@
+{
+  "gate": "suite",
+  "story": "scc-456",
+  "result": "pass",
+  "exit_code": 0,
+  "sha": "da9d5c4b467148453e718cff990cae641a454f93",
+  "dirty_tree": false,
+  "dirty_paths": [],
+  "totals": null,
+  "command": "python3 .agents/scripts/tests/run_all.py",
+  "cwd": "/home/dlohn/Sudo_Hatter_Command/.claude/worktrees/SCC-456-export",
+  "duration_s": 129.7,
+  "recorded_at": "2026-09-12T22:44:16+00:00",
+  "output_tail": "\n============================================================\n95/95 files passed",
+  "files": "95/95",
+  "note": "re-certified after the code review fixes; the previous receipt named b967ca4e and 94/94, which was 22 commits and one file stale by the time the walkthrough cited it."
+}

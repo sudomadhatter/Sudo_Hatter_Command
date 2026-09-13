@@ -111,6 +111,12 @@ PAIRS = [
 # dead set it was, where its one entry could never appear in the derived set anyway.
 _ONE_SUBJECT = "single-subject: the other family has no equivalent and should not"
 NOT_PAIRED = {
+    "smh-publish-teaching-edition.md": "lobby-only by construction: it regenerates the "
+                                       "PUBLISHED teaching edition from this lobby's own "
+                                       "manifest and exporter. A project has no teaching "
+                                       "edition to publish and carries neither file, so a "
+                                       "cicd- twin could only be a door that always "
+                                       "refuses (SCC-456)",
     "smh-dev-task-tests.md": "the full Task lane (plan, audit, approved, RED, GREEN, mutant sweep, "
                              "review) - its story-side counterpart is cicd-dev-story-tests, which "
                              "binds BMAD (a story file, a board, an epic branch) and so cannot be "

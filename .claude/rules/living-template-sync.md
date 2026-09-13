@@ -36,6 +36,31 @@ project starts stale — and unlike the old model, **nothing detects that for yo
 | The PR gate and its classifier — a project's `pr-check.yml` under `.github/workflows/`, its `.github/scripts/`, the ruleset recipes under `.github/rulesets/` | **Hand-mirror.** CI is repo-local and never synced. When a project changes the shape of the gate (the diff classifier, a per-job `if:`, a ruleset), the skeleton gets the same shape by hand, with placeholders where the project's names go. The lobby's own `main-write-gate.yml` is not part of this row — the skeleton does not ship the lobby's gate. |
 | `.agents/INDEX.md` template stub, the BMAD `_bmad/custom/*.toml` (incl. the INLINED plan-first gate) | **Hand-mirror.** The gate text lives inline in the tomls; edit the canonical rule first, then mirror it into the skeleton's two tomls. |
 
+## There are TWO living templates, and only one of them is detected
+
+They are easy to confuse and they fail differently, so the distinction is stated here rather than
+left to be rediscovered.
+
+| Template | What it is | Kept current by | Detector |
+|---|---|---|---|
+| `sudo-project-skeleton` | the clone source for a NEW project | **hand-mirroring**, the table above | **none** — this rule is the whole mechanism |
+| `sudo-command-center` | the PUBLISHED teaching edition the team pulls | **generated** by `/smh-publish-teaching-edition` in the source command centre; never hand-edited | `teaching_edition_staleness.py`, armed at SessionStart |
+
+**The teaching edition is not hand-mirrored and must never be.** Every byte under
+`Projects/sudo-command-center` is a sanitized export of this lobby. A hand edit there is deleted by
+the next export and — because it never passed the exporter — it **bypasses the leak scan on a public
+repo**. Something wrong in the published edition is a bug in the lobby master or in
+`lobby.manifest.json`; fix it there and re-export.
+
+Its staleness is now measurable: the export stamps `.teaching-edition-source` with the lobby sha, and
+in the source command centre `teaching_edition_staleness.py` reads it from
+`.agents/hooks/session-start-context.sh` and says one line when the copy the team pulls has gone
+stale. It reports and never blocks.
+
+**The skeleton still has no detector.** That is the open half of this rule, and it is the same engine
+away: a second manifest sourced from a real project. Until then, the table above is enforced by
+nothing but this page.
+
 ## The obligation
 
 After changing anything in the right-hand "hand-mirror" rows: **clone the skeleton fresh, apply the
