@@ -77,7 +77,7 @@ All maps & INDEXes agree with disk. [ok]
   ALL CHECKS PASSED
 ```
 
-Base SHA: `91c314fa1051947a27eb045654a8a9197e203e3e`
+Base SHA: `d49bb54d`
 
 ---
 
@@ -96,7 +96,7 @@ Base SHA: `91c314fa1051947a27eb045654a8a9197e203e3e`
 
 ## Code Review (2026-09-13)
 
-Review: none - quick lane; walkthrough approved by the operator @ 91c314fa1051947a27eb045654a8a9197e203e3e
+Review: none - quick lane; walkthrough approved by the operator @ d49bb54d
 
 ---
 
